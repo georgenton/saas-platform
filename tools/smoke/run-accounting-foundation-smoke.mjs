@@ -1236,6 +1236,12 @@ const [
   fullAccountingBankFeedReconciliationReadiness,
   fullAccountingTrialBalanceStatementReadiness,
   fullAccountingMvpReadinessCloseout,
+  fullAccountingMvpOperationsAnchor,
+  fullAccountingLedgerWorkbenchMvp,
+  fullAccountingPostingDraftLane,
+  fullAccountingBankReconciliationWorkbenchMvp,
+  fullAccountingTrialBalancePreviewWorkbench,
+  fullAccountingMvpOperationsCloseout,
 ] = await Promise.all([
   apiRequest({
     baseUrl,
@@ -2010,6 +2016,44 @@ const [
     path: accountingPath(`/full-accounting-mvp-readiness/closeout?${periodQuery()}`),
     token,
   }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(`/full-accounting-mvp-operations/anchor?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-mvp-operations/ledger-workbench?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-mvp-operations/posting-draft-lane?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-mvp-operations/bank-reconciliation-workbench?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-mvp-operations/trial-balance-preview?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(`/full-accounting-mvp-operations/closeout?${periodQuery()}`),
+    token,
+  }),
 ]);
 
 assertStatus(
@@ -2480,6 +2524,30 @@ assertStatus(
   'full accounting mvp readiness closeout',
   fullAccountingMvpReadinessCloseout.closeoutStatus,
 );
+assertStatus(
+  'full accounting mvp operations anchor',
+  fullAccountingMvpOperationsAnchor.anchorStatus,
+);
+assertStatus(
+  'full accounting ledger workbench mvp',
+  fullAccountingLedgerWorkbenchMvp.workbenchStatus,
+);
+assertStatus(
+  'full accounting posting draft lane',
+  fullAccountingPostingDraftLane.laneStatus,
+);
+assertStatus(
+  'full accounting bank reconciliation workbench mvp',
+  fullAccountingBankReconciliationWorkbenchMvp.workbenchStatus,
+);
+assertStatus(
+  'full accounting trial balance preview workbench',
+  fullAccountingTrialBalancePreviewWorkbench.previewStatus,
+);
+assertStatus(
+  'full accounting mvp operations closeout',
+  fullAccountingMvpOperationsCloseout.closeoutStatus,
+);
 if (!Array.isArray(advancedDiscoveryCloseout.closeoutChecklist)) {
   throw new Error('advanced-discovery/closeout no devolvio checklist[].');
 }
@@ -2554,6 +2622,11 @@ if (!Array.isArray(fullAccountingCandidateCloseout.closeoutChecklist)) {
 if (!Array.isArray(fullAccountingMvpReadinessCloseout.closeoutChecklist)) {
   throw new Error(
     'full-accounting-mvp-readiness/closeout no devolvio checklist[].',
+  );
+}
+if (!Array.isArray(fullAccountingMvpOperationsCloseout.closeoutChecklist)) {
+  throw new Error(
+    'full-accounting-mvp-operations/closeout no devolvio checklist[].',
   );
 }
 printLine(

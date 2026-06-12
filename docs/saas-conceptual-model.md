@@ -2345,6 +2345,38 @@ ready for a controlled MVP.
 Guardrail: readiness 0.2 does not persist a ledger, post journals, reconcile
 banks, issue statements, legalize books or certify balances.
 
+### Full Accounting MVP operations 0.3
+
+After readiness 0.2, full Accounting can open a narrow assisted operating
+surface. This is the workshop floor after the construction permit: operators
+can prepare draft ledger work, simulate posting packets, review bank matching
+candidates and preview trial-balance warnings, but the product still avoids
+official postings, official reconciliations, statutory statements and
+certifications.
+
+1. `Full Accounting MVP Operations Anchor`
+   - converts readiness closeout into draft, simulation, preview and blocker
+     operating lanes
+2. `Ledger Workbench MVP`
+   - organizes journal batch drafts, journal-line review, balance snapshot
+     preview, invariant checks and period-lock preview
+3. `Posting Draft Lane`
+   - separates draft, pending approval, approved-for-simulation, returned and
+     blocked posting packets with operator/accountant ownership
+4. `Bank Reconciliation Workbench MVP`
+   - prepares statement batches, candidate matches, exception review, cutoff
+     review and professional-boundary packets
+5. `Trial Balance Preview Workbench`
+   - previews trial balance, balance variances, approval warnings, bank
+     dependencies and adjustment traces
+6. `Full Accounting MVP Operations Closeout`
+   - decides whether to advance to a controlled pilot, continue operations
+     hardening, return to MVP readiness, return to candidate discovery or stop
+
+Guardrail: operations 0.3 is draft/simulation/preview only. It does not write
+official ledger entries, post journal batches, reconcile bank accounts, issue
+financial statements, legalize books or certify balances.
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal
@@ -2481,6 +2513,10 @@ product. Its current scope is intentionally operational and review-oriented:
 37. Full Accounting MVP readiness 0.2 as the construction permit. It designs
     ledger persistence, posting approvals, bank feed readiness and trial balance
     readiness without writing official ledger entries or issuing statements.
+38. Full Accounting MVP operations 0.3 as the workshop floor. It opens draft
+    ledger work, posting simulations, bank matching candidates and trial balance
+    previews while keeping official postings, reconciliations, statements and
+    certifications outside the product boundary.
 
 Boundary: this foundation still does not perform bank reconciliation, lock
 against certified bank feeds, lock official legal books, issue official

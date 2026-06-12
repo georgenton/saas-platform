@@ -95,6 +95,11 @@ import {
   GetTenantFullAccountingPostingPolicyApprovalBoundaryUseCase,
   GetTenantFullAccountingBankFeedReconciliationMvpReadinessUseCase,
   GetTenantFullAccountingTrialBalanceStatementReadinessUseCase,
+  GetTenantFullAccountingMvpOperationsAnchorUseCase,
+  GetTenantFullAccountingLedgerWorkbenchMvpUseCase,
+  GetTenantFullAccountingPostingDraftLaneUseCase,
+  GetTenantFullAccountingBankReconciliationWorkbenchMvpUseCase,
+  GetTenantFullAccountingTrialBalancePreviewWorkbenchUseCase,
   GetTenantAccountingAdvancedFormalProductScopeContractUseCase,
   GetTenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixUseCase,
   GetTenantAccountingAdvancedProfessionalReviewWorkflowDesignUseCase,
@@ -171,6 +176,7 @@ import {
   RequestTenantAccountingAdvancedGraduationArchiveHandoffCloseoutUseCase,
   RequestTenantFullAccountingCandidateCloseoutUseCase,
   RequestTenantFullAccountingMvpReadinessCloseoutUseCase,
+  RequestTenantFullAccountingMvpOperationsCloseoutUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -307,6 +313,12 @@ import {
   FullAccountingBankFeedReconciliationMvpReadinessResponseDto,
   FullAccountingTrialBalanceStatementReadinessResponseDto,
   FullAccountingMvpReadinessCloseoutResponseDto,
+  FullAccountingMvpOperationsAnchorResponseDto,
+  FullAccountingLedgerWorkbenchMvpResponseDto,
+  FullAccountingPostingDraftLaneResponseDto,
+  FullAccountingBankReconciliationWorkbenchMvpResponseDto,
+  FullAccountingTrialBalancePreviewWorkbenchResponseDto,
+  FullAccountingMvpOperationsCloseoutResponseDto,
   AccountingAdvancedProfessionalResponsibilityAssignmentMatrixResponseDto,
   AccountingAdvancedProfessionalReviewWorkflowDesignResponseDto,
   AccountingCertifiedBankEvidenceBoundaryResponseDto,
@@ -421,6 +433,12 @@ import {
   toFullAccountingBankFeedReconciliationMvpReadinessResponseDto,
   toFullAccountingTrialBalanceStatementReadinessResponseDto,
   toFullAccountingMvpReadinessCloseoutResponseDto,
+  toFullAccountingMvpOperationsAnchorResponseDto,
+  toFullAccountingLedgerWorkbenchMvpResponseDto,
+  toFullAccountingPostingDraftLaneResponseDto,
+  toFullAccountingBankReconciliationWorkbenchMvpResponseDto,
+  toFullAccountingTrialBalancePreviewWorkbenchResponseDto,
+  toFullAccountingMvpOperationsCloseoutResponseDto,
   toAccountingAdvancedProfessionalResponsibilityAssignmentMatrixResponseDto,
   toAccountingAdvancedProfessionalReviewWorkflowDesignResponseDto,
   toAccountingCertifiedBankEvidenceBoundaryResponseDto,
@@ -807,6 +825,12 @@ export class AccountingController {
     private readonly getTenantFullAccountingBankFeedReconciliationMvpReadinessUseCase: GetTenantFullAccountingBankFeedReconciliationMvpReadinessUseCase,
     private readonly getTenantFullAccountingTrialBalanceStatementReadinessUseCase: GetTenantFullAccountingTrialBalanceStatementReadinessUseCase,
     private readonly requestTenantFullAccountingMvpReadinessCloseoutUseCase: RequestTenantFullAccountingMvpReadinessCloseoutUseCase,
+    private readonly getTenantFullAccountingMvpOperationsAnchorUseCase: GetTenantFullAccountingMvpOperationsAnchorUseCase,
+    private readonly getTenantFullAccountingLedgerWorkbenchMvpUseCase: GetTenantFullAccountingLedgerWorkbenchMvpUseCase,
+    private readonly getTenantFullAccountingPostingDraftLaneUseCase: GetTenantFullAccountingPostingDraftLaneUseCase,
+    private readonly getTenantFullAccountingBankReconciliationWorkbenchMvpUseCase: GetTenantFullAccountingBankReconciliationWorkbenchMvpUseCase,
+    private readonly getTenantFullAccountingTrialBalancePreviewWorkbenchUseCase: GetTenantFullAccountingTrialBalancePreviewWorkbenchUseCase,
+    private readonly requestTenantFullAccountingMvpOperationsCloseoutUseCase: RequestTenantFullAccountingMvpOperationsCloseoutUseCase,
   ) {}
 
   @Get(':slug/advanced-discovery/anchor')
@@ -3575,6 +3599,138 @@ export class AccountingController {
         );
 
       return toFullAccountingMvpReadinessCloseoutResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-mvp-operations/anchor')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingMvpOperationsAnchor(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingMvpOperationsAnchorResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingMvpOperationsAnchorUseCase.execute({
+          tenantSlug,
+          period,
+          year: Number.parseInt(year, 10),
+        });
+      return toFullAccountingMvpOperationsAnchorResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-mvp-operations/ledger-workbench')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingLedgerWorkbenchMvp(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingLedgerWorkbenchMvpResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingLedgerWorkbenchMvpUseCase.execute({
+          tenantSlug,
+          period,
+          year: Number.parseInt(year, 10),
+        });
+      return toFullAccountingLedgerWorkbenchMvpResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-mvp-operations/posting-draft-lane')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingPostingDraftLane(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingPostingDraftLaneResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingPostingDraftLaneUseCase.execute({
+          tenantSlug,
+          period,
+          year: Number.parseInt(year, 10),
+        });
+      return toFullAccountingPostingDraftLaneResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-mvp-operations/bank-reconciliation-workbench')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingBankReconciliationWorkbenchMvp(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingBankReconciliationWorkbenchMvpResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingBankReconciliationWorkbenchMvpUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+      return toFullAccountingBankReconciliationWorkbenchMvpResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-mvp-operations/trial-balance-preview')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingTrialBalancePreviewWorkbench(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingTrialBalancePreviewWorkbenchResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingTrialBalancePreviewWorkbenchUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+      return toFullAccountingTrialBalancePreviewWorkbenchResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-mvp-operations/closeout')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingMvpOperationsCloseout(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingMvpOperationsCloseoutResponseDto> {
+    try {
+      const view =
+        await this.requestTenantFullAccountingMvpOperationsCloseoutUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+      return toFullAccountingMvpOperationsCloseoutResponseDto(view);
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);

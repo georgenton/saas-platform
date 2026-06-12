@@ -18,6 +18,7 @@ import {
   AccountingAdvancedGraduationArchiveHandoffDecision,
   FullAccountingCandidateDecision,
   FullAccountingMvpReadinessDecision,
+  FullAccountingMvpOperationsDecision,
   AccountingAdvancedFormalModuleKey,
   AccountingAdvancedProfessionalOwner,
   AccountingAdvancedPilotEnrollmentStatus,
@@ -129,6 +130,12 @@ import {
   TenantFullAccountingLegalBooksStatutoryBoundaryView,
   TenantFullAccountingMvpReadinessAnchorView,
   TenantFullAccountingMvpReadinessCloseoutView,
+  TenantFullAccountingMvpOperationsAnchorView,
+  TenantFullAccountingMvpOperationsCloseoutView,
+  TenantFullAccountingLedgerWorkbenchMvpView,
+  TenantFullAccountingPostingDraftLaneView,
+  TenantFullAccountingBankReconciliationWorkbenchMvpView,
+  TenantFullAccountingTrialBalancePreviewWorkbenchView,
   TenantFullAccountingPostingPolicyApprovalBoundaryView,
   TenantFullAccountingTrialBalanceStatementReadinessView,
   TenantAccountingAdvancedReturnedEvidenceValidationWorkspaceView,
@@ -9142,6 +9149,293 @@ export class RequestTenantFullAccountingMvpReadinessCloseoutUseCase {
   }
 }
 
+export class GetTenantFullAccountingMvpOperationsAnchorUseCase {
+  constructor(
+    private readonly requestTenantFullAccountingMvpReadinessCloseoutUseCase: RequestTenantFullAccountingMvpReadinessCloseoutUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingMvpOperationsAnchorView> {
+    const readinessCloseout =
+      await this.requestTenantFullAccountingMvpReadinessCloseoutUseCase.execute(input);
+    const operationLanes: TenantFullAccountingMvpOperationsAnchorView['operationLanes'] = [
+      fullAccountingMvpOperationLane('ledger_workbench', 'Ledger workbench MVP', readinessCloseout.closeoutStatus, 'ledger_workbench', 'draft_only', ['full_accounting_mvp_readiness_closeout']),
+      fullAccountingMvpOperationLane('posting_draft', 'Posting draft lane', readinessCloseout.postingPolicyBoundary.boundaryStatus, 'posting_draft', 'simulation_only', ['full_accounting_posting_policy_boundary']),
+      fullAccountingMvpOperationLane('bank_reconciliation', 'Bank reconciliation workbench MVP', readinessCloseout.bankFeedReadiness.readinessStatus, 'bank_reconciliation', 'simulation_only', ['full_accounting_bank_feed_reconciliation_mvp_readiness']),
+      fullAccountingMvpOperationLane('trial_balance_preview', 'Trial balance preview workbench', readinessCloseout.trialBalanceStatementReadiness.readinessStatus, 'trial_balance_preview', 'preview_only', ['full_accounting_trial_balance_statement_readiness']),
+    ];
+    const blockers =
+      readinessCloseout.finalDecision === 'open_full_accounting_mvp_operations'
+        ? [...readinessCloseout.blockers]
+        : unique([
+            ...readinessCloseout.blockers,
+            `Full Accounting MVP readiness decision is ${readinessCloseout.finalDecision}.`,
+          ]);
+    const anchorStatus = resolveStatus(operationLanes.map((lane) => lane.status), blockers);
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      anchorStatus,
+      readinessCloseout,
+      operationLanes,
+      summary: {
+        laneCount: operationLanes.length,
+        readyLaneCount: operationLanes.filter((lane) => lane.status === 'ready').length,
+        simulationLaneCount: operationLanes.filter((lane) => lane.operationMode === 'simulation_only').length,
+        previewLaneCount: operationLanes.filter((lane) => lane.operationMode === 'preview_only').length,
+        blockedLaneCount: operationLanes.filter((lane) => lane.status === 'blocked').length,
+      },
+      blockers,
+      nextStep: 'Abrir ledger workbench MVP en modo draft.',
+      guardrails: [
+        'MVP operations 0.3 opera drafts, simulations y previews; no postings oficiales.',
+        'Ningun workbench emite libros legales ni estados financieros.',
+      ],
+    };
+  }
+}
+
+export class GetTenantFullAccountingLedgerWorkbenchMvpUseCase {
+  constructor(
+    private readonly getTenantFullAccountingMvpOperationsAnchorUseCase: GetTenantFullAccountingMvpOperationsAnchorUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingLedgerWorkbenchMvpView> {
+    const operationsAnchor =
+      await this.getTenantFullAccountingMvpOperationsAnchorUseCase.execute(input);
+    const ledgerWorkItems: TenantFullAccountingLedgerWorkbenchMvpView['ledgerWorkItems'] = [
+      fullAccountingLedgerWorkItem('journal_batch_draft', 'Journal batch draft', operationsAnchor.anchorStatus, 'journal_batch_draft', 'draft', ['full_accounting_ledger_persistence_design']),
+      fullAccountingLedgerWorkItem('journal_line_review', 'Journal line review', operationsAnchor.anchorStatus, 'journal_line_review', 'draft', ['full_accounting_ledger_persistence_design']),
+      fullAccountingLedgerWorkItem('balance_snapshot_preview', 'Balance snapshot preview', operationsAnchor.anchorStatus, 'balance_snapshot_preview', 'preview', ['accounting_trial_balance_workspace']),
+      fullAccountingLedgerWorkItem('invariant_check', 'Ledger invariant check', operationsAnchor.anchorStatus, 'invariant_check', 'simulation', ['full_accounting_ledger_persistence_design']),
+      fullAccountingLedgerWorkItem('period_lock_preview', 'Period lock preview', operationsAnchor.anchorStatus, 'period_lock_preview', 'preview', ['accounting_period_lock_readiness']),
+    ];
+    const blockers = [...operationsAnchor.blockers];
+    const workbenchStatus = resolveStatus(ledgerWorkItems.map((item) => item.status), blockers);
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      workbenchStatus,
+      operationsAnchor,
+      ledgerWorkItems,
+      summary: {
+        itemCount: ledgerWorkItems.length,
+        readyItemCount: ledgerWorkItems.filter((item) => item.status === 'ready').length,
+        draftItemCount: ledgerWorkItems.filter((item) => item.workMode === 'draft').length,
+        simulationItemCount: ledgerWorkItems.filter((item) => item.workMode === 'simulation').length,
+        previewItemCount: ledgerWorkItems.filter((item) => item.workMode === 'preview').length,
+      },
+      blockers,
+      nextStep: 'Preparar posting draft lane.',
+      guardrails: [
+        'Ledger workbench MVP no persiste ledger oficial.',
+        'Balance snapshots son previews derivados, no saldos certificados.',
+      ],
+    };
+  }
+}
+
+export class GetTenantFullAccountingPostingDraftLaneUseCase {
+  constructor(
+    private readonly getTenantFullAccountingLedgerWorkbenchMvpUseCase: GetTenantFullAccountingLedgerWorkbenchMvpUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingPostingDraftLaneView> {
+    const ledgerWorkbench =
+      await this.getTenantFullAccountingLedgerWorkbenchMvpUseCase.execute(input);
+    const draftItems: TenantFullAccountingPostingDraftLaneView['draftItems'] = [
+      fullAccountingPostingDraftItem('draft_batch', 'Draft posting batch', ledgerWorkbench.workbenchStatus, 'draft', 'operator', ['full_accounting_ledger_workbench_mvp']),
+      fullAccountingPostingDraftItem('pending_approval', 'Pending posting approval', ledgerWorkbench.workbenchStatus, 'pending_approval', 'external_accountant', ['full_accounting_posting_policy_boundary']),
+      fullAccountingPostingDraftItem('approved_for_simulation', 'Approved for simulation', ledgerWorkbench.workbenchStatus, 'approved_for_simulation', 'external_accountant', ['full_accounting_posting_policy_boundary']),
+      fullAccountingPostingDraftItem('returned_review', 'Returned posting draft', 'ready', 'returned', 'operator', ['accounting_corrections_queue']),
+    ];
+    const blockers = [...ledgerWorkbench.blockers];
+    const laneStatus = resolveStatus(draftItems.map((item) => item.status), blockers);
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      laneStatus,
+      ledgerWorkbench,
+      draftItems,
+      summary: {
+        draftCount: draftItems.length,
+        readyDraftCount: draftItems.filter((item) => item.status === 'ready').length,
+        pendingApprovalCount: draftItems.filter((item) => item.draftState === 'pending_approval').length,
+        simulationApprovedCount: draftItems.filter((item) => item.draftState === 'approved_for_simulation').length,
+        blockedDraftCount: draftItems.filter((item) => item.status === 'blocked').length,
+      },
+      blockers,
+      nextStep: 'Preparar bank reconciliation workbench MVP.',
+      guardrails: [
+        'Approved for simulation no significa posted.',
+        'Posting drafts no afectan libros ni saldos oficiales.',
+      ],
+    };
+  }
+}
+
+export class GetTenantFullAccountingBankReconciliationWorkbenchMvpUseCase {
+  constructor(
+    private readonly getTenantFullAccountingPostingDraftLaneUseCase: GetTenantFullAccountingPostingDraftLaneUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingBankReconciliationWorkbenchMvpView> {
+    const postingDraftLane =
+      await this.getTenantFullAccountingPostingDraftLaneUseCase.execute(input);
+    const reconciliationItems: TenantFullAccountingBankReconciliationWorkbenchMvpView['reconciliationItems'] = [
+      fullAccountingReconciliationWorkItem('statement_batch', 'Statement batch preparation', postingDraftLane.laneStatus, 'statement_batch', 'prepared', ['accounting_bank_statement_registry']),
+      fullAccountingReconciliationWorkItem('candidate_match', 'Candidate match review', postingDraftLane.laneStatus, 'candidate_match', 'candidate', ['accounting_bank_reconciliation_workspace']),
+      fullAccountingReconciliationWorkItem('exception_review', 'Exception review', postingDraftLane.laneStatus, 'exception_review', 'operator_review', ['accounting_corrections_queue']),
+      fullAccountingReconciliationWorkItem('cutoff_review', 'Cutoff review', postingDraftLane.laneStatus, 'cutoff_review', 'operator_review', ['accounting_period_cash_closeout_readiness']),
+      fullAccountingReconciliationWorkItem('reconciliation_packet', 'Reconciliation packet boundary', 'ready', 'reconciliation_packet', 'professional_boundary', ['accounting_certified_bank_evidence_boundary']),
+    ];
+    const blockers = [...postingDraftLane.blockers];
+    const workbenchStatus = resolveStatus(reconciliationItems.map((item) => item.status), blockers);
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      workbenchStatus,
+      postingDraftLane,
+      reconciliationItems,
+      summary: {
+        itemCount: reconciliationItems.length,
+        readyItemCount: reconciliationItems.filter((item) => item.status === 'ready').length,
+        candidateMatchCount: reconciliationItems.filter((item) => item.reconciliationType === 'candidate_match').length,
+        exceptionReviewCount: reconciliationItems.filter((item) => item.reconciliationType === 'exception_review').length,
+        professionalBoundaryCount: reconciliationItems.filter((item) => item.workMode === 'professional_boundary').length,
+      },
+      blockers,
+      nextStep: 'Preparar trial balance preview workbench.',
+      guardrails: [
+        'Bank reconciliation workbench no certifica conciliaciones.',
+        'Candidate matches requieren revision antes de cualquier cierre bancario.',
+      ],
+    };
+  }
+}
+
+export class GetTenantFullAccountingTrialBalancePreviewWorkbenchUseCase {
+  constructor(
+    private readonly getTenantFullAccountingBankReconciliationWorkbenchMvpUseCase: GetTenantFullAccountingBankReconciliationWorkbenchMvpUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingTrialBalancePreviewWorkbenchView> {
+    const bankReconciliationWorkbench =
+      await this.getTenantFullAccountingBankReconciliationWorkbenchMvpUseCase.execute(input);
+    const previewItems: TenantFullAccountingTrialBalancePreviewWorkbenchView['previewItems'] = [
+      fullAccountingTrialBalancePreviewItem('trial_balance', 'Trial balance preview', bankReconciliationWorkbench.workbenchStatus, 'trial_balance', 'ledger_workbench', ['full_accounting_ledger_workbench_mvp']),
+      fullAccountingTrialBalancePreviewItem('balance_variance', 'Balance variance preview', bankReconciliationWorkbench.workbenchStatus, 'balance_variance', 'posting_simulation', ['full_accounting_posting_draft_lane']),
+      fullAccountingTrialBalancePreviewItem('approval_warning', 'Approval warning preview', bankReconciliationWorkbench.workbenchStatus, 'approval_warning', 'professional_review', ['full_accounting_posting_policy_boundary']),
+      fullAccountingTrialBalancePreviewItem('bank_dependency', 'Bank dependency preview', bankReconciliationWorkbench.workbenchStatus, 'bank_dependency', 'bank_workbench', ['full_accounting_bank_reconciliation_workbench_mvp']),
+      fullAccountingTrialBalancePreviewItem('adjustment_trace', 'Adjustment trace preview', 'ready', 'adjustment_trace', 'professional_review', ['advanced_adjustment_draft_pack']),
+    ];
+    const blockers = [...bankReconciliationWorkbench.blockers];
+    const previewStatus = resolveStatus(previewItems.map((item) => item.status), blockers);
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      previewStatus,
+      bankReconciliationWorkbench,
+      previewItems,
+      summary: {
+        itemCount: previewItems.length,
+        readyItemCount: previewItems.filter((item) => item.status === 'ready').length,
+        warningCount: previewItems.filter((item) => item.previewType === 'approval_warning').length,
+        bankDependencyCount: previewItems.filter((item) => item.dependency === 'bank_workbench').length,
+        professionalReviewCount: previewItems.filter((item) => item.dependency === 'professional_review').length,
+      },
+      blockers,
+      nextStep: 'Cerrar Full Accounting MVP Operations 0.3.',
+      guardrails: [
+        'Trial balance preview no emite estados financieros.',
+        'Las variaciones son diagnostico operativo, no cierre oficial.',
+      ],
+    };
+  }
+}
+
+export class RequestTenantFullAccountingMvpOperationsCloseoutUseCase {
+  constructor(
+    private readonly getTenantFullAccountingTrialBalancePreviewWorkbenchUseCase: GetTenantFullAccountingTrialBalancePreviewWorkbenchUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingMvpOperationsCloseoutView> {
+    const trialBalancePreviewWorkbench =
+      await this.getTenantFullAccountingTrialBalancePreviewWorkbenchUseCase.execute(input);
+    const { bankReconciliationWorkbench } = trialBalancePreviewWorkbench;
+    const { postingDraftLane } = bankReconciliationWorkbench;
+    const { ledgerWorkbench } = postingDraftLane;
+    const { operationsAnchor } = ledgerWorkbench;
+    const closeoutChecklist: TenantFullAccountingMvpOperationsCloseoutView['closeoutChecklist'] = [
+      fullAccountingMvpOperationsCloseoutCheck('operations_anchor', 'Full Accounting MVP operations anchor', operationsAnchor.anchorStatus, ['full_accounting_mvp_operations_anchor']),
+      fullAccountingMvpOperationsCloseoutCheck('ledger_workbench', 'Ledger workbench MVP', ledgerWorkbench.workbenchStatus, ['full_accounting_ledger_workbench_mvp']),
+      fullAccountingMvpOperationsCloseoutCheck('posting_draft_lane', 'Posting draft lane', postingDraftLane.laneStatus, ['full_accounting_posting_draft_lane']),
+      fullAccountingMvpOperationsCloseoutCheck('bank_workbench', 'Bank reconciliation workbench MVP', bankReconciliationWorkbench.workbenchStatus, ['full_accounting_bank_reconciliation_workbench_mvp']),
+      fullAccountingMvpOperationsCloseoutCheck('trial_balance_preview', 'Trial balance preview workbench', trialBalancePreviewWorkbench.previewStatus, ['full_accounting_trial_balance_preview_workbench']),
+    ];
+    const blockers = unique([
+      ...operationsAnchor.blockers,
+      ...ledgerWorkbench.blockers,
+      ...postingDraftLane.blockers,
+      ...bankReconciliationWorkbench.blockers,
+      ...trialBalancePreviewWorkbench.blockers,
+    ]);
+    const closeoutStatus = resolveStatus(closeoutChecklist.map((item) => item.status), blockers);
+    const finalDecision = fullAccountingMvpOperationsDecisionFromStatus(
+      closeoutStatus,
+      operationsAnchor,
+      ledgerWorkbench,
+      postingDraftLane,
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      closeoutStatus,
+      operationsAnchor,
+      ledgerWorkbench,
+      postingDraftLane,
+      bankReconciliationWorkbench,
+      trialBalancePreviewWorkbench,
+      closeoutChecklist,
+      finalDecision,
+      summary: {
+        checklistCount: closeoutChecklist.length,
+        readyChecklistCount: closeoutChecklist.filter((item) => item.status === 'ready').length,
+        blockedChecklistCount: closeoutChecklist.filter((item) => item.status === 'blocked').length,
+        ledgerWorkItemCount: ledgerWorkbench.summary.itemCount,
+        postingDraftCount: postingDraftLane.summary.draftCount,
+        reconciliationItemCount: bankReconciliationWorkbench.summary.itemCount,
+        previewItemCount: trialBalancePreviewWorkbench.summary.itemCount,
+      },
+      blockers,
+      nextStep:
+        finalDecision === 'advance_to_controlled_pilot'
+          ? 'Preparar Full Accounting controlled pilot 0.4.'
+          : finalDecision === 'continue_operations_hardening'
+            ? 'Continuar hardening de operations antes de pilot.'
+            : finalDecision === 'return_to_mvp_readiness'
+              ? 'Volver a Full Accounting MVP Readiness 0.2.'
+              : 'Frenar full Accounting MVP por ahora.',
+      guardrails: [
+        'Operations closeout no confirma postings oficiales.',
+        'Controlled pilot debe abrirse separado antes de cualquier contabilidad real.',
+      ],
+    };
+  }
+}
+
 function check(
   key: string,
   label: string,
@@ -10942,6 +11236,93 @@ function fullAccountingMvpReadinessDecisionFromStatus(
     return 'open_full_accounting_mvp_operations';
   }
   return 'do_not_open_mvp';
+}
+
+function fullAccountingMvpOperationLane(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  laneType: TenantFullAccountingMvpOperationsAnchorView['operationLanes'][number]['laneType'],
+  operationMode: TenantFullAccountingMvpOperationsAnchorView['operationLanes'][number]['operationMode'],
+  evidenceRefs: string[],
+): TenantFullAccountingMvpOperationsAnchorView['operationLanes'][number] {
+  return { key, label, status, laneType, operationMode, evidenceRefs };
+}
+
+function fullAccountingLedgerWorkItem(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  workType: TenantFullAccountingLedgerWorkbenchMvpView['ledgerWorkItems'][number]['workType'],
+  workMode: TenantFullAccountingLedgerWorkbenchMvpView['ledgerWorkItems'][number]['workMode'],
+  evidenceRefs: string[],
+): TenantFullAccountingLedgerWorkbenchMvpView['ledgerWorkItems'][number] {
+  return { key, label, status, workType, workMode, evidenceRefs };
+}
+
+function fullAccountingPostingDraftItem(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  draftState: TenantFullAccountingPostingDraftLaneView['draftItems'][number]['draftState'],
+  approvalOwner: AccountingAdvancedProfessionalOwner,
+  evidenceRefs: string[],
+): TenantFullAccountingPostingDraftLaneView['draftItems'][number] {
+  return { key, label, status, draftState, approvalOwner, evidenceRefs };
+}
+
+function fullAccountingReconciliationWorkItem(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  reconciliationType: TenantFullAccountingBankReconciliationWorkbenchMvpView['reconciliationItems'][number]['reconciliationType'],
+  workMode: TenantFullAccountingBankReconciliationWorkbenchMvpView['reconciliationItems'][number]['workMode'],
+  evidenceRefs: string[],
+): TenantFullAccountingBankReconciliationWorkbenchMvpView['reconciliationItems'][number] {
+  return { key, label, status, reconciliationType, workMode, evidenceRefs };
+}
+
+function fullAccountingTrialBalancePreviewItem(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  previewType: TenantFullAccountingTrialBalancePreviewWorkbenchView['previewItems'][number]['previewType'],
+  dependency: TenantFullAccountingTrialBalancePreviewWorkbenchView['previewItems'][number]['dependency'],
+  evidenceRefs: string[],
+): TenantFullAccountingTrialBalancePreviewWorkbenchView['previewItems'][number] {
+  return { key, label, status, previewType, dependency, evidenceRefs };
+}
+
+function fullAccountingMvpOperationsCloseoutCheck(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  evidenceRefs: string[],
+): TenantFullAccountingMvpOperationsCloseoutView['closeoutChecklist'][number] {
+  return { key, label, status, evidenceRefs };
+}
+
+function fullAccountingMvpOperationsDecisionFromStatus(
+  status: AccountingReadinessStatus,
+  operationsAnchor: TenantFullAccountingMvpOperationsAnchorView,
+  ledgerWorkbench: TenantFullAccountingLedgerWorkbenchMvpView,
+  postingDraftLane: TenantFullAccountingPostingDraftLaneView,
+  blockers: string[],
+): FullAccountingMvpOperationsDecision {
+  if (blockers.length > 0 || status === 'blocked') {
+    return 'return_to_mvp_readiness';
+  }
+  if (
+    operationsAnchor.summary.simulationLaneCount > 0 &&
+    ledgerWorkbench.summary.simulationItemCount > 0 &&
+    postingDraftLane.summary.simulationApprovedCount > 0
+  ) {
+    return 'advance_to_controlled_pilot';
+  }
+  if (operationsAnchor.summary.readyLaneCount > 0) {
+    return 'continue_operations_hardening';
+  }
+  return 'stop_full_accounting_mvp';
 }
 
 function formalProductDesignDecisionFromStatus(

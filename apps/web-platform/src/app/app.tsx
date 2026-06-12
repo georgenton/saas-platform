@@ -147,6 +147,7 @@ import {
   fetchAccountingAdvancedFormalRecordCloseoutCloseout,
   fetchAccountingAdvancedGraduationArchiveHandoffCloseout,
   fetchFullAccountingCandidateCloseout,
+  fetchFullAccountingMvpOperationsCloseout,
   fetchFullAccountingMvpReadinessCloseout,
   fetchAccountingPeriodCloseoutReport,
   fetchAccountingPeriodCloseoutReadiness,
@@ -517,6 +518,7 @@ import {
   AccountingAdvancedFormalRecordCloseoutCloseoutResponse,
   AccountingAdvancedGraduationArchiveHandoffCloseoutResponse,
   FullAccountingCandidateCloseoutResponse,
+  FullAccountingMvpOperationsCloseoutResponse,
   FullAccountingMvpReadinessCloseoutResponse,
   AccountingLegalBooksReadinessPacketResponse,
   AccountingCloseoutCertificationReadinessResponse,
@@ -2684,6 +2686,10 @@ export function App() {
     fullAccountingMvpReadinessCloseout,
     setFullAccountingMvpReadinessCloseout,
   ] = useState<FullAccountingMvpReadinessCloseoutResponse | null>(null);
+  const [
+    fullAccountingMvpOperationsCloseout,
+    setFullAccountingMvpOperationsCloseout,
+  ] = useState<FullAccountingMvpOperationsCloseoutResponse | null>(null);
   const [
     taxComplianceSriFiscalEvidenceWorkspace,
     setTaxComplianceSriFiscalEvidenceWorkspace,
@@ -20850,6 +20856,7 @@ export function App() {
         nextAccountingAdvancedGraduationArchiveHandoffCloseout,
         nextFullAccountingCandidateCloseout,
         nextFullAccountingMvpReadinessCloseout,
+        nextFullAccountingMvpOperationsCloseout,
       ] = accountingEnabled
         ? await Promise.all([
             fetchAccountingIntakeWorkspace(
@@ -21179,6 +21186,12 @@ export function App() {
               taxCompliancePeriod,
               year,
             ),
+            fetchFullAccountingMvpOperationsCloseout(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
           ])
         : [
             null,
@@ -21214,6 +21227,7 @@ export function App() {
             null,
             null,
             [],
+            null,
             null,
             null,
             null,
@@ -21542,6 +21556,9 @@ export function App() {
         );
         setFullAccountingMvpReadinessCloseout(
           nextFullAccountingMvpReadinessCloseout,
+        );
+        setFullAccountingMvpOperationsCloseout(
+          nextFullAccountingMvpOperationsCloseout,
         );
       });
     } catch (error) {
@@ -37809,8 +37826,107 @@ export function App() {
                                     </p>
                                   </div>
                                 ) : null}
+                                {fullAccountingMvpOperationsCloseout ? (
+                                  <div className={styles.invoiceItemCard}>
+                                    <div className={styles.invoiceCardHeader}>
+                                      <strong>
+                                        Full Accounting MVP Operations 0.3
+                                      </strong>
+                                      <span className={styles.statusPill}>
+                                        {humanizeKey(
+                                          fullAccountingMvpOperationsCloseout.closeoutStatus,
+                                        )}
+                                      </span>
+                                    </div>
+                                    <div className={styles.invoiceInlineGrid}>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Lanes
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingMvpOperationsCloseout
+                                              .operationsAnchor.summary
+                                              .readyLaneCount
+                                          }
+                                          /
+                                          {
+                                            fullAccountingMvpOperationsCloseout
+                                              .operationsAnchor.summary.laneCount
+                                          }
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Ledger work
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingMvpOperationsCloseout
+                                              .ledgerWorkbench.summary
+                                              .simulationItemCount
+                                          }{' '}
+                                          simulation
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Posting
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingMvpOperationsCloseout
+                                              .postingDraftLane.summary
+                                              .simulationApprovedCount
+                                          }{' '}
+                                          approved
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Bank
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingMvpOperationsCloseout
+                                              .bankReconciliationWorkbench
+                                              .summary.candidateMatchCount
+                                          }{' '}
+                                          matches
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Preview
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingMvpOperationsCloseout
+                                              .trialBalancePreviewWorkbench
+                                              .summary.warningCount
+                                          }{' '}
+                                          warnings
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Decision
+                                        </span>
+                                        <strong>
+                                          {humanizeKey(
+                                            fullAccountingMvpOperationsCloseout.finalDecision,
+                                          )}
+                                        </strong>
+                                      </div>
+                                    </div>
+                                    <p className={styles.muted}>
+                                      {fullAccountingMvpOperationsCloseout.nextStep}
+                                    </p>
+                                  </div>
+                                ) : null}
                                 <p className={styles.muted}>
-                                  {fullAccountingMvpReadinessCloseout?.nextStep ??
+                                  {fullAccountingMvpOperationsCloseout?.nextStep ??
+                                    fullAccountingMvpReadinessCloseout?.nextStep ??
                                     fullAccountingCandidateCloseout?.nextStep ??
                                     accountingAdvancedGraduationArchiveHandoffCloseout?.nextStep ??
                                     accountingAdvancedFormalRecordCloseoutCloseout?.nextStep ??

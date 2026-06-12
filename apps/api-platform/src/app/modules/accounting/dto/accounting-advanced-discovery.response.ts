@@ -105,6 +105,12 @@ import {
   TenantFullAccountingLegalBooksStatutoryBoundaryView,
   TenantFullAccountingMvpReadinessAnchorView,
   TenantFullAccountingMvpReadinessCloseoutView,
+  TenantFullAccountingMvpOperationsAnchorView,
+  TenantFullAccountingMvpOperationsCloseoutView,
+  TenantFullAccountingLedgerWorkbenchMvpView,
+  TenantFullAccountingPostingDraftLaneView,
+  TenantFullAccountingBankReconciliationWorkbenchMvpView,
+  TenantFullAccountingTrialBalancePreviewWorkbenchView,
   TenantFullAccountingPostingPolicyApprovalBoundaryView,
   TenantFullAccountingTrialBalanceStatementReadinessView,
   TenantAccountingAdvancedReturnedEvidenceValidationWorkspaceView,
@@ -343,6 +349,18 @@ export type FullAccountingTrialBalanceStatementReadinessResponseDto =
   Serialized<TenantFullAccountingTrialBalanceStatementReadinessView>;
 export type FullAccountingMvpReadinessCloseoutResponseDto =
   Serialized<TenantFullAccountingMvpReadinessCloseoutView>;
+export type FullAccountingMvpOperationsAnchorResponseDto =
+  Serialized<TenantFullAccountingMvpOperationsAnchorView>;
+export type FullAccountingLedgerWorkbenchMvpResponseDto =
+  Serialized<TenantFullAccountingLedgerWorkbenchMvpView>;
+export type FullAccountingPostingDraftLaneResponseDto =
+  Serialized<TenantFullAccountingPostingDraftLaneView>;
+export type FullAccountingBankReconciliationWorkbenchMvpResponseDto =
+  Serialized<TenantFullAccountingBankReconciliationWorkbenchMvpView>;
+export type FullAccountingTrialBalancePreviewWorkbenchResponseDto =
+  Serialized<TenantFullAccountingTrialBalancePreviewWorkbenchView>;
+export type FullAccountingMvpOperationsCloseoutResponseDto =
+  Serialized<TenantFullAccountingMvpOperationsCloseoutView>;
 
 export function toAccountingAdvancedDiscoveryAnchorResponseDto(
   view: TenantAccountingAdvancedDiscoveryAnchorView,
@@ -1025,6 +1043,42 @@ export function toFullAccountingTrialBalanceStatementReadinessResponseDto(
 export function toFullAccountingMvpReadinessCloseoutResponseDto(
   view: TenantFullAccountingMvpReadinessCloseoutView,
 ): FullAccountingMvpReadinessCloseoutResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingMvpOperationsAnchorResponseDto(
+  view: TenantFullAccountingMvpOperationsAnchorView,
+): FullAccountingMvpOperationsAnchorResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingLedgerWorkbenchMvpResponseDto(
+  view: TenantFullAccountingLedgerWorkbenchMvpView,
+): FullAccountingLedgerWorkbenchMvpResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingPostingDraftLaneResponseDto(
+  view: TenantFullAccountingPostingDraftLaneView,
+): FullAccountingPostingDraftLaneResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingBankReconciliationWorkbenchMvpResponseDto(
+  view: TenantFullAccountingBankReconciliationWorkbenchMvpView,
+): FullAccountingBankReconciliationWorkbenchMvpResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingTrialBalancePreviewWorkbenchResponseDto(
+  view: TenantFullAccountingTrialBalancePreviewWorkbenchView,
+): FullAccountingTrialBalancePreviewWorkbenchResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingMvpOperationsCloseoutResponseDto(
+  view: TenantFullAccountingMvpOperationsCloseoutView,
+): FullAccountingMvpOperationsCloseoutResponseDto {
   return serialize(view);
 }
 

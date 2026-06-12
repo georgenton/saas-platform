@@ -2406,6 +2406,37 @@ Guardrail: controlled pilot 0.4 still does not write official postings,
 certify bank reconciliations, issue statutory financial statements, legalize
 books or replace accountant judgment.
 
+### Full Accounting graduation 0.5
+
+After controlled pilot 0.4, full Accounting needs a graduation decision before
+any product design. This is the flight review board: it reviews pilot evidence,
+module scope, professional ownership and risk controls before deciding whether
+to design a full Accounting product.
+
+1. `Full Accounting Graduation Anchor`
+   - converts controlled pilot closeout into graduation lanes for ledger,
+     posting, bank reconciliation, financial statements, statutory boundary and
+     professional operations
+2. `Graduation Evidence Dossier`
+   - assembles pilot snapshots, runbook results, accountant recommendations,
+     acceptance signals, repeated blockers and guardrail evidence
+3. `Product Scope Graduation Matrix`
+   - decides which modules graduate, need more pilot, need hardening or remain
+     excluded
+4. `Professional Operating Model`
+   - maps platform assistance, human approval, external professional ownership
+     and excluded activities
+5. `Graduation Risk & Control Pack`
+   - defines posting, bank, statement, statutory, professional-boundary and
+     rollback controls
+6. `Full Accounting Graduation Closeout`
+   - decides whether to graduate to product design, continue controlled pilot,
+     return to MVP operations, return to MVP readiness or not graduate
+
+Guardrail: graduation 0.5 decides whether to design a product. It still does
+not post official entries, certify reconciliations, issue statutory statements,
+legalize books or replace accountant/auditor judgment.
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal
@@ -2549,6 +2580,9 @@ product. Its current scope is intentionally operational and review-oriented:
 39. Full Accounting controlled pilot 0.4 as the test flight. It enrolls a
     tenant-period, freezes operating evidence, runs an accountant-reviewed
     runbook and records outcome signals before any graduation decision.
+40. Full Accounting graduation 0.5 as the flight review board. It uses pilot
+    evidence, product scope, professional ownership and risk controls to decide
+    whether a full Accounting product design should open.
 
 Boundary: this foundation still does not perform bank reconciliation, lock
 against certified bank feeds, lock official legal books, issue official

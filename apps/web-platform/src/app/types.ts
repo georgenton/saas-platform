@@ -5356,6 +5356,89 @@ export interface FullAccountingControlledPilotCloseoutResponse {
   guardrails: string[];
 }
 
+export interface FullAccountingGraduationCloseoutResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  closeoutStatus: string;
+  graduationAnchor: {
+    anchorStatus: string;
+    summary: {
+      laneCount: number;
+      readyLaneCount: number;
+      graduableLaneCount: number;
+      needsMorePilotLaneCount: number;
+      statutoryBoundaryLaneCount: number;
+      blockedLaneCount: number;
+    };
+  };
+  graduationEvidenceDossier: {
+    dossierStatus: string;
+    summary: {
+      sectionCount: number;
+      readySectionCount: number;
+      snapshotSectionCount: number;
+      accountantRecommendationCount: number;
+      acceptanceSignalCount: number;
+      blockerSectionCount: number;
+    };
+  };
+  productScopeMatrix: {
+    matrixStatus: string;
+    summary: {
+      moduleCount: number;
+      readyModuleCount: number;
+      graduateModuleCount: number;
+      pilotMoreModuleCount: number;
+      hardenModuleCount: number;
+      excludedModuleCount: number;
+    };
+  };
+  professionalOperatingModel: {
+    modelStatus: string;
+    summary: {
+      assignmentCount: number;
+      readyAssignmentCount: number;
+      platformAssistedCount: number;
+      humanApprovalCount: number;
+      externalProfessionalCount: number;
+      excludedAssignmentCount: number;
+    };
+  };
+  riskControlPack: {
+    packStatus: string;
+    summary: {
+      controlCount: number;
+      readyControlCount: number;
+      preventiveControlCount: number;
+      detectiveControlCount: number;
+      professionalReviewControlCount: number;
+      rollbackControlCount: number;
+    };
+  };
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: string;
+    evidenceRefs: string[];
+  }>;
+  finalDecision: string;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockedChecklistCount: number;
+    graduationLaneCount: number;
+    evidenceSectionCount: number;
+    scopeModuleCount: number;
+    responsibilityAssignmentCount: number;
+    riskControlCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface AccountingOperationalCommandCenterResponse {
   tenantSlug: string;
   period: string;

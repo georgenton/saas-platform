@@ -1248,6 +1248,12 @@ const [
   fullAccountingPilotAccountantReviewRoom,
   fullAccountingPilotOutcomePacket,
   fullAccountingControlledPilotCloseout,
+  fullAccountingGraduationAnchor,
+  fullAccountingGraduationEvidenceDossier,
+  fullAccountingProductScopeGraduationMatrix,
+  fullAccountingProfessionalOperatingModel,
+  fullAccountingGraduationRiskControlPack,
+  fullAccountingGraduationCloseout,
 ] = await Promise.all([
   apiRequest({
     baseUrl,
@@ -2096,6 +2102,42 @@ const [
     path: accountingPath(`/full-accounting-controlled-pilot/closeout?${periodQuery()}`),
     token,
   }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(`/full-accounting-graduation/anchor?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-graduation/evidence-dossier?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(`/full-accounting-graduation/scope-matrix?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-graduation/professional-operating-model?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-graduation/risk-control-pack?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(`/full-accounting-graduation/closeout?${periodQuery()}`),
+    token,
+  }),
 ]);
 
 assertStatus(
@@ -2614,6 +2656,30 @@ assertStatus(
   'full accounting controlled pilot closeout',
   fullAccountingControlledPilotCloseout.closeoutStatus,
 );
+assertStatus(
+  'full accounting graduation anchor',
+  fullAccountingGraduationAnchor.anchorStatus,
+);
+assertStatus(
+  'full accounting graduation evidence dossier',
+  fullAccountingGraduationEvidenceDossier.dossierStatus,
+);
+assertStatus(
+  'full accounting product scope graduation matrix',
+  fullAccountingProductScopeGraduationMatrix.matrixStatus,
+);
+assertStatus(
+  'full accounting professional operating model',
+  fullAccountingProfessionalOperatingModel.modelStatus,
+);
+assertStatus(
+  'full accounting graduation risk control pack',
+  fullAccountingGraduationRiskControlPack.packStatus,
+);
+assertStatus(
+  'full accounting graduation closeout',
+  fullAccountingGraduationCloseout.closeoutStatus,
+);
 if (!Array.isArray(advancedDiscoveryCloseout.closeoutChecklist)) {
   throw new Error('advanced-discovery/closeout no devolvio checklist[].');
 }
@@ -2698,6 +2764,11 @@ if (!Array.isArray(fullAccountingMvpOperationsCloseout.closeoutChecklist)) {
 if (!Array.isArray(fullAccountingControlledPilotCloseout.closeoutChecklist)) {
   throw new Error(
     'full-accounting-controlled-pilot/closeout no devolvio checklist[].',
+  );
+}
+if (!Array.isArray(fullAccountingGraduationCloseout.closeoutChecklist)) {
+  throw new Error(
+    'full-accounting-graduation/closeout no devolvio checklist[].',
   );
 }
 printLine(

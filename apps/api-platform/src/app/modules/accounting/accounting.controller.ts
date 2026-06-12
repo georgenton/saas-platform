@@ -105,6 +105,11 @@ import {
   GetTenantFullAccountingPilotRunbookWorkspaceUseCase,
   GetTenantFullAccountingPilotAccountantReviewRoomUseCase,
   GetTenantFullAccountingPilotOutcomePacketUseCase,
+  GetTenantFullAccountingGraduationAnchorUseCase,
+  GetTenantFullAccountingGraduationEvidenceDossierUseCase,
+  GetTenantFullAccountingProductScopeGraduationMatrixUseCase,
+  GetTenantFullAccountingProfessionalOperatingModelUseCase,
+  GetTenantFullAccountingGraduationRiskControlPackUseCase,
   GetTenantAccountingAdvancedFormalProductScopeContractUseCase,
   GetTenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixUseCase,
   GetTenantAccountingAdvancedProfessionalReviewWorkflowDesignUseCase,
@@ -183,6 +188,7 @@ import {
   RequestTenantFullAccountingMvpReadinessCloseoutUseCase,
   RequestTenantFullAccountingMvpOperationsCloseoutUseCase,
   RequestTenantFullAccountingControlledPilotCloseoutUseCase,
+  RequestTenantFullAccountingGraduationCloseoutUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -331,6 +337,12 @@ import {
   FullAccountingPilotAccountantReviewRoomResponseDto,
   FullAccountingPilotOutcomePacketResponseDto,
   FullAccountingControlledPilotCloseoutResponseDto,
+  FullAccountingGraduationAnchorResponseDto,
+  FullAccountingGraduationEvidenceDossierResponseDto,
+  FullAccountingProductScopeGraduationMatrixResponseDto,
+  FullAccountingProfessionalOperatingModelResponseDto,
+  FullAccountingGraduationRiskControlPackResponseDto,
+  FullAccountingGraduationCloseoutResponseDto,
   AccountingAdvancedProfessionalResponsibilityAssignmentMatrixResponseDto,
   AccountingAdvancedProfessionalReviewWorkflowDesignResponseDto,
   AccountingCertifiedBankEvidenceBoundaryResponseDto,
@@ -457,6 +469,12 @@ import {
   toFullAccountingPilotAccountantReviewRoomResponseDto,
   toFullAccountingPilotOutcomePacketResponseDto,
   toFullAccountingControlledPilotCloseoutResponseDto,
+  toFullAccountingGraduationAnchorResponseDto,
+  toFullAccountingGraduationEvidenceDossierResponseDto,
+  toFullAccountingProductScopeGraduationMatrixResponseDto,
+  toFullAccountingProfessionalOperatingModelResponseDto,
+  toFullAccountingGraduationRiskControlPackResponseDto,
+  toFullAccountingGraduationCloseoutResponseDto,
   toAccountingAdvancedProfessionalResponsibilityAssignmentMatrixResponseDto,
   toAccountingAdvancedProfessionalReviewWorkflowDesignResponseDto,
   toAccountingCertifiedBankEvidenceBoundaryResponseDto,
@@ -855,6 +873,12 @@ export class AccountingController {
     private readonly getTenantFullAccountingPilotAccountantReviewRoomUseCase: GetTenantFullAccountingPilotAccountantReviewRoomUseCase,
     private readonly getTenantFullAccountingPilotOutcomePacketUseCase: GetTenantFullAccountingPilotOutcomePacketUseCase,
     private readonly requestTenantFullAccountingControlledPilotCloseoutUseCase: RequestTenantFullAccountingControlledPilotCloseoutUseCase,
+    private readonly getTenantFullAccountingGraduationAnchorUseCase: GetTenantFullAccountingGraduationAnchorUseCase,
+    private readonly getTenantFullAccountingGraduationEvidenceDossierUseCase: GetTenantFullAccountingGraduationEvidenceDossierUseCase,
+    private readonly getTenantFullAccountingProductScopeGraduationMatrixUseCase: GetTenantFullAccountingProductScopeGraduationMatrixUseCase,
+    private readonly getTenantFullAccountingProfessionalOperatingModelUseCase: GetTenantFullAccountingProfessionalOperatingModelUseCase,
+    private readonly getTenantFullAccountingGraduationRiskControlPackUseCase: GetTenantFullAccountingGraduationRiskControlPackUseCase,
+    private readonly requestTenantFullAccountingGraduationCloseoutUseCase: RequestTenantFullAccountingGraduationCloseoutUseCase,
   ) {}
 
   @Get(':slug/advanced-discovery/anchor')
@@ -3885,6 +3909,134 @@ export class AccountingController {
           { tenantSlug, period, year: Number.parseInt(year, 10) },
         );
       return toFullAccountingControlledPilotCloseoutResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-graduation/anchor')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingGraduationAnchor(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingGraduationAnchorResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingGraduationAnchorUseCase.execute({
+          tenantSlug,
+          period,
+          year: Number.parseInt(year, 10),
+        });
+      return toFullAccountingGraduationAnchorResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-graduation/evidence-dossier')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingGraduationEvidenceDossier(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingGraduationEvidenceDossierResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingGraduationEvidenceDossierUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+      return toFullAccountingGraduationEvidenceDossierResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-graduation/scope-matrix')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingProductScopeGraduationMatrix(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingProductScopeGraduationMatrixResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingProductScopeGraduationMatrixUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+      return toFullAccountingProductScopeGraduationMatrixResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-graduation/professional-operating-model')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingProfessionalOperatingModel(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingProfessionalOperatingModelResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingProfessionalOperatingModelUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+      return toFullAccountingProfessionalOperatingModelResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-graduation/risk-control-pack')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingGraduationRiskControlPack(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingGraduationRiskControlPackResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingGraduationRiskControlPackUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+      return toFullAccountingGraduationRiskControlPackResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-graduation/closeout')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingGraduationCloseout(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingGraduationCloseoutResponseDto> {
+    try {
+      const view =
+        await this.requestTenantFullAccountingGraduationCloseoutUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+      return toFullAccountingGraduationCloseoutResponseDto(view);
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);

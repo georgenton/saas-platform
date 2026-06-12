@@ -5132,6 +5132,73 @@ export interface FullAccountingCandidateCloseoutResponse {
   guardrails: string[];
 }
 
+export interface FullAccountingMvpReadinessCloseoutResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  closeoutStatus: string;
+  readinessAnchor: {
+    anchorStatus: string;
+    summary: {
+      gateCount: number;
+      readyGateCount: number;
+      needsReadinessGateCount: number;
+      blockedGateCount: number;
+      candidateChecklistCount: number;
+    };
+  };
+  ledgerPersistenceDesign: {
+    designStatus: string;
+    summary: {
+      itemCount: number;
+      readyItemCount: number;
+      approvalInvariantCount: number;
+      balanceInvariantCount: number;
+    };
+  };
+  postingPolicyBoundary: {
+    boundaryStatus: string;
+    summary: {
+      itemCount: number;
+      readyItemCount: number;
+      accountantOwnedItemCount: number;
+      platformGuardrailItemCount: number;
+    };
+  };
+  bankFeedReadiness: {
+    readinessStatus: string;
+    summary: {
+      itemCount: number;
+      readyItemCount: number;
+      providerDependencyCount: number;
+      operatorReviewCount: number;
+    };
+  };
+  trialBalanceStatementReadiness: {
+    readinessStatus: string;
+    summary: {
+      itemCount: number;
+      readyItemCount: number;
+      ledgerDependencyCount: number;
+      professionalReviewCount: number;
+    };
+  };
+  finalDecision: string;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockedChecklistCount: number;
+    ledgerPersistenceItemCount: number;
+    postingPolicyItemCount: number;
+    bankReadinessItemCount: number;
+    statementReadinessItemCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface AccountingOperationalCommandCenterResponse {
   tenantSlug: string;
   period: string;

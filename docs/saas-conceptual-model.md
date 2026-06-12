@@ -2317,6 +2317,34 @@ Guardrail: candidate 0.1 is not full Accounting. It does not persist a ledger,
 post journal entries, reconcile banks, issue statements, legalize books or
 certify balances.
 
+### Full Accounting MVP readiness 0.2
+
+After candidate 0.1, full Accounting can prepare an MVP readiness layer without
+crossing into real postings. This is the construction permit: it checks whether
+ledger persistence, posting approvals, bank feeds and trial balance surfaces are
+ready for a controlled MVP.
+
+1. `Full Accounting MVP Readiness Anchor`
+   - converts candidate closeout into readiness gates for candidate, ledger,
+     posting policy, bank readiness and statement readiness
+2. `Ledger Persistence Design Workspace`
+   - defines journal headers, lines, posting batches, balance snapshots, period
+     locks and reversal links as design-only persistence
+3. `Posting Policy & Approval Boundary`
+   - states draft, approval, posting, reversal and accountant escalation rules
+4. `Bank Feed & Reconciliation MVP Readiness`
+   - prepares bank feed source, import profile, matching rules, exception
+     queue, cutoff controls and evidence packet readiness
+5. `Trial Balance & Statement Readiness`
+   - prepares trial balance, balance sheet, income statement, comparatives,
+     adjustment trace and professional review readiness
+6. `Full Accounting MVP Readiness Closeout`
+   - decides whether to open MVP operations, continue readiness, return to
+     candidate discovery, return to Accounting Advanced hardening or stop
+
+Guardrail: readiness 0.2 does not persist a ledger, post journals, reconcile
+banks, issue statements, legalize books or certify balances.
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal
@@ -2450,6 +2478,9 @@ product. Its current scope is intentionally operational and review-oriented:
 36. Full Accounting candidate 0.1 as the architectural survey. It scopes ledger,
     bank reconciliation, financial statements and legal/statutory boundaries
     without implementing postings, statements, legal books or certifications.
+37. Full Accounting MVP readiness 0.2 as the construction permit. It designs
+    ledger persistence, posting approvals, bank feed readiness and trial balance
+    readiness without writing official ledger entries or issuing statements.
 
 Boundary: this foundation still does not perform bank reconciliation, lock
 against certified bank feeds, lock official legal books, issue official

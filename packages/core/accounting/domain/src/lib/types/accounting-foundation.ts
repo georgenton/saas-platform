@@ -317,6 +317,12 @@ export type FullAccountingCandidateDecision =
   | 'return_to_accounting_advanced_hardening'
   | 'archive_handoff_only'
   | 'do_not_open_full_accounting';
+export type FullAccountingMvpReadinessDecision =
+  | 'open_full_accounting_mvp_operations'
+  | 'continue_mvp_readiness'
+  | 'return_to_candidate_discovery'
+  | 'return_to_accounting_advanced_hardening'
+  | 'do_not_open_mvp';
 export type AccountingAdvancedFormalModuleKey =
   | 'formal_books'
   | 'certified_bank_reconciliation'
@@ -3574,6 +3580,215 @@ export interface TenantFullAccountingCandidateCloseoutView {
     bankBoundaryItemCount: number;
     financialStatementItemCount: number;
     statutoryBoundaryItemCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingMvpReadinessAnchorView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  anchorStatus: AccountingReadinessStatus;
+  candidateCloseout: TenantFullAccountingCandidateCloseoutView;
+  readinessGates: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    gateType:
+      | 'candidate_closeout'
+      | 'ledger_persistence'
+      | 'posting_policy'
+      | 'bank_readiness'
+      | 'statement_readiness';
+    readinessState:
+      | 'ready_for_mvp_design'
+      | 'needs_readiness'
+      | 'return_to_candidate'
+      | 'blocked';
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    gateCount: number;
+    readyGateCount: number;
+    needsReadinessGateCount: number;
+    blockedGateCount: number;
+    candidateChecklistCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingLedgerPersistenceDesignWorkspaceView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  designStatus: AccountingReadinessStatus;
+  readinessAnchor: TenantFullAccountingMvpReadinessAnchorView;
+  persistenceItems: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    persistenceType:
+      | 'journal_header'
+      | 'journal_line'
+      | 'posting_batch'
+      | 'balance_snapshot'
+      | 'period_lock'
+      | 'reversal_link';
+    invariant:
+      | 'balanced_debits_credits'
+      | 'period_locked_after_close'
+      | 'approval_required'
+      | 'reversal_trace_required'
+      | 'recalculable_snapshot';
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    itemCount: number;
+    readyItemCount: number;
+    approvalInvariantCount: number;
+    balanceInvariantCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingPostingPolicyApprovalBoundaryView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  boundaryStatus: AccountingReadinessStatus;
+  ledgerPersistenceDesign: TenantFullAccountingLedgerPersistenceDesignWorkspaceView;
+  policyItems: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    policyType:
+      | 'draft_policy'
+      | 'approval_policy'
+      | 'posting_policy'
+      | 'reversal_policy'
+      | 'accountant_escalation';
+    owner: AccountingAdvancedProfessionalOwner;
+    evidenceRefs: string[];
+    guardrail: string;
+  }>;
+  summary: {
+    itemCount: number;
+    readyItemCount: number;
+    accountantOwnedItemCount: number;
+    platformGuardrailItemCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingBankFeedReconciliationMvpReadinessView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  readinessStatus: AccountingReadinessStatus;
+  postingPolicyBoundary: TenantFullAccountingPostingPolicyApprovalBoundaryView;
+  bankReadinessItems: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    readinessType:
+      | 'bank_feed_source'
+      | 'import_profile'
+      | 'matching_rules'
+      | 'exception_queue'
+      | 'cutoff_controls'
+      | 'evidence_packet';
+    implementationMode:
+      | 'mvp_ready'
+      | 'needs_provider'
+      | 'needs_operator_review'
+      | 'professional_boundary';
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    itemCount: number;
+    readyItemCount: number;
+    providerDependencyCount: number;
+    operatorReviewCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingTrialBalanceStatementReadinessView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  readinessStatus: AccountingReadinessStatus;
+  bankFeedReadiness: TenantFullAccountingBankFeedReconciliationMvpReadinessView;
+  statementReadinessItems: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    readinessType:
+      | 'trial_balance'
+      | 'balance_sheet'
+      | 'income_statement'
+      | 'comparatives'
+      | 'adjustment_trace'
+      | 'professional_review';
+    dependency:
+      | 'ledger_snapshot'
+      | 'bank_reconciliation'
+      | 'adjustment_policy'
+      | 'professional_review';
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    itemCount: number;
+    readyItemCount: number;
+    ledgerDependencyCount: number;
+    professionalReviewCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingMvpReadinessCloseoutView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  closeoutStatus: AccountingReadinessStatus;
+  readinessAnchor: TenantFullAccountingMvpReadinessAnchorView;
+  ledgerPersistenceDesign: TenantFullAccountingLedgerPersistenceDesignWorkspaceView;
+  postingPolicyBoundary: TenantFullAccountingPostingPolicyApprovalBoundaryView;
+  bankFeedReadiness: TenantFullAccountingBankFeedReconciliationMvpReadinessView;
+  trialBalanceStatementReadiness: TenantFullAccountingTrialBalanceStatementReadinessView;
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    evidenceRefs: string[];
+  }>;
+  finalDecision: FullAccountingMvpReadinessDecision;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockedChecklistCount: number;
+    ledgerPersistenceItemCount: number;
+    postingPolicyItemCount: number;
+    bankReadinessItemCount: number;
+    statementReadinessItemCount: number;
   };
   blockers: string[];
   nextStep: string;

@@ -1230,6 +1230,12 @@ const [
   fullAccountingFinancialStatementsBlueprint,
   fullAccountingLegalBooksStatutoryBoundary,
   fullAccountingCandidateCloseout,
+  fullAccountingMvpReadinessAnchor,
+  fullAccountingLedgerPersistenceDesign,
+  fullAccountingPostingPolicyBoundary,
+  fullAccountingBankFeedReconciliationReadiness,
+  fullAccountingTrialBalanceStatementReadiness,
+  fullAccountingMvpReadinessCloseout,
 ] = await Promise.all([
   apiRequest({
     baseUrl,
@@ -1966,6 +1972,44 @@ const [
     path: accountingPath(`/full-accounting-candidate/closeout?${periodQuery()}`),
     token,
   }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(`/full-accounting-mvp-readiness/anchor?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-mvp-readiness/ledger-persistence-design?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-mvp-readiness/posting-policy-boundary?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-mvp-readiness/bank-feed-reconciliation?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-mvp-readiness/trial-balance-statements?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(`/full-accounting-mvp-readiness/closeout?${periodQuery()}`),
+    token,
+  }),
 ]);
 
 assertStatus(
@@ -2412,6 +2456,30 @@ assertStatus(
   'full accounting candidate closeout',
   fullAccountingCandidateCloseout.closeoutStatus,
 );
+assertStatus(
+  'full accounting mvp readiness anchor',
+  fullAccountingMvpReadinessAnchor.anchorStatus,
+);
+assertStatus(
+  'full accounting ledger persistence design',
+  fullAccountingLedgerPersistenceDesign.designStatus,
+);
+assertStatus(
+  'full accounting posting policy boundary',
+  fullAccountingPostingPolicyBoundary.boundaryStatus,
+);
+assertStatus(
+  'full accounting bank feed reconciliation readiness',
+  fullAccountingBankFeedReconciliationReadiness.readinessStatus,
+);
+assertStatus(
+  'full accounting trial balance statement readiness',
+  fullAccountingTrialBalanceStatementReadiness.readinessStatus,
+);
+assertStatus(
+  'full accounting mvp readiness closeout',
+  fullAccountingMvpReadinessCloseout.closeoutStatus,
+);
 if (!Array.isArray(advancedDiscoveryCloseout.closeoutChecklist)) {
   throw new Error('advanced-discovery/closeout no devolvio checklist[].');
 }
@@ -2481,6 +2549,11 @@ if (!Array.isArray(advancedGraduationArchiveHandoffCloseout.closeoutChecklist)) 
 if (!Array.isArray(fullAccountingCandidateCloseout.closeoutChecklist)) {
   throw new Error(
     'full-accounting-candidate/closeout no devolvio checklist[].',
+  );
+}
+if (!Array.isArray(fullAccountingMvpReadinessCloseout.closeoutChecklist)) {
+  throw new Error(
+    'full-accounting-mvp-readiness/closeout no devolvio checklist[].',
   );
 }
 printLine(

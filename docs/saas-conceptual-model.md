@@ -2499,6 +2499,39 @@ boundaries without posting, certifying, signing or filing.
 Guardrail: formal readiness 0.7 prepares conditions only. It does not draft,
 post, certify, sign, legalize or file formal accounting artifacts.
 
+### Full Accounting formal artifact drafting 0.8
+
+After formal readiness 0.7, full Accounting can prepare the first formal
+artifact drafts for professional review. Think of this as the drafting table
+after the permit desk: the platform can assemble controlled draft packets,
+evidence summaries and review placeholders, but the accountant still owns
+approval, certification, signature and any official execution.
+
+1. `Full Accounting Formal Artifact Drafting Anchor`
+   - turns formal readiness closeout into drafting lanes for ledger drafts,
+     posting packets, bank evidence, trial balance, financial statements and
+     professional review boundaries
+2. `Formal Ledger Draft Pack`
+   - prepares ledger structure, journal batch, journal line, reversal,
+     invariant evidence and period-lock preview references
+3. `Posting Approval Draft Pack`
+   - prepares posting approval summary, pending approval items, risk flags,
+     rollback references, accountant decision placeholders and execution
+     exclusions
+4. `Bank & Reconciliation Evidence Draft Pack`
+   - prepares bank evidence, candidate match summaries, unresolved exceptions,
+     cutoff evidence, certified reconciliation boundaries and external
+     certification markers
+5. `Trial Balance & Financial Statement Draft Pack`
+   - prepares trial balance, balance sheet, income statement, variance notes,
+     accountant review requirements and signed statement boundaries
+6. `Full Accounting Formal Artifact Drafting Closeout`
+   - decides whether to open professional review execution, continue drafting,
+     return to formal readiness, return to product design or stop drafting
+
+Guardrail: formal artifact drafting 0.8 creates draft packets only. It does not
+post, approve, sign, certify, legalize, submit or file official artifacts.
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal
@@ -2651,6 +2684,10 @@ product. Its current scope is intentionally operational and review-oriented:
 42. Full Accounting formal readiness 0.7 as the permit desk. It prepares
     policies, templates, professional portal shells, ledger/posting readiness
     and bank/statement formal boundaries before artifact drafting.
+43. Full Accounting formal artifact drafting 0.8 as the drafting table. It
+    assembles ledger, posting approval, bank evidence, trial balance and
+    financial statement draft packets for professional review without posting,
+    approving, signing, certifying, legalizing or filing official artifacts.
 
 Boundary: this foundation still does not perform bank reconciliation, lock
 against certified bank feeds, lock official legal books, issue official

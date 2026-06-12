@@ -126,6 +126,11 @@ import {
   GetTenantFullAccountingProfessionalPortalReadinessShellUseCase,
   GetTenantFullAccountingFormalLedgerPostingReadinessPackUseCase,
   GetTenantFullAccountingStatementBankFormalBoundaryPackUseCase,
+  GetTenantFullAccountingFormalArtifactDraftingAnchorUseCase,
+  GetTenantFullAccountingFormalLedgerDraftPackUseCase,
+  GetTenantFullAccountingPostingApprovalDraftPackUseCase,
+  GetTenantFullAccountingBankReconciliationEvidenceDraftPackUseCase,
+  GetTenantFullAccountingTrialBalanceFinancialStatementDraftPackUseCase,
   GetTenantAccountingAdvancedFormalProductScopeContractUseCase,
   GetTenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixUseCase,
   GetTenantAccountingAdvancedProfessionalReviewWorkflowDesignUseCase,
@@ -207,6 +212,7 @@ import {
   RequestTenantFullAccountingGraduationCloseoutUseCase,
   RequestTenantFullAccountingProductDesignCloseoutUseCase,
   RequestTenantFullAccountingFormalReadinessCloseoutUseCase,
+  RequestTenantFullAccountingFormalArtifactDraftingCloseoutUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -1797,6 +1803,68 @@ import { AccountingController } from './accounting.controller';
       ) =>
         new RequestTenantFullAccountingFormalReadinessCloseoutUseCase(
           getTenantFullAccountingStatementBankFormalBoundaryPackUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingFormalArtifactDraftingAnchorUseCase,
+      inject: [RequestTenantFullAccountingFormalReadinessCloseoutUseCase],
+      useFactory: (
+        requestTenantFullAccountingFormalReadinessCloseoutUseCase,
+      ) =>
+        new GetTenantFullAccountingFormalArtifactDraftingAnchorUseCase(
+          requestTenantFullAccountingFormalReadinessCloseoutUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingFormalLedgerDraftPackUseCase,
+      inject: [GetTenantFullAccountingFormalArtifactDraftingAnchorUseCase],
+      useFactory: (
+        getTenantFullAccountingFormalArtifactDraftingAnchorUseCase,
+      ) =>
+        new GetTenantFullAccountingFormalLedgerDraftPackUseCase(
+          getTenantFullAccountingFormalArtifactDraftingAnchorUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingPostingApprovalDraftPackUseCase,
+      inject: [GetTenantFullAccountingFormalLedgerDraftPackUseCase],
+      useFactory: (getTenantFullAccountingFormalLedgerDraftPackUseCase) =>
+        new GetTenantFullAccountingPostingApprovalDraftPackUseCase(
+          getTenantFullAccountingFormalLedgerDraftPackUseCase,
+        ),
+    },
+    {
+      provide:
+        GetTenantFullAccountingBankReconciliationEvidenceDraftPackUseCase,
+      inject: [GetTenantFullAccountingPostingApprovalDraftPackUseCase],
+      useFactory: (getTenantFullAccountingPostingApprovalDraftPackUseCase) =>
+        new GetTenantFullAccountingBankReconciliationEvidenceDraftPackUseCase(
+          getTenantFullAccountingPostingApprovalDraftPackUseCase,
+        ),
+    },
+    {
+      provide:
+        GetTenantFullAccountingTrialBalanceFinancialStatementDraftPackUseCase,
+      inject: [
+        GetTenantFullAccountingBankReconciliationEvidenceDraftPackUseCase,
+      ],
+      useFactory: (
+        getTenantFullAccountingBankReconciliationEvidenceDraftPackUseCase,
+      ) =>
+        new GetTenantFullAccountingTrialBalanceFinancialStatementDraftPackUseCase(
+          getTenantFullAccountingBankReconciliationEvidenceDraftPackUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantFullAccountingFormalArtifactDraftingCloseoutUseCase,
+      inject: [
+        GetTenantFullAccountingTrialBalanceFinancialStatementDraftPackUseCase,
+      ],
+      useFactory: (
+        getTenantFullAccountingTrialBalanceFinancialStatementDraftPackUseCase,
+      ) =>
+        new RequestTenantFullAccountingFormalArtifactDraftingCloseoutUseCase(
+          getTenantFullAccountingTrialBalanceFinancialStatementDraftPackUseCase,
         ),
     },
     {

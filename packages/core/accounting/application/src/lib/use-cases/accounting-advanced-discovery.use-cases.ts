@@ -20,6 +20,7 @@ import {
   FullAccountingControlledPilotDecision,
   FullAccountingGraduationDecision,
   FullAccountingFormalReadinessDecision,
+  FullAccountingFormalArtifactDraftingDecision,
   FullAccountingProductDesignDecision,
   FullAccountingMvpReadinessDecision,
   FullAccountingMvpOperationsDecision,
@@ -143,6 +144,9 @@ import {
   TenantFullAccountingGraduationEvidenceDossierView,
   TenantFullAccountingGraduationRiskControlPackView,
   TenantFullAccountingFormalLedgerPostingReadinessPackView,
+  TenantFullAccountingFormalArtifactDraftingAnchorView,
+  TenantFullAccountingFormalArtifactDraftingCloseoutView,
+  TenantFullAccountingFormalLedgerDraftPackView,
   TenantFullAccountingFormalReadinessAnchorView,
   TenantFullAccountingFormalReadinessCloseoutView,
   TenantFullAccountingOfficialArtifactBoundaryRegistryView,
@@ -159,7 +163,10 @@ import {
   TenantFullAccountingProfessionalOperatingModelView,
   TenantFullAccountingProfessionalPortalReadinessShellView,
   TenantFullAccountingPolicyTemplateRegistryView,
+  TenantFullAccountingPostingApprovalDraftPackView,
+  TenantFullAccountingBankReconciliationEvidenceDraftPackView,
   TenantFullAccountingStatementBankFormalBoundaryPackView,
+  TenantFullAccountingTrialBalanceFinancialStatementDraftPackView,
   TenantFullAccountingWorkflowControlBlueprintView,
   TenantFullAccountingPostingDraftLaneView,
   TenantFullAccountingBankReconciliationWorkbenchMvpView,
@@ -10666,6 +10673,305 @@ export class RequestTenantFullAccountingFormalReadinessCloseoutUseCase {
   }
 }
 
+export class GetTenantFullAccountingFormalArtifactDraftingAnchorUseCase {
+  constructor(
+    private readonly requestTenantFullAccountingFormalReadinessCloseoutUseCase: RequestTenantFullAccountingFormalReadinessCloseoutUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingFormalArtifactDraftingAnchorView> {
+    const formalReadinessCloseout =
+      await this.requestTenantFullAccountingFormalReadinessCloseoutUseCase.execute(input);
+    const draftingLanes: TenantFullAccountingFormalArtifactDraftingAnchorView['draftingLanes'] = [
+      fullAccountingFormalArtifactDraftingLane('ledger_draft', 'Ledger draft lane', formalReadinessCloseout.ledgerPostingReadinessPack.packStatus, 'ledger_draft', 'draft', ['full_accounting_formal_ledger_posting_readiness_pack']),
+      fullAccountingFormalArtifactDraftingLane('posting_packet_draft', 'Posting packet draft lane', formalReadinessCloseout.ledgerPostingReadinessPack.packStatus, 'posting_packet_draft', 'professional_review', ['full_accounting_policy_template_registry']),
+      fullAccountingFormalArtifactDraftingLane('bank_evidence_draft', 'Bank evidence draft lane', formalReadinessCloseout.statementBankBoundaryPack.packStatus, 'bank_evidence_draft', 'evidence_draft', ['full_accounting_statement_bank_formal_boundary_pack']),
+      fullAccountingFormalArtifactDraftingLane('trial_balance_draft', 'Trial balance draft lane', formalReadinessCloseout.statementBankBoundaryPack.packStatus, 'trial_balance_draft', 'preview_draft', ['full_accounting_statement_bank_formal_boundary_pack']),
+      fullAccountingFormalArtifactDraftingLane('financial_statement_draft', 'Financial statement draft lane', formalReadinessCloseout.statementBankBoundaryPack.packStatus, 'financial_statement_draft', 'professional_review', ['full_accounting_statement_bank_formal_boundary_pack']),
+      fullAccountingFormalArtifactDraftingLane('professional_review_boundary', 'Professional review boundary lane', 'ready', 'professional_review_boundary', 'professional_review', ['full_accounting_professional_portal_readiness_shell']),
+    ];
+    const blockers =
+      formalReadinessCloseout.finalDecision === 'open_formal_artifact_drafting'
+        ? [...formalReadinessCloseout.blockers]
+        : unique([
+            ...formalReadinessCloseout.blockers,
+            `Full Accounting formal readiness decision is ${formalReadinessCloseout.finalDecision}.`,
+          ]);
+    const anchorStatus = resolveStatus(draftingLanes.map((lane) => lane.status), blockers);
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      anchorStatus,
+      formalReadinessCloseout,
+      draftingLanes,
+      summary: {
+        laneCount: draftingLanes.length,
+        readyLaneCount: draftingLanes.filter((lane) => lane.status === 'ready').length,
+        draftLaneCount: draftingLanes.filter((lane) => lane.draftMode === 'draft' || lane.draftMode === 'evidence_draft' || lane.draftMode === 'preview_draft').length,
+        professionalReviewLaneCount: draftingLanes.filter((lane) => lane.draftMode === 'professional_review').length,
+        blockedLaneCount: draftingLanes.filter((lane) => lane.status === 'blocked').length,
+      },
+      blockers,
+      nextStep: 'Preparar formal ledger draft pack.',
+      guardrails: [
+        'Artifact drafting 0.8 prepara borradores; no emite artefactos oficiales.',
+        'Los drafts requieren revision profesional antes de cualquier aprobacion.',
+      ],
+    };
+  }
+}
+
+export class GetTenantFullAccountingFormalLedgerDraftPackUseCase {
+  constructor(
+    private readonly getTenantFullAccountingFormalArtifactDraftingAnchorUseCase: GetTenantFullAccountingFormalArtifactDraftingAnchorUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingFormalLedgerDraftPackView> {
+    const draftingAnchor =
+      await this.getTenantFullAccountingFormalArtifactDraftingAnchorUseCase.execute(input);
+    const ledgerDrafts: TenantFullAccountingFormalLedgerDraftPackView['ledgerDrafts'] = [
+      fullAccountingFormalLedgerDraft('ledger_structure', 'Ledger structure draft', draftingAnchor.anchorStatus, 'ledger_structure', 'draft', ['full_accounting_product_scope_contract']),
+      fullAccountingFormalLedgerDraft('journal_batch', 'Journal batch draft', draftingAnchor.anchorStatus, 'journal_batch', 'draft', ['full_accounting_formal_ledger_posting_readiness_pack']),
+      fullAccountingFormalLedgerDraft('journal_line', 'Journal line draft', draftingAnchor.anchorStatus, 'journal_line', 'draft', ['full_accounting_formal_ledger_posting_readiness_pack']),
+      fullAccountingFormalLedgerDraft('reversal', 'Reversal draft', draftingAnchor.anchorStatus, 'reversal', 'draft', ['full_accounting_formal_ledger_posting_readiness_pack']),
+      fullAccountingFormalLedgerDraft('invariant_evidence', 'Invariant evidence draft', 'ready', 'invariant_evidence', 'evidence', ['full_accounting_workflow_control_blueprint']),
+      fullAccountingFormalLedgerDraft('period_lock_preview_reference', 'Period lock preview reference', 'ready', 'period_lock_preview_reference', 'preview_reference', ['accounting_period_lock_readiness']),
+    ];
+    const blockers = [...draftingAnchor.blockers];
+    const packStatus = resolveStatus(ledgerDrafts.map((draft) => draft.status), blockers);
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      packStatus,
+      draftingAnchor,
+      ledgerDrafts,
+      summary: {
+        draftCount: ledgerDrafts.length,
+        readyDraftCount: ledgerDrafts.filter((draft) => draft.status === 'ready').length,
+        evidenceDraftCount: ledgerDrafts.filter((draft) => draft.draftState === 'evidence').length,
+        previewReferenceCount: ledgerDrafts.filter((draft) => draft.draftState === 'preview_reference').length,
+        blockedDraftCount: ledgerDrafts.filter((draft) => draft.status === 'blocked').length,
+      },
+      blockers,
+      nextStep: 'Preparar posting approval draft pack.',
+      guardrails: [
+        'Ledger draft pack no escribe asientos oficiales.',
+        'Journal drafts son borradores revisables, no libro mayor.',
+      ],
+    };
+  }
+}
+
+export class GetTenantFullAccountingPostingApprovalDraftPackUseCase {
+  constructor(
+    private readonly getTenantFullAccountingFormalLedgerDraftPackUseCase: GetTenantFullAccountingFormalLedgerDraftPackUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingPostingApprovalDraftPackView> {
+    const ledgerDraftPack =
+      await this.getTenantFullAccountingFormalLedgerDraftPackUseCase.execute(input);
+    const approvalDrafts: TenantFullAccountingPostingApprovalDraftPackView['approvalDrafts'] = [
+      fullAccountingPostingApprovalDraft('posting_approval_summary', 'Posting approval summary draft', ledgerDraftPack.packStatus, 'posting_approval_summary', 'operator', ['full_accounting_formal_ledger_draft_pack']),
+      fullAccountingPostingApprovalDraft('pending_approval_item', 'Pending approval item draft', ledgerDraftPack.packStatus, 'pending_approval_item', 'external_accountant', ['full_accounting_policy_template_registry']),
+      fullAccountingPostingApprovalDraft('risk_flag', 'Posting risk flag draft', ledgerDraftPack.packStatus, 'risk_flag', 'external_accountant', ['full_accounting_graduation_risk_control_pack']),
+      fullAccountingPostingApprovalDraft('rollback_reference', 'Rollback reference draft', 'ready', 'rollback_reference', 'operator', ['full_accounting_formal_ledger_posting_readiness_pack']),
+      fullAccountingPostingApprovalDraft('accountant_decision_placeholder', 'Accountant decision placeholder', 'ready', 'accountant_decision_placeholder', 'external_accountant', ['full_accounting_professional_portal_readiness_shell']),
+      fullAccountingPostingApprovalDraft('posting_execution_exclusion', 'Posting execution exclusion', 'ready', 'posting_execution_exclusion', 'platform', ['full_accounting_official_artifact_boundary_registry']),
+    ];
+    const blockers = [...ledgerDraftPack.blockers];
+    const packStatus = resolveStatus(approvalDrafts.map((draft) => draft.status), blockers);
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      packStatus,
+      ledgerDraftPack,
+      approvalDrafts,
+      summary: {
+        draftCount: approvalDrafts.length,
+        readyDraftCount: approvalDrafts.filter((draft) => draft.status === 'ready').length,
+        accountantOwnedDraftCount: approvalDrafts.filter((draft) => draft.owner === 'external_accountant').length,
+        riskFlagCount: approvalDrafts.filter((draft) => draft.approvalType === 'risk_flag').length,
+        executionExclusionCount: approvalDrafts.filter((draft) => draft.approvalType === 'posting_execution_exclusion').length,
+      },
+      blockers,
+      nextStep: 'Preparar bank and reconciliation evidence draft pack.',
+      guardrails: [
+        'Posting approval draft pack no ejecuta postings.',
+        'Accountant decision placeholders no equivalen a aprobacion profesional.',
+      ],
+    };
+  }
+}
+
+export class GetTenantFullAccountingBankReconciliationEvidenceDraftPackUseCase {
+  constructor(
+    private readonly getTenantFullAccountingPostingApprovalDraftPackUseCase: GetTenantFullAccountingPostingApprovalDraftPackUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingBankReconciliationEvidenceDraftPackView> {
+    const postingApprovalDraftPack =
+      await this.getTenantFullAccountingPostingApprovalDraftPackUseCase.execute(input);
+    const bankDrafts: TenantFullAccountingBankReconciliationEvidenceDraftPackView['bankDrafts'] = [
+      fullAccountingBankEvidenceDraft('bank_evidence', 'Bank evidence draft', postingApprovalDraftPack.packStatus, 'bank_evidence', 'draft', ['full_accounting_statement_bank_formal_boundary_pack']),
+      fullAccountingBankEvidenceDraft('candidate_match_summary', 'Candidate match summary draft', postingApprovalDraftPack.packStatus, 'candidate_match_summary', 'summary', ['full_accounting_statement_bank_formal_boundary_pack']),
+      fullAccountingBankEvidenceDraft('unresolved_exception', 'Unresolved exception draft', postingApprovalDraftPack.packStatus, 'unresolved_exception', 'summary', ['accounting_corrections_queue']),
+      fullAccountingBankEvidenceDraft('cutoff_evidence', 'Cutoff evidence draft', postingApprovalDraftPack.packStatus, 'cutoff_evidence', 'draft', ['full_accounting_statement_bank_formal_boundary_pack']),
+      fullAccountingBankEvidenceDraft('certified_reconciliation_boundary', 'Certified reconciliation boundary draft', 'ready', 'certified_reconciliation_boundary', 'boundary', ['full_accounting_official_artifact_boundary_registry']),
+      fullAccountingBankEvidenceDraft('external_certification_marker', 'External certification marker', 'ready', 'external_certification_marker', 'external_only', ['full_accounting_statement_bank_formal_boundary_pack']),
+    ];
+    const blockers = [...postingApprovalDraftPack.blockers];
+    const packStatus = resolveStatus(bankDrafts.map((draft) => draft.status), blockers);
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      packStatus,
+      postingApprovalDraftPack,
+      bankDrafts,
+      summary: {
+        draftCount: bankDrafts.length,
+        readyDraftCount: bankDrafts.filter((draft) => draft.status === 'ready').length,
+        summaryCount: bankDrafts.filter((draft) => draft.evidenceMode === 'summary').length,
+        boundaryCount: bankDrafts.filter((draft) => draft.evidenceMode === 'boundary').length,
+        externalOnlyCount: bankDrafts.filter((draft) => draft.evidenceMode === 'external_only').length,
+      },
+      blockers,
+      nextStep: 'Preparar trial balance and financial statement draft pack.',
+      guardrails: [
+        'Bank evidence draft pack no certifica conciliaciones.',
+        'External certification marker mantiene certificacion fuera de plataforma.',
+      ],
+    };
+  }
+}
+
+export class GetTenantFullAccountingTrialBalanceFinancialStatementDraftPackUseCase {
+  constructor(
+    private readonly getTenantFullAccountingBankReconciliationEvidenceDraftPackUseCase: GetTenantFullAccountingBankReconciliationEvidenceDraftPackUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingTrialBalanceFinancialStatementDraftPackView> {
+    const bankEvidenceDraftPack =
+      await this.getTenantFullAccountingBankReconciliationEvidenceDraftPackUseCase.execute(input);
+    const statementDrafts: TenantFullAccountingTrialBalanceFinancialStatementDraftPackView['statementDrafts'] = [
+      fullAccountingStatementDraft('trial_balance', 'Trial balance draft', bankEvidenceDraftPack.packStatus, 'trial_balance', 'draft', ['full_accounting_statement_bank_formal_boundary_pack']),
+      fullAccountingStatementDraft('balance_sheet', 'Balance sheet draft', bankEvidenceDraftPack.packStatus, 'balance_sheet', 'draft', ['full_accounting_statement_bank_formal_boundary_pack']),
+      fullAccountingStatementDraft('income_statement', 'Income statement draft', bankEvidenceDraftPack.packStatus, 'income_statement', 'draft', ['full_accounting_statement_bank_formal_boundary_pack']),
+      fullAccountingStatementDraft('variance_note', 'Variance note draft', bankEvidenceDraftPack.packStatus, 'variance_note', 'note', ['full_accounting_statement_bank_formal_boundary_pack']),
+      fullAccountingStatementDraft('accountant_review_requirement', 'Accountant review requirement draft', 'ready', 'accountant_review_requirement', 'professional_review', ['full_accounting_professional_portal_readiness_shell']),
+      fullAccountingStatementDraft('signed_statement_boundary', 'Signed statement boundary draft', 'ready', 'signed_statement_boundary', 'boundary', ['full_accounting_official_artifact_boundary_registry']),
+    ];
+    const blockers = [...bankEvidenceDraftPack.blockers];
+    const packStatus = resolveStatus(statementDrafts.map((draft) => draft.status), blockers);
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      packStatus,
+      bankEvidenceDraftPack,
+      statementDrafts,
+      summary: {
+        draftCount: statementDrafts.length,
+        readyDraftCount: statementDrafts.filter((draft) => draft.status === 'ready').length,
+        statementDraftCount: statementDrafts.filter((draft) => draft.draftMode === 'draft').length,
+        professionalReviewCount: statementDrafts.filter((draft) => draft.draftMode === 'professional_review').length,
+        boundaryCount: statementDrafts.filter((draft) => draft.draftMode === 'boundary').length,
+      },
+      blockers,
+      nextStep: 'Cerrar Full Accounting formal artifact drafting 0.8.',
+      guardrails: [
+        'Financial statement drafts no son estados financieros oficiales.',
+        'Signed statement boundary conserva firma fuera de plataforma.',
+      ],
+    };
+  }
+}
+
+export class RequestTenantFullAccountingFormalArtifactDraftingCloseoutUseCase {
+  constructor(
+    private readonly getTenantFullAccountingTrialBalanceFinancialStatementDraftPackUseCase: GetTenantFullAccountingTrialBalanceFinancialStatementDraftPackUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingFormalArtifactDraftingCloseoutView> {
+    const statementDraftPack =
+      await this.getTenantFullAccountingTrialBalanceFinancialStatementDraftPackUseCase.execute(input);
+    const { bankEvidenceDraftPack } = statementDraftPack;
+    const { postingApprovalDraftPack } = bankEvidenceDraftPack;
+    const { ledgerDraftPack } = postingApprovalDraftPack;
+    const { draftingAnchor } = ledgerDraftPack;
+    const closeoutChecklist: TenantFullAccountingFormalArtifactDraftingCloseoutView['closeoutChecklist'] = [
+      fullAccountingFormalArtifactDraftingCloseoutCheck('drafting_anchor', 'Full Accounting formal artifact drafting anchor', draftingAnchor.anchorStatus, ['full_accounting_formal_artifact_drafting_anchor']),
+      fullAccountingFormalArtifactDraftingCloseoutCheck('ledger_draft_pack', 'Formal ledger draft pack', ledgerDraftPack.packStatus, ['full_accounting_formal_ledger_draft_pack']),
+      fullAccountingFormalArtifactDraftingCloseoutCheck('posting_approval_draft_pack', 'Posting approval draft pack', postingApprovalDraftPack.packStatus, ['full_accounting_posting_approval_draft_pack']),
+      fullAccountingFormalArtifactDraftingCloseoutCheck('bank_evidence_draft_pack', 'Bank reconciliation evidence draft pack', bankEvidenceDraftPack.packStatus, ['full_accounting_bank_reconciliation_evidence_draft_pack']),
+      fullAccountingFormalArtifactDraftingCloseoutCheck('statement_draft_pack', 'Trial balance and financial statement draft pack', statementDraftPack.packStatus, ['full_accounting_trial_balance_financial_statement_draft_pack']),
+    ];
+    const blockers = unique([
+      ...draftingAnchor.blockers,
+      ...ledgerDraftPack.blockers,
+      ...postingApprovalDraftPack.blockers,
+      ...bankEvidenceDraftPack.blockers,
+      ...statementDraftPack.blockers,
+    ]);
+    const closeoutStatus = resolveStatus(closeoutChecklist.map((item) => item.status), blockers);
+    const finalDecision = fullAccountingFormalArtifactDraftingDecisionFromStatus(
+      closeoutStatus,
+      draftingAnchor,
+      ledgerDraftPack,
+      postingApprovalDraftPack,
+      bankEvidenceDraftPack,
+      statementDraftPack,
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      closeoutStatus,
+      draftingAnchor,
+      ledgerDraftPack,
+      postingApprovalDraftPack,
+      bankEvidenceDraftPack,
+      statementDraftPack,
+      closeoutChecklist,
+      finalDecision,
+      summary: {
+        checklistCount: closeoutChecklist.length,
+        readyChecklistCount: closeoutChecklist.filter((item) => item.status === 'ready').length,
+        blockedChecklistCount: closeoutChecklist.filter((item) => item.status === 'blocked').length,
+        draftingLaneCount: draftingAnchor.summary.laneCount,
+        ledgerDraftCount: ledgerDraftPack.summary.draftCount,
+        postingDraftCount: postingApprovalDraftPack.summary.draftCount,
+        bankDraftCount: bankEvidenceDraftPack.summary.draftCount,
+        statementDraftCount: statementDraftPack.summary.draftCount,
+      },
+      blockers,
+      nextStep:
+        finalDecision === 'open_professional_review_execution'
+          ? 'Preparar Full Accounting professional review execution 0.9.'
+          : finalDecision === 'continue_artifact_drafting'
+            ? 'Continuar artifact drafting antes de review profesional.'
+            : finalDecision === 'return_to_formal_readiness'
+              ? 'Volver a Full Accounting formal readiness 0.7.'
+              : finalDecision === 'return_to_product_design'
+                ? 'Volver a Full Accounting product design 0.6.'
+                : 'No redactar artefactos formales por ahora.',
+      guardrails: [
+        'Formal artifact drafting closeout no aprueba, firma, certifica, legaliza ni postea.',
+        'Professional review execution debe abrirse separado antes de cualquier aprobacion formal.',
+      ],
+    };
+  }
+}
+
 function check(
   key: string,
   label: string,
@@ -12923,6 +13229,99 @@ function fullAccountingFormalReadinessDecisionFromStatus(
     return 'continue_formal_readiness';
   }
   return 'do_not_open_formal_readiness';
+}
+
+function fullAccountingFormalArtifactDraftingLane(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  laneType: TenantFullAccountingFormalArtifactDraftingAnchorView['draftingLanes'][number]['laneType'],
+  draftMode: TenantFullAccountingFormalArtifactDraftingAnchorView['draftingLanes'][number]['draftMode'],
+  evidenceRefs: string[],
+): TenantFullAccountingFormalArtifactDraftingAnchorView['draftingLanes'][number] {
+  return { key, label, status, laneType, draftMode, evidenceRefs };
+}
+
+function fullAccountingFormalLedgerDraft(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  draftType: TenantFullAccountingFormalLedgerDraftPackView['ledgerDrafts'][number]['draftType'],
+  draftState: TenantFullAccountingFormalLedgerDraftPackView['ledgerDrafts'][number]['draftState'],
+  evidenceRefs: string[],
+): TenantFullAccountingFormalLedgerDraftPackView['ledgerDrafts'][number] {
+  return { key, label, status, draftType, draftState, evidenceRefs };
+}
+
+function fullAccountingPostingApprovalDraft(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  approvalType: TenantFullAccountingPostingApprovalDraftPackView['approvalDrafts'][number]['approvalType'],
+  owner: AccountingAdvancedProfessionalOwner,
+  evidenceRefs: string[],
+): TenantFullAccountingPostingApprovalDraftPackView['approvalDrafts'][number] {
+  return { key, label, status, approvalType, owner, evidenceRefs };
+}
+
+function fullAccountingBankEvidenceDraft(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  evidenceType: TenantFullAccountingBankReconciliationEvidenceDraftPackView['bankDrafts'][number]['evidenceType'],
+  evidenceMode: TenantFullAccountingBankReconciliationEvidenceDraftPackView['bankDrafts'][number]['evidenceMode'],
+  evidenceRefs: string[],
+): TenantFullAccountingBankReconciliationEvidenceDraftPackView['bankDrafts'][number] {
+  return { key, label, status, evidenceType, evidenceMode, evidenceRefs };
+}
+
+function fullAccountingStatementDraft(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  statementType: TenantFullAccountingTrialBalanceFinancialStatementDraftPackView['statementDrafts'][number]['statementType'],
+  draftMode: TenantFullAccountingTrialBalanceFinancialStatementDraftPackView['statementDrafts'][number]['draftMode'],
+  evidenceRefs: string[],
+): TenantFullAccountingTrialBalanceFinancialStatementDraftPackView['statementDrafts'][number] {
+  return { key, label, status, statementType, draftMode, evidenceRefs };
+}
+
+function fullAccountingFormalArtifactDraftingCloseoutCheck(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  evidenceRefs: string[],
+): TenantFullAccountingFormalArtifactDraftingCloseoutView['closeoutChecklist'][number] {
+  return { key, label, status, evidenceRefs };
+}
+
+function fullAccountingFormalArtifactDraftingDecisionFromStatus(
+  status: AccountingReadinessStatus,
+  draftingAnchor: TenantFullAccountingFormalArtifactDraftingAnchorView,
+  ledgerDraftPack: TenantFullAccountingFormalLedgerDraftPackView,
+  postingApprovalDraftPack: TenantFullAccountingPostingApprovalDraftPackView,
+  bankEvidenceDraftPack: TenantFullAccountingBankReconciliationEvidenceDraftPackView,
+  statementDraftPack: TenantFullAccountingTrialBalanceFinancialStatementDraftPackView,
+  blockers: string[],
+): FullAccountingFormalArtifactDraftingDecision {
+  if (blockers.length > 0 || status === 'blocked') {
+    return 'return_to_formal_readiness';
+  }
+  if (draftingAnchor.summary.draftLaneCount === 0) {
+    return 'return_to_product_design';
+  }
+  if (
+    ledgerDraftPack.summary.draftCount > 0 &&
+    postingApprovalDraftPack.summary.accountantOwnedDraftCount > 0 &&
+    bankEvidenceDraftPack.summary.boundaryCount > 0 &&
+    statementDraftPack.summary.professionalReviewCount > 0
+  ) {
+    return 'open_professional_review_execution';
+  }
+  if (statementDraftPack.summary.boundaryCount > 0) {
+    return 'continue_artifact_drafting';
+  }
+  return 'do_not_draft_formal_artifacts';
 }
 
 function formalProductDesignDecisionFromStatus(

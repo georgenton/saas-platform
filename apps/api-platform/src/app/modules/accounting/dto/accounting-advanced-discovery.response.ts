@@ -114,6 +114,9 @@ import {
   TenantFullAccountingGraduationEvidenceDossierView,
   TenantFullAccountingGraduationRiskControlPackView,
   TenantFullAccountingFormalLedgerPostingReadinessPackView,
+  TenantFullAccountingFormalArtifactDraftingAnchorView,
+  TenantFullAccountingFormalArtifactDraftingCloseoutView,
+  TenantFullAccountingFormalLedgerDraftPackView,
   TenantFullAccountingFormalReadinessAnchorView,
   TenantFullAccountingFormalReadinessCloseoutView,
   TenantFullAccountingOfficialArtifactBoundaryRegistryView,
@@ -130,7 +133,10 @@ import {
   TenantFullAccountingProfessionalOperatingModelView,
   TenantFullAccountingProfessionalPortalReadinessShellView,
   TenantFullAccountingPolicyTemplateRegistryView,
+  TenantFullAccountingPostingApprovalDraftPackView,
+  TenantFullAccountingBankReconciliationEvidenceDraftPackView,
   TenantFullAccountingStatementBankFormalBoundaryPackView,
+  TenantFullAccountingTrialBalanceFinancialStatementDraftPackView,
   TenantFullAccountingWorkflowControlBlueprintView,
   TenantFullAccountingPostingDraftLaneView,
   TenantFullAccountingBankReconciliationWorkbenchMvpView,
@@ -433,6 +439,18 @@ export type FullAccountingStatementBankFormalBoundaryPackResponseDto =
   Serialized<TenantFullAccountingStatementBankFormalBoundaryPackView>;
 export type FullAccountingFormalReadinessCloseoutResponseDto =
   Serialized<TenantFullAccountingFormalReadinessCloseoutView>;
+export type FullAccountingFormalArtifactDraftingAnchorResponseDto =
+  Serialized<TenantFullAccountingFormalArtifactDraftingAnchorView>;
+export type FullAccountingFormalLedgerDraftPackResponseDto =
+  Serialized<TenantFullAccountingFormalLedgerDraftPackView>;
+export type FullAccountingPostingApprovalDraftPackResponseDto =
+  Serialized<TenantFullAccountingPostingApprovalDraftPackView>;
+export type FullAccountingBankReconciliationEvidenceDraftPackResponseDto =
+  Serialized<TenantFullAccountingBankReconciliationEvidenceDraftPackView>;
+export type FullAccountingTrialBalanceFinancialStatementDraftPackResponseDto =
+  Serialized<TenantFullAccountingTrialBalanceFinancialStatementDraftPackView>;
+export type FullAccountingFormalArtifactDraftingCloseoutResponseDto =
+  Serialized<TenantFullAccountingFormalArtifactDraftingCloseoutView>;
 
 export function toAccountingAdvancedDiscoveryAnchorResponseDto(
   view: TenantAccountingAdvancedDiscoveryAnchorView,
@@ -1295,6 +1313,42 @@ export function toFullAccountingStatementBankFormalBoundaryPackResponseDto(
 export function toFullAccountingFormalReadinessCloseoutResponseDto(
   view: TenantFullAccountingFormalReadinessCloseoutView,
 ): FullAccountingFormalReadinessCloseoutResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingFormalArtifactDraftingAnchorResponseDto(
+  view: TenantFullAccountingFormalArtifactDraftingAnchorView,
+): FullAccountingFormalArtifactDraftingAnchorResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingFormalLedgerDraftPackResponseDto(
+  view: TenantFullAccountingFormalLedgerDraftPackView,
+): FullAccountingFormalLedgerDraftPackResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingPostingApprovalDraftPackResponseDto(
+  view: TenantFullAccountingPostingApprovalDraftPackView,
+): FullAccountingPostingApprovalDraftPackResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingBankReconciliationEvidenceDraftPackResponseDto(
+  view: TenantFullAccountingBankReconciliationEvidenceDraftPackView,
+): FullAccountingBankReconciliationEvidenceDraftPackResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingTrialBalanceFinancialStatementDraftPackResponseDto(
+  view: TenantFullAccountingTrialBalanceFinancialStatementDraftPackView,
+): FullAccountingTrialBalanceFinancialStatementDraftPackResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingFormalArtifactDraftingCloseoutResponseDto(
+  view: TenantFullAccountingFormalArtifactDraftingCloseoutView,
+): FullAccountingFormalArtifactDraftingCloseoutResponseDto {
   return serialize(view);
 }
 

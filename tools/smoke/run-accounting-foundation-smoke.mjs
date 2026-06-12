@@ -1266,6 +1266,12 @@ const [
   fullAccountingFormalLedgerPostingReadinessPack,
   fullAccountingStatementBankFormalBoundaryPack,
   fullAccountingFormalReadinessCloseout,
+  fullAccountingFormalArtifactDraftingAnchor,
+  fullAccountingFormalLedgerDraftPack,
+  fullAccountingPostingApprovalDraftPack,
+  fullAccountingBankReconciliationEvidenceDraftPack,
+  fullAccountingTrialBalanceFinancialStatementDraftPack,
+  fullAccountingFormalArtifactDraftingCloseout,
 ] = await Promise.all([
   apiRequest({
     baseUrl,
@@ -2228,6 +2234,48 @@ const [
     path: accountingPath(`/full-accounting-formal-readiness/closeout?${periodQuery()}`),
     token,
   }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-formal-artifact-drafting/anchor?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-formal-artifact-drafting/ledger-draft-pack?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-formal-artifact-drafting/posting-approval-draft-pack?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-formal-artifact-drafting/bank-evidence-draft-pack?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-formal-artifact-drafting/statement-draft-pack?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-formal-artifact-drafting/closeout?${periodQuery()}`,
+    ),
+    token,
+  }),
 ]);
 
 assertStatus(
@@ -2818,6 +2866,30 @@ assertStatus(
   'full accounting formal readiness closeout',
   fullAccountingFormalReadinessCloseout.closeoutStatus,
 );
+assertStatus(
+  'full accounting formal artifact drafting anchor',
+  fullAccountingFormalArtifactDraftingAnchor.anchorStatus,
+);
+assertStatus(
+  'full accounting formal ledger draft pack',
+  fullAccountingFormalLedgerDraftPack.packStatus,
+);
+assertStatus(
+  'full accounting posting approval draft pack',
+  fullAccountingPostingApprovalDraftPack.packStatus,
+);
+assertStatus(
+  'full accounting bank reconciliation evidence draft pack',
+  fullAccountingBankReconciliationEvidenceDraftPack.packStatus,
+);
+assertStatus(
+  'full accounting trial balance financial statement draft pack',
+  fullAccountingTrialBalanceFinancialStatementDraftPack.packStatus,
+);
+assertStatus(
+  'full accounting formal artifact drafting closeout',
+  fullAccountingFormalArtifactDraftingCloseout.closeoutStatus,
+);
 if (!Array.isArray(advancedDiscoveryCloseout.closeoutChecklist)) {
   throw new Error('advanced-discovery/closeout no devolvio checklist[].');
 }
@@ -2917,6 +2989,15 @@ if (!Array.isArray(fullAccountingProductDesignCloseout.closeoutChecklist)) {
 if (!Array.isArray(fullAccountingFormalReadinessCloseout.closeoutChecklist)) {
   throw new Error(
     'full-accounting-formal-readiness/closeout no devolvio checklist[].',
+  );
+}
+if (
+  !Array.isArray(
+    fullAccountingFormalArtifactDraftingCloseout.closeoutChecklist,
+  )
+) {
+  throw new Error(
+    'full-accounting-formal-artifact-drafting/closeout no devolvio checklist[].',
   );
 }
 printLine(

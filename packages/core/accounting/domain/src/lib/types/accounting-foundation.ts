@@ -353,6 +353,12 @@ export type FullAccountingFormalReadinessDecision =
   | 'return_to_product_design'
   | 'return_to_graduation'
   | 'do_not_open_formal_readiness';
+export type FullAccountingFormalArtifactDraftingDecision =
+  | 'open_professional_review_execution'
+  | 'continue_artifact_drafting'
+  | 'return_to_formal_readiness'
+  | 'return_to_product_design'
+  | 'do_not_draft_formal_artifacts';
 export type AccountingAdvancedFormalModuleKey =
   | 'formal_books'
   | 'certified_bank_reconciliation'
@@ -4856,6 +4862,204 @@ export interface TenantFullAccountingFormalReadinessCloseoutView {
     portalShellItemCount: number;
     ledgerPostingItemCount: number;
     statementBankBoundaryCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingFormalArtifactDraftingAnchorView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  anchorStatus: AccountingReadinessStatus;
+  formalReadinessCloseout: TenantFullAccountingFormalReadinessCloseoutView;
+  draftingLanes: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    laneType:
+      | 'ledger_draft'
+      | 'posting_packet_draft'
+      | 'bank_evidence_draft'
+      | 'trial_balance_draft'
+      | 'financial_statement_draft'
+      | 'professional_review_boundary';
+    draftMode: 'draft' | 'evidence_draft' | 'preview_draft' | 'professional_review' | 'blocked';
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    laneCount: number;
+    readyLaneCount: number;
+    draftLaneCount: number;
+    professionalReviewLaneCount: number;
+    blockedLaneCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingFormalLedgerDraftPackView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  packStatus: AccountingReadinessStatus;
+  draftingAnchor: TenantFullAccountingFormalArtifactDraftingAnchorView;
+  ledgerDrafts: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    draftType:
+      | 'ledger_structure'
+      | 'journal_batch'
+      | 'journal_line'
+      | 'reversal'
+      | 'invariant_evidence'
+      | 'period_lock_preview_reference';
+    draftState: 'draft' | 'evidence' | 'preview_reference' | 'blocked';
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    draftCount: number;
+    readyDraftCount: number;
+    evidenceDraftCount: number;
+    previewReferenceCount: number;
+    blockedDraftCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingPostingApprovalDraftPackView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  packStatus: AccountingReadinessStatus;
+  ledgerDraftPack: TenantFullAccountingFormalLedgerDraftPackView;
+  approvalDrafts: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    approvalType:
+      | 'posting_approval_summary'
+      | 'pending_approval_item'
+      | 'risk_flag'
+      | 'rollback_reference'
+      | 'accountant_decision_placeholder'
+      | 'posting_execution_exclusion';
+    owner: AccountingAdvancedProfessionalOwner;
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    draftCount: number;
+    readyDraftCount: number;
+    accountantOwnedDraftCount: number;
+    riskFlagCount: number;
+    executionExclusionCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingBankReconciliationEvidenceDraftPackView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  packStatus: AccountingReadinessStatus;
+  postingApprovalDraftPack: TenantFullAccountingPostingApprovalDraftPackView;
+  bankDrafts: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    evidenceType:
+      | 'bank_evidence'
+      | 'candidate_match_summary'
+      | 'unresolved_exception'
+      | 'cutoff_evidence'
+      | 'certified_reconciliation_boundary'
+      | 'external_certification_marker';
+    evidenceMode: 'draft' | 'summary' | 'boundary' | 'external_only' | 'blocked';
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    draftCount: number;
+    readyDraftCount: number;
+    summaryCount: number;
+    boundaryCount: number;
+    externalOnlyCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingTrialBalanceFinancialStatementDraftPackView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  packStatus: AccountingReadinessStatus;
+  bankEvidenceDraftPack: TenantFullAccountingBankReconciliationEvidenceDraftPackView;
+  statementDrafts: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    statementType:
+      | 'trial_balance'
+      | 'balance_sheet'
+      | 'income_statement'
+      | 'variance_note'
+      | 'accountant_review_requirement'
+      | 'signed_statement_boundary';
+    draftMode: 'draft' | 'note' | 'professional_review' | 'boundary' | 'blocked';
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    draftCount: number;
+    readyDraftCount: number;
+    statementDraftCount: number;
+    professionalReviewCount: number;
+    boundaryCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingFormalArtifactDraftingCloseoutView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  closeoutStatus: AccountingReadinessStatus;
+  draftingAnchor: TenantFullAccountingFormalArtifactDraftingAnchorView;
+  ledgerDraftPack: TenantFullAccountingFormalLedgerDraftPackView;
+  postingApprovalDraftPack: TenantFullAccountingPostingApprovalDraftPackView;
+  bankEvidenceDraftPack: TenantFullAccountingBankReconciliationEvidenceDraftPackView;
+  statementDraftPack: TenantFullAccountingTrialBalanceFinancialStatementDraftPackView;
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    evidenceRefs: string[];
+  }>;
+  finalDecision: FullAccountingFormalArtifactDraftingDecision;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockedChecklistCount: number;
+    draftingLaneCount: number;
+    ledgerDraftCount: number;
+    postingDraftCount: number;
+    bankDraftCount: number;
+    statementDraftCount: number;
   };
   blockers: string[];
   nextStep: string;

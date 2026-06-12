@@ -1,5 +1,14 @@
 # api-platform
 
+## 0.107.55
+
+### Patch Changes
+
+- ab9eb19: Add Full Accounting formal readiness 0.7 with formal readiness anchor, policy
+  template registry, professional portal readiness shell, ledger/posting readiness
+  pack, statement/bank formal boundary pack, closeout API, dashboard wiring,
+  conceptual model updates, and smoke coverage.
+
 ## 0.107.54
 
 ### Patch Changes

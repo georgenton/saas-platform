@@ -329,6 +329,12 @@ export type FullAccountingMvpOperationsDecision =
   | 'return_to_mvp_readiness'
   | 'return_to_candidate_discovery'
   | 'stop_full_accounting_mvp';
+export type FullAccountingControlledPilotDecision =
+  | 'prepare_full_accounting_graduation'
+  | 'continue_controlled_pilot'
+  | 'return_to_mvp_operations'
+  | 'return_to_mvp_readiness'
+  | 'stop_full_accounting_mvp';
 export type AccountingAdvancedFormalModuleKey =
   | 'formal_books'
   | 'certified_bank_reconciliation'
@@ -4000,6 +4006,206 @@ export interface TenantFullAccountingMvpOperationsCloseoutView {
     postingDraftCount: number;
     reconciliationItemCount: number;
     previewItemCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingControlledPilotAnchorView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  anchorStatus: AccountingReadinessStatus;
+  operationsCloseout: TenantFullAccountingMvpOperationsCloseoutView;
+  pilotLanes: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    laneType:
+      | 'ledger'
+      | 'posting'
+      | 'bank_reconciliation'
+      | 'trial_balance'
+      | 'accountant_review';
+    pilotMode:
+      | 'controlled_draft'
+      | 'controlled_simulation'
+      | 'operator_review'
+      | 'professional_review'
+      | 'blocked';
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    laneCount: number;
+    readyLaneCount: number;
+    controlledLaneCount: number;
+    professionalReviewLaneCount: number;
+    blockedLaneCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingPilotEnrollmentPeriodFreezeView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  enrollmentStatus: AccountingReadinessStatus;
+  pilotAnchor: TenantFullAccountingControlledPilotAnchorView;
+  frozenEvidence: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    sourceLane:
+      | 'operations_closeout'
+      | 'ledger_workbench'
+      | 'posting_draft_lane'
+      | 'bank_workbench'
+      | 'trial_balance_preview';
+    freezeMode: 'snapshot' | 'reference' | 'review_packet' | 'blocked';
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    evidenceCount: number;
+    readyEvidenceCount: number;
+    snapshotCount: number;
+    reviewPacketCount: number;
+    blockedEvidenceCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingPilotRunbookWorkspaceView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  runbookStatus: AccountingReadinessStatus;
+  enrollmentFreeze: TenantFullAccountingPilotEnrollmentPeriodFreezeView;
+  runbookSteps: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    stepType:
+      | 'ledger_draft_review'
+      | 'posting_simulation'
+      | 'bank_candidate_review'
+      | 'trial_balance_preview'
+      | 'rollback_gate';
+    owner: AccountingAdvancedProfessionalOwner;
+    successMetric: string;
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    stepCount: number;
+    readyStepCount: number;
+    accountantOwnedStepCount: number;
+    rollbackGateCount: number;
+    blockedStepCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingPilotAccountantReviewRoomView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  reviewStatus: AccountingReadinessStatus;
+  runbookWorkspace: TenantFullAccountingPilotRunbookWorkspaceView;
+  reviewItems: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    reviewType:
+      | 'evidence_question'
+      | 'approval_recommendation'
+      | 'professional_concern'
+      | 'resolution_note'
+      | 'boundary_attestation';
+    owner: AccountingAdvancedProfessionalOwner;
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    itemCount: number;
+    readyItemCount: number;
+    accountantOwnedItemCount: number;
+    unresolvedConcernCount: number;
+    approvalRecommendationCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingPilotOutcomePacketView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  outcomeStatus: AccountingReadinessStatus;
+  accountantReviewRoom: TenantFullAccountingPilotAccountantReviewRoomView;
+  outcomeSignals: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    signalType:
+      | 'lane_completed'
+      | 'blocker_repeated'
+      | 'accountant_acceptance'
+      | 'graduation_signal'
+      | 'hardening_signal';
+    signalStrength: 'high' | 'medium' | 'low' | 'blocked';
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    signalCount: number;
+    readySignalCount: number;
+    highSignalCount: number;
+    accountantAcceptanceCount: number;
+    graduationSignalCount: number;
+    hardeningSignalCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingControlledPilotCloseoutView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  closeoutStatus: AccountingReadinessStatus;
+  pilotAnchor: TenantFullAccountingControlledPilotAnchorView;
+  enrollmentFreeze: TenantFullAccountingPilotEnrollmentPeriodFreezeView;
+  runbookWorkspace: TenantFullAccountingPilotRunbookWorkspaceView;
+  accountantReviewRoom: TenantFullAccountingPilotAccountantReviewRoomView;
+  outcomePacket: TenantFullAccountingPilotOutcomePacketView;
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    evidenceRefs: string[];
+  }>;
+  finalDecision: FullAccountingControlledPilotDecision;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockedChecklistCount: number;
+    pilotLaneCount: number;
+    frozenEvidenceCount: number;
+    runbookStepCount: number;
+    reviewItemCount: number;
+    outcomeSignalCount: number;
   };
   blockers: string[];
   nextStep: string;

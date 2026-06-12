@@ -106,6 +106,11 @@ import {
   GetTenantFullAccountingPostingDraftLaneUseCase,
   GetTenantFullAccountingBankReconciliationWorkbenchMvpUseCase,
   GetTenantFullAccountingTrialBalancePreviewWorkbenchUseCase,
+  GetTenantFullAccountingControlledPilotAnchorUseCase,
+  GetTenantFullAccountingPilotEnrollmentPeriodFreezeUseCase,
+  GetTenantFullAccountingPilotRunbookWorkspaceUseCase,
+  GetTenantFullAccountingPilotAccountantReviewRoomUseCase,
+  GetTenantFullAccountingPilotOutcomePacketUseCase,
   GetTenantAccountingAdvancedFormalProductScopeContractUseCase,
   GetTenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixUseCase,
   GetTenantAccountingAdvancedProfessionalReviewWorkflowDesignUseCase,
@@ -183,6 +188,7 @@ import {
   RequestTenantFullAccountingCandidateCloseoutUseCase,
   RequestTenantFullAccountingMvpReadinessCloseoutUseCase,
   RequestTenantFullAccountingMvpOperationsCloseoutUseCase,
+  RequestTenantFullAccountingControlledPilotCloseoutUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -1565,6 +1571,58 @@ import { AccountingController } from './accounting.controller';
       ) =>
         new RequestTenantFullAccountingMvpOperationsCloseoutUseCase(
           getTenantFullAccountingTrialBalancePreviewWorkbenchUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingControlledPilotAnchorUseCase,
+      inject: [RequestTenantFullAccountingMvpOperationsCloseoutUseCase],
+      useFactory: (requestTenantFullAccountingMvpOperationsCloseoutUseCase) =>
+        new GetTenantFullAccountingControlledPilotAnchorUseCase(
+          requestTenantFullAccountingMvpOperationsCloseoutUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingPilotEnrollmentPeriodFreezeUseCase,
+      inject: [GetTenantFullAccountingControlledPilotAnchorUseCase],
+      useFactory: (getTenantFullAccountingControlledPilotAnchorUseCase) =>
+        new GetTenantFullAccountingPilotEnrollmentPeriodFreezeUseCase(
+          getTenantFullAccountingControlledPilotAnchorUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingPilotRunbookWorkspaceUseCase,
+      inject: [GetTenantFullAccountingPilotEnrollmentPeriodFreezeUseCase],
+      useFactory: (
+        getTenantFullAccountingPilotEnrollmentPeriodFreezeUseCase,
+      ) =>
+        new GetTenantFullAccountingPilotRunbookWorkspaceUseCase(
+          getTenantFullAccountingPilotEnrollmentPeriodFreezeUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingPilotAccountantReviewRoomUseCase,
+      inject: [GetTenantFullAccountingPilotRunbookWorkspaceUseCase],
+      useFactory: (getTenantFullAccountingPilotRunbookWorkspaceUseCase) =>
+        new GetTenantFullAccountingPilotAccountantReviewRoomUseCase(
+          getTenantFullAccountingPilotRunbookWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingPilotOutcomePacketUseCase,
+      inject: [GetTenantFullAccountingPilotAccountantReviewRoomUseCase],
+      useFactory: (
+        getTenantFullAccountingPilotAccountantReviewRoomUseCase,
+      ) =>
+        new GetTenantFullAccountingPilotOutcomePacketUseCase(
+          getTenantFullAccountingPilotAccountantReviewRoomUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantFullAccountingControlledPilotCloseoutUseCase,
+      inject: [GetTenantFullAccountingPilotOutcomePacketUseCase],
+      useFactory: (getTenantFullAccountingPilotOutcomePacketUseCase) =>
+        new RequestTenantFullAccountingControlledPilotCloseoutUseCase(
+          getTenantFullAccountingPilotOutcomePacketUseCase,
         ),
     },
     {

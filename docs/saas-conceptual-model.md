@@ -2377,6 +2377,35 @@ Guardrail: operations 0.3 is draft/simulation/preview only. It does not write
 official ledger entries, post journal batches, reconcile bank accounts, issue
 financial statements, legalize books or certify balances.
 
+### Full Accounting controlled pilot 0.4
+
+After MVP operations 0.3, full Accounting can run a controlled pilot for a
+specific tenant-period. This is the test flight: the product freezes the
+operating evidence, follows a runbook, opens an accountant review room and
+records outcome signals before any graduation decision.
+
+1. `Full Accounting Controlled Pilot Anchor`
+   - converts operations closeout into pilot lanes for ledger, posting, bank,
+     trial balance and accountant review
+2. `Pilot Enrollment & Period Freeze`
+   - enrolls the tenant-period and freezes operations, ledger, posting, bank
+     and trial-balance evidence as pilot snapshots or references
+3. `Pilot Runbook Workspace`
+   - orders the pilot sequence with owner, success metric and rollback gate
+4. `Pilot Accountant Review Room`
+   - captures accountant questions, recommendations, concerns, resolution notes
+     and professional boundary attestation
+5. `Pilot Outcome Packet`
+   - summarizes lane completion, repeated blockers, accountant acceptance,
+     graduation signals and hardening signals
+6. `Full Accounting Controlled Pilot Closeout`
+   - decides whether to prepare graduation, continue the controlled pilot,
+     return to MVP operations, return to MVP readiness or stop
+
+Guardrail: controlled pilot 0.4 still does not write official postings,
+certify bank reconciliations, issue statutory financial statements, legalize
+books or replace accountant judgment.
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal
@@ -2517,6 +2546,9 @@ product. Its current scope is intentionally operational and review-oriented:
     ledger work, posting simulations, bank matching candidates and trial balance
     previews while keeping official postings, reconciliations, statements and
     certifications outside the product boundary.
+39. Full Accounting controlled pilot 0.4 as the test flight. It enrolls a
+    tenant-period, freezes operating evidence, runs an accountant-reviewed
+    runbook and records outcome signals before any graduation decision.
 
 Boundary: this foundation still does not perform bank reconciliation, lock
 against certified bank feeds, lock official legal books, issue official

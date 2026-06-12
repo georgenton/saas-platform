@@ -17,6 +17,7 @@ import {
   AccountingAdvancedFormalRecordCloseoutDecision,
   AccountingAdvancedGraduationArchiveHandoffDecision,
   FullAccountingCandidateDecision,
+  FullAccountingControlledPilotDecision,
   FullAccountingMvpReadinessDecision,
   FullAccountingMvpOperationsDecision,
   AccountingAdvancedFormalModuleKey,
@@ -132,7 +133,13 @@ import {
   TenantFullAccountingMvpReadinessCloseoutView,
   TenantFullAccountingMvpOperationsAnchorView,
   TenantFullAccountingMvpOperationsCloseoutView,
+  TenantFullAccountingControlledPilotAnchorView,
+  TenantFullAccountingControlledPilotCloseoutView,
   TenantFullAccountingLedgerWorkbenchMvpView,
+  TenantFullAccountingPilotAccountantReviewRoomView,
+  TenantFullAccountingPilotEnrollmentPeriodFreezeView,
+  TenantFullAccountingPilotOutcomePacketView,
+  TenantFullAccountingPilotRunbookWorkspaceView,
   TenantFullAccountingPostingDraftLaneView,
   TenantFullAccountingBankReconciliationWorkbenchMvpView,
   TenantFullAccountingTrialBalancePreviewWorkbenchView,
@@ -9436,6 +9443,299 @@ export class RequestTenantFullAccountingMvpOperationsCloseoutUseCase {
   }
 }
 
+export class GetTenantFullAccountingControlledPilotAnchorUseCase {
+  constructor(
+    private readonly requestTenantFullAccountingMvpOperationsCloseoutUseCase: RequestTenantFullAccountingMvpOperationsCloseoutUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingControlledPilotAnchorView> {
+    const operationsCloseout =
+      await this.requestTenantFullAccountingMvpOperationsCloseoutUseCase.execute(input);
+    const pilotLanes: TenantFullAccountingControlledPilotAnchorView['pilotLanes'] = [
+      fullAccountingControlledPilotLane('ledger', 'Ledger controlled draft lane', operationsCloseout.ledgerWorkbench.workbenchStatus, 'ledger', 'controlled_draft', ['full_accounting_ledger_workbench_mvp']),
+      fullAccountingControlledPilotLane('posting', 'Posting controlled simulation lane', operationsCloseout.postingDraftLane.laneStatus, 'posting', 'controlled_simulation', ['full_accounting_posting_draft_lane']),
+      fullAccountingControlledPilotLane('bank_reconciliation', 'Bank reconciliation pilot lane', operationsCloseout.bankReconciliationWorkbench.workbenchStatus, 'bank_reconciliation', 'operator_review', ['full_accounting_bank_reconciliation_workbench_mvp']),
+      fullAccountingControlledPilotLane('trial_balance', 'Trial balance pilot preview lane', operationsCloseout.trialBalancePreviewWorkbench.previewStatus, 'trial_balance', 'operator_review', ['full_accounting_trial_balance_preview_workbench']),
+      fullAccountingControlledPilotLane('accountant_review', 'Accountant review pilot lane', operationsCloseout.closeoutStatus, 'accountant_review', 'professional_review', ['full_accounting_mvp_operations_closeout']),
+    ];
+    const blockers =
+      operationsCloseout.finalDecision === 'advance_to_controlled_pilot'
+        ? [...operationsCloseout.blockers]
+        : unique([
+            ...operationsCloseout.blockers,
+            `Full Accounting MVP operations decision is ${operationsCloseout.finalDecision}.`,
+          ]);
+    const anchorStatus = resolveStatus(pilotLanes.map((lane) => lane.status), blockers);
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      anchorStatus,
+      operationsCloseout,
+      pilotLanes,
+      summary: {
+        laneCount: pilotLanes.length,
+        readyLaneCount: pilotLanes.filter((lane) => lane.status === 'ready').length,
+        controlledLaneCount: pilotLanes.filter((lane) => lane.pilotMode.startsWith('controlled')).length,
+        professionalReviewLaneCount: pilotLanes.filter((lane) => lane.pilotMode === 'professional_review').length,
+        blockedLaneCount: pilotLanes.filter((lane) => lane.status === 'blocked').length,
+      },
+      blockers,
+      nextStep: 'Enrollar tenant-period y congelar evidencia del piloto.',
+      guardrails: [
+        'Controlled pilot 0.4 prueba evidencia operativa; no abre contabilidad oficial.',
+        'La elegibilidad del piloto depende del closeout de Operations 0.3.',
+      ],
+    };
+  }
+}
+
+export class GetTenantFullAccountingPilotEnrollmentPeriodFreezeUseCase {
+  constructor(
+    private readonly getTenantFullAccountingControlledPilotAnchorUseCase: GetTenantFullAccountingControlledPilotAnchorUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingPilotEnrollmentPeriodFreezeView> {
+    const pilotAnchor =
+      await this.getTenantFullAccountingControlledPilotAnchorUseCase.execute(input);
+    const frozenEvidence: TenantFullAccountingPilotEnrollmentPeriodFreezeView['frozenEvidence'] = [
+      fullAccountingPilotFrozenEvidence('operations_closeout', 'Operations closeout snapshot', pilotAnchor.operationsCloseout.closeoutStatus, 'operations_closeout', 'snapshot', ['full_accounting_mvp_operations_closeout']),
+      fullAccountingPilotFrozenEvidence('ledger_workbench', 'Ledger workbench snapshot', pilotAnchor.operationsCloseout.ledgerWorkbench.workbenchStatus, 'ledger_workbench', 'snapshot', ['full_accounting_ledger_workbench_mvp']),
+      fullAccountingPilotFrozenEvidence('posting_draft_lane', 'Posting draft review packet', pilotAnchor.operationsCloseout.postingDraftLane.laneStatus, 'posting_draft_lane', 'review_packet', ['full_accounting_posting_draft_lane']),
+      fullAccountingPilotFrozenEvidence('bank_workbench', 'Bank candidate reference set', pilotAnchor.operationsCloseout.bankReconciliationWorkbench.workbenchStatus, 'bank_workbench', 'reference', ['full_accounting_bank_reconciliation_workbench_mvp']),
+      fullAccountingPilotFrozenEvidence('trial_balance_preview', 'Trial balance preview reference', pilotAnchor.operationsCloseout.trialBalancePreviewWorkbench.previewStatus, 'trial_balance_preview', 'reference', ['full_accounting_trial_balance_preview_workbench']),
+    ];
+    const blockers = [...pilotAnchor.blockers];
+    const enrollmentStatus = resolveStatus(frozenEvidence.map((item) => item.status), blockers);
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      enrollmentStatus,
+      pilotAnchor,
+      frozenEvidence,
+      summary: {
+        evidenceCount: frozenEvidence.length,
+        readyEvidenceCount: frozenEvidence.filter((item) => item.status === 'ready').length,
+        snapshotCount: frozenEvidence.filter((item) => item.freezeMode === 'snapshot').length,
+        reviewPacketCount: frozenEvidence.filter((item) => item.freezeMode === 'review_packet').length,
+        blockedEvidenceCount: frozenEvidence.filter((item) => item.status === 'blocked').length,
+      },
+      blockers,
+      nextStep: 'Construir runbook del piloto controlado.',
+      guardrails: [
+        'Congelar evidencia no equivale a cerrar periodo ni libros.',
+        'El snapshot del piloto es reproducible y separado de postings oficiales.',
+      ],
+    };
+  }
+}
+
+export class GetTenantFullAccountingPilotRunbookWorkspaceUseCase {
+  constructor(
+    private readonly getTenantFullAccountingPilotEnrollmentPeriodFreezeUseCase: GetTenantFullAccountingPilotEnrollmentPeriodFreezeUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingPilotRunbookWorkspaceView> {
+    const enrollmentFreeze =
+      await this.getTenantFullAccountingPilotEnrollmentPeriodFreezeUseCase.execute(input);
+    const runbookSteps: TenantFullAccountingPilotRunbookWorkspaceView['runbookSteps'] = [
+      fullAccountingPilotRunbookStep('ledger_draft_review', 'Review ledger draft packet', enrollmentFreeze.enrollmentStatus, 'ledger_draft_review', 'operator', 'Ledger draft packet reviewed', ['full_accounting_ledger_workbench_mvp']),
+      fullAccountingPilotRunbookStep('posting_simulation', 'Execute posting simulation review', enrollmentFreeze.enrollmentStatus, 'posting_simulation', 'external_accountant', 'Posting simulation approved or returned', ['full_accounting_posting_draft_lane']),
+      fullAccountingPilotRunbookStep('bank_candidate_review', 'Review bank candidate matches', enrollmentFreeze.enrollmentStatus, 'bank_candidate_review', 'operator', 'Bank candidates classified', ['full_accounting_bank_reconciliation_workbench_mvp']),
+      fullAccountingPilotRunbookStep('trial_balance_preview', 'Review trial balance warnings', enrollmentFreeze.enrollmentStatus, 'trial_balance_preview', 'external_accountant', 'Trial balance warnings explained', ['full_accounting_trial_balance_preview_workbench']),
+      fullAccountingPilotRunbookStep('rollback_gate', 'Evaluate rollback gate', 'ready', 'rollback_gate', 'platform', 'Rollback criteria are explicit', ['full_accounting_controlled_pilot_anchor']),
+    ];
+    const blockers = [...enrollmentFreeze.blockers];
+    const runbookStatus = resolveStatus(runbookSteps.map((step) => step.status), blockers);
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      runbookStatus,
+      enrollmentFreeze,
+      runbookSteps,
+      summary: {
+        stepCount: runbookSteps.length,
+        readyStepCount: runbookSteps.filter((step) => step.status === 'ready').length,
+        accountantOwnedStepCount: runbookSteps.filter((step) => step.owner === 'external_accountant').length,
+        rollbackGateCount: runbookSteps.filter((step) => step.stepType === 'rollback_gate').length,
+        blockedStepCount: runbookSteps.filter((step) => step.status === 'blocked').length,
+      },
+      blockers,
+      nextStep: 'Abrir pilot accountant review room.',
+      guardrails: [
+        'El runbook ordena la prueba; no autoriza postings.',
+        'Rollback gate debe existir antes de cualquier graduacion.',
+      ],
+    };
+  }
+}
+
+export class GetTenantFullAccountingPilotAccountantReviewRoomUseCase {
+  constructor(
+    private readonly getTenantFullAccountingPilotRunbookWorkspaceUseCase: GetTenantFullAccountingPilotRunbookWorkspaceUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingPilotAccountantReviewRoomView> {
+    const runbookWorkspace =
+      await this.getTenantFullAccountingPilotRunbookWorkspaceUseCase.execute(input);
+    const reviewItems: TenantFullAccountingPilotAccountantReviewRoomView['reviewItems'] = [
+      fullAccountingPilotReviewItem('evidence_question', 'Accountant evidence question', runbookWorkspace.runbookStatus, 'evidence_question', 'external_accountant', ['full_accounting_pilot_runbook_workspace']),
+      fullAccountingPilotReviewItem('approval_recommendation', 'Pilot approval recommendation', runbookWorkspace.runbookStatus, 'approval_recommendation', 'external_accountant', ['full_accounting_posting_draft_lane']),
+      fullAccountingPilotReviewItem('professional_concern', 'Professional concern register', runbookWorkspace.runbookStatus, 'professional_concern', 'external_accountant', ['accounting_accountant_handoff_workspace']),
+      fullAccountingPilotReviewItem('resolution_note', 'Operator resolution note', 'ready', 'resolution_note', 'operator', ['accounting_review_resolution_packet']),
+      fullAccountingPilotReviewItem('boundary_attestation', 'Professional boundary attestation', 'ready', 'boundary_attestation', 'platform', ['full_accounting_mvp_operations_closeout']),
+    ];
+    const blockers = [...runbookWorkspace.blockers];
+    const reviewStatus = resolveStatus(reviewItems.map((item) => item.status), blockers);
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      reviewStatus,
+      runbookWorkspace,
+      reviewItems,
+      summary: {
+        itemCount: reviewItems.length,
+        readyItemCount: reviewItems.filter((item) => item.status === 'ready').length,
+        accountantOwnedItemCount: reviewItems.filter((item) => item.owner === 'external_accountant').length,
+        unresolvedConcernCount: reviewItems.filter((item) => item.reviewType === 'professional_concern' && item.status !== 'ready').length,
+        approvalRecommendationCount: reviewItems.filter((item) => item.reviewType === 'approval_recommendation').length,
+      },
+      blockers,
+      nextStep: 'Preparar pilot outcome packet.',
+      guardrails: [
+        'Review room captura criterio profesional, no reemplaza firma ni certificacion.',
+        'Las recomendaciones del piloto no emiten estados financieros oficiales.',
+      ],
+    };
+  }
+}
+
+export class GetTenantFullAccountingPilotOutcomePacketUseCase {
+  constructor(
+    private readonly getTenantFullAccountingPilotAccountantReviewRoomUseCase: GetTenantFullAccountingPilotAccountantReviewRoomUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingPilotOutcomePacketView> {
+    const accountantReviewRoom =
+      await this.getTenantFullAccountingPilotAccountantReviewRoomUseCase.execute(input);
+    const outcomeSignals: TenantFullAccountingPilotOutcomePacketView['outcomeSignals'] = [
+      fullAccountingPilotOutcomeSignal('lane_completed', 'Pilot lanes completed signal', accountantReviewRoom.reviewStatus, 'lane_completed', 'high', ['full_accounting_controlled_pilot_anchor']),
+      fullAccountingPilotOutcomeSignal('accountant_acceptance', 'Accountant acceptance signal', accountantReviewRoom.reviewStatus, 'accountant_acceptance', 'high', ['full_accounting_pilot_accountant_review_room']),
+      fullAccountingPilotOutcomeSignal('graduation_signal', 'Graduation readiness signal', accountantReviewRoom.reviewStatus, 'graduation_signal', 'medium', ['full_accounting_pilot_runbook_workspace']),
+      fullAccountingPilotOutcomeSignal('hardening_signal', 'Hardening signal', 'ready', 'hardening_signal', 'medium', ['full_accounting_pilot_outcome_packet']),
+      fullAccountingPilotOutcomeSignal('blocker_repeated', 'Repeated blocker scan', accountantReviewRoom.reviewStatus, 'blocker_repeated', accountantReviewRoom.blockers.length > 0 ? 'blocked' : 'low', ['full_accounting_pilot_accountant_review_room']),
+    ];
+    const blockers = [...accountantReviewRoom.blockers];
+    const outcomeStatus = resolveStatus(outcomeSignals.map((signal) => signal.status), blockers);
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      outcomeStatus,
+      accountantReviewRoom,
+      outcomeSignals,
+      summary: {
+        signalCount: outcomeSignals.length,
+        readySignalCount: outcomeSignals.filter((signal) => signal.status === 'ready').length,
+        highSignalCount: outcomeSignals.filter((signal) => signal.signalStrength === 'high').length,
+        accountantAcceptanceCount: outcomeSignals.filter((signal) => signal.signalType === 'accountant_acceptance').length,
+        graduationSignalCount: outcomeSignals.filter((signal) => signal.signalType === 'graduation_signal').length,
+        hardeningSignalCount: outcomeSignals.filter((signal) => signal.signalType === 'hardening_signal').length,
+      },
+      blockers,
+      nextStep: 'Cerrar Full Accounting controlled pilot 0.4.',
+      guardrails: [
+        'Outcome packet resume resultados del piloto; no gradua automaticamente.',
+        'Los blockers repetidos deben volver a operations o readiness.',
+      ],
+    };
+  }
+}
+
+export class RequestTenantFullAccountingControlledPilotCloseoutUseCase {
+  constructor(
+    private readonly getTenantFullAccountingPilotOutcomePacketUseCase: GetTenantFullAccountingPilotOutcomePacketUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingControlledPilotCloseoutView> {
+    const outcomePacket =
+      await this.getTenantFullAccountingPilotOutcomePacketUseCase.execute(input);
+    const { accountantReviewRoom } = outcomePacket;
+    const { runbookWorkspace } = accountantReviewRoom;
+    const { enrollmentFreeze } = runbookWorkspace;
+    const { pilotAnchor } = enrollmentFreeze;
+    const closeoutChecklist: TenantFullAccountingControlledPilotCloseoutView['closeoutChecklist'] = [
+      fullAccountingControlledPilotCloseoutCheck('pilot_anchor', 'Full Accounting controlled pilot anchor', pilotAnchor.anchorStatus, ['full_accounting_controlled_pilot_anchor']),
+      fullAccountingControlledPilotCloseoutCheck('enrollment_freeze', 'Pilot enrollment and period freeze', enrollmentFreeze.enrollmentStatus, ['full_accounting_pilot_enrollment_period_freeze']),
+      fullAccountingControlledPilotCloseoutCheck('runbook_workspace', 'Pilot runbook workspace', runbookWorkspace.runbookStatus, ['full_accounting_pilot_runbook_workspace']),
+      fullAccountingControlledPilotCloseoutCheck('accountant_review_room', 'Pilot accountant review room', accountantReviewRoom.reviewStatus, ['full_accounting_pilot_accountant_review_room']),
+      fullAccountingControlledPilotCloseoutCheck('outcome_packet', 'Pilot outcome packet', outcomePacket.outcomeStatus, ['full_accounting_pilot_outcome_packet']),
+    ];
+    const blockers = unique([
+      ...pilotAnchor.blockers,
+      ...enrollmentFreeze.blockers,
+      ...runbookWorkspace.blockers,
+      ...accountantReviewRoom.blockers,
+      ...outcomePacket.blockers,
+    ]);
+    const closeoutStatus = resolveStatus(closeoutChecklist.map((item) => item.status), blockers);
+    const finalDecision = fullAccountingControlledPilotDecisionFromStatus(
+      closeoutStatus,
+      pilotAnchor,
+      accountantReviewRoom,
+      outcomePacket,
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      closeoutStatus,
+      pilotAnchor,
+      enrollmentFreeze,
+      runbookWorkspace,
+      accountantReviewRoom,
+      outcomePacket,
+      closeoutChecklist,
+      finalDecision,
+      summary: {
+        checklistCount: closeoutChecklist.length,
+        readyChecklistCount: closeoutChecklist.filter((item) => item.status === 'ready').length,
+        blockedChecklistCount: closeoutChecklist.filter((item) => item.status === 'blocked').length,
+        pilotLaneCount: pilotAnchor.summary.laneCount,
+        frozenEvidenceCount: enrollmentFreeze.summary.evidenceCount,
+        runbookStepCount: runbookWorkspace.summary.stepCount,
+        reviewItemCount: accountantReviewRoom.summary.itemCount,
+        outcomeSignalCount: outcomePacket.summary.signalCount,
+      },
+      blockers,
+      nextStep:
+        finalDecision === 'prepare_full_accounting_graduation'
+          ? 'Preparar Full Accounting graduation 0.5.'
+          : finalDecision === 'continue_controlled_pilot'
+            ? 'Continuar piloto controlado con mas tenant-periods.'
+            : finalDecision === 'return_to_mvp_operations'
+              ? 'Volver a Full Accounting MVP Operations 0.3.'
+              : finalDecision === 'return_to_mvp_readiness'
+                ? 'Volver a Full Accounting MVP Readiness 0.2.'
+                : 'Detener Full Accounting MVP por ahora.',
+      guardrails: [
+        'Controlled pilot closeout no abre contabilidad oficial por si solo.',
+        'Graduation 0.5 debe decidir formalmente antes de emitir libros, conciliaciones certificadas o estados financieros.',
+      ],
+    };
+  }
+}
+
 function check(
   key: string,
   label: string,
@@ -11321,6 +11621,97 @@ function fullAccountingMvpOperationsDecisionFromStatus(
   }
   if (operationsAnchor.summary.readyLaneCount > 0) {
     return 'continue_operations_hardening';
+  }
+  return 'stop_full_accounting_mvp';
+}
+
+function fullAccountingControlledPilotLane(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  laneType: TenantFullAccountingControlledPilotAnchorView['pilotLanes'][number]['laneType'],
+  pilotMode: TenantFullAccountingControlledPilotAnchorView['pilotLanes'][number]['pilotMode'],
+  evidenceRefs: string[],
+): TenantFullAccountingControlledPilotAnchorView['pilotLanes'][number] {
+  return { key, label, status, laneType, pilotMode, evidenceRefs };
+}
+
+function fullAccountingPilotFrozenEvidence(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  sourceLane: TenantFullAccountingPilotEnrollmentPeriodFreezeView['frozenEvidence'][number]['sourceLane'],
+  freezeMode: TenantFullAccountingPilotEnrollmentPeriodFreezeView['frozenEvidence'][number]['freezeMode'],
+  evidenceRefs: string[],
+): TenantFullAccountingPilotEnrollmentPeriodFreezeView['frozenEvidence'][number] {
+  return { key, label, status, sourceLane, freezeMode, evidenceRefs };
+}
+
+function fullAccountingPilotRunbookStep(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  stepType: TenantFullAccountingPilotRunbookWorkspaceView['runbookSteps'][number]['stepType'],
+  owner: AccountingAdvancedProfessionalOwner,
+  successMetric: string,
+  evidenceRefs: string[],
+): TenantFullAccountingPilotRunbookWorkspaceView['runbookSteps'][number] {
+  return { key, label, status, stepType, owner, successMetric, evidenceRefs };
+}
+
+function fullAccountingPilotReviewItem(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  reviewType: TenantFullAccountingPilotAccountantReviewRoomView['reviewItems'][number]['reviewType'],
+  owner: AccountingAdvancedProfessionalOwner,
+  evidenceRefs: string[],
+): TenantFullAccountingPilotAccountantReviewRoomView['reviewItems'][number] {
+  return { key, label, status, reviewType, owner, evidenceRefs };
+}
+
+function fullAccountingPilotOutcomeSignal(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  signalType: TenantFullAccountingPilotOutcomePacketView['outcomeSignals'][number]['signalType'],
+  signalStrength: TenantFullAccountingPilotOutcomePacketView['outcomeSignals'][number]['signalStrength'],
+  evidenceRefs: string[],
+): TenantFullAccountingPilotOutcomePacketView['outcomeSignals'][number] {
+  return { key, label, status, signalType, signalStrength, evidenceRefs };
+}
+
+function fullAccountingControlledPilotCloseoutCheck(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  evidenceRefs: string[],
+): TenantFullAccountingControlledPilotCloseoutView['closeoutChecklist'][number] {
+  return { key, label, status, evidenceRefs };
+}
+
+function fullAccountingControlledPilotDecisionFromStatus(
+  status: AccountingReadinessStatus,
+  pilotAnchor: TenantFullAccountingControlledPilotAnchorView,
+  accountantReviewRoom: TenantFullAccountingPilotAccountantReviewRoomView,
+  outcomePacket: TenantFullAccountingPilotOutcomePacketView,
+  blockers: string[],
+): FullAccountingControlledPilotDecision {
+  if (blockers.length > 0 || status === 'blocked') {
+    return 'return_to_mvp_operations';
+  }
+  if (pilotAnchor.summary.controlledLaneCount === 0) {
+    return 'return_to_mvp_readiness';
+  }
+  if (
+    accountantReviewRoom.summary.accountantOwnedItemCount > 0 &&
+    outcomePacket.summary.accountantAcceptanceCount > 0 &&
+    outcomePacket.summary.graduationSignalCount > 0
+  ) {
+    return 'prepare_full_accounting_graduation';
+  }
+  if (outcomePacket.summary.hardeningSignalCount > 0) {
+    return 'continue_controlled_pilot';
   }
   return 'stop_full_accounting_mvp';
 }

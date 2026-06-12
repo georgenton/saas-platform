@@ -61,6 +61,7 @@ import {
   AccountingAdvancedFormalRecordAssemblyCloseoutResponse,
   AccountingAdvancedFormalRecordCloseoutCloseoutResponse,
   AccountingAdvancedGraduationArchiveHandoffCloseoutResponse,
+  FullAccountingControlledPilotCloseoutResponse,
   FullAccountingCandidateCloseoutResponse,
   FullAccountingMvpOperationsCloseoutResponse,
   FullAccountingMvpReadinessCloseoutResponse,
@@ -3501,6 +3502,22 @@ export async function fetchFullAccountingMvpOperationsCloseout(
     `/accounting/tenants/${encodeURIComponent(
       tenantSlug,
     )}/full-accounting-mvp-operations/closeout?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchFullAccountingControlledPilotCloseout(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<FullAccountingControlledPilotCloseoutResponse> {
+  return request<FullAccountingControlledPilotCloseoutResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/full-accounting-controlled-pilot/closeout?period=${encodeURIComponent(
       period,
     )}&year=${encodeURIComponent(String(year))}`,
     { method: 'GET', token },

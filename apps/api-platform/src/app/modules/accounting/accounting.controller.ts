@@ -120,6 +120,11 @@ import {
   GetTenantFullAccountingProfessionalPortalReadinessShellUseCase,
   GetTenantFullAccountingFormalLedgerPostingReadinessPackUseCase,
   GetTenantFullAccountingStatementBankFormalBoundaryPackUseCase,
+  GetTenantFullAccountingFormalArtifactDraftingAnchorUseCase,
+  GetTenantFullAccountingFormalLedgerDraftPackUseCase,
+  GetTenantFullAccountingPostingApprovalDraftPackUseCase,
+  GetTenantFullAccountingBankReconciliationEvidenceDraftPackUseCase,
+  GetTenantFullAccountingTrialBalanceFinancialStatementDraftPackUseCase,
   GetTenantAccountingAdvancedFormalProductScopeContractUseCase,
   GetTenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixUseCase,
   GetTenantAccountingAdvancedProfessionalReviewWorkflowDesignUseCase,
@@ -201,6 +206,7 @@ import {
   RequestTenantFullAccountingGraduationCloseoutUseCase,
   RequestTenantFullAccountingProductDesignCloseoutUseCase,
   RequestTenantFullAccountingFormalReadinessCloseoutUseCase,
+  RequestTenantFullAccountingFormalArtifactDraftingCloseoutUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -367,6 +373,12 @@ import {
   FullAccountingFormalLedgerPostingReadinessPackResponseDto,
   FullAccountingStatementBankFormalBoundaryPackResponseDto,
   FullAccountingFormalReadinessCloseoutResponseDto,
+  FullAccountingFormalArtifactDraftingAnchorResponseDto,
+  FullAccountingFormalLedgerDraftPackResponseDto,
+  FullAccountingPostingApprovalDraftPackResponseDto,
+  FullAccountingBankReconciliationEvidenceDraftPackResponseDto,
+  FullAccountingTrialBalanceFinancialStatementDraftPackResponseDto,
+  FullAccountingFormalArtifactDraftingCloseoutResponseDto,
   AccountingAdvancedProfessionalResponsibilityAssignmentMatrixResponseDto,
   AccountingAdvancedProfessionalReviewWorkflowDesignResponseDto,
   AccountingCertifiedBankEvidenceBoundaryResponseDto,
@@ -511,6 +523,12 @@ import {
   toFullAccountingFormalLedgerPostingReadinessPackResponseDto,
   toFullAccountingStatementBankFormalBoundaryPackResponseDto,
   toFullAccountingFormalReadinessCloseoutResponseDto,
+  toFullAccountingFormalArtifactDraftingAnchorResponseDto,
+  toFullAccountingFormalLedgerDraftPackResponseDto,
+  toFullAccountingPostingApprovalDraftPackResponseDto,
+  toFullAccountingBankReconciliationEvidenceDraftPackResponseDto,
+  toFullAccountingTrialBalanceFinancialStatementDraftPackResponseDto,
+  toFullAccountingFormalArtifactDraftingCloseoutResponseDto,
   toAccountingAdvancedProfessionalResponsibilityAssignmentMatrixResponseDto,
   toAccountingAdvancedProfessionalReviewWorkflowDesignResponseDto,
   toAccountingCertifiedBankEvidenceBoundaryResponseDto,
@@ -927,6 +945,12 @@ export class AccountingController {
     private readonly getTenantFullAccountingFormalLedgerPostingReadinessPackUseCase: GetTenantFullAccountingFormalLedgerPostingReadinessPackUseCase,
     private readonly getTenantFullAccountingStatementBankFormalBoundaryPackUseCase: GetTenantFullAccountingStatementBankFormalBoundaryPackUseCase,
     private readonly requestTenantFullAccountingFormalReadinessCloseoutUseCase: RequestTenantFullAccountingFormalReadinessCloseoutUseCase,
+    private readonly getTenantFullAccountingFormalArtifactDraftingAnchorUseCase: GetTenantFullAccountingFormalArtifactDraftingAnchorUseCase,
+    private readonly getTenantFullAccountingFormalLedgerDraftPackUseCase: GetTenantFullAccountingFormalLedgerDraftPackUseCase,
+    private readonly getTenantFullAccountingPostingApprovalDraftPackUseCase: GetTenantFullAccountingPostingApprovalDraftPackUseCase,
+    private readonly getTenantFullAccountingBankReconciliationEvidenceDraftPackUseCase: GetTenantFullAccountingBankReconciliationEvidenceDraftPackUseCase,
+    private readonly getTenantFullAccountingTrialBalanceFinancialStatementDraftPackUseCase: GetTenantFullAccountingTrialBalanceFinancialStatementDraftPackUseCase,
+    private readonly requestTenantFullAccountingFormalArtifactDraftingCloseoutUseCase: RequestTenantFullAccountingFormalArtifactDraftingCloseoutUseCase,
   ) {}
 
   @Get(':slug/advanced-discovery/anchor')
@@ -4345,6 +4369,138 @@ export class AccountingController {
           { tenantSlug, period, year: Number.parseInt(year, 10) },
         );
       return toFullAccountingFormalReadinessCloseoutResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-formal-artifact-drafting/anchor')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingFormalArtifactDraftingAnchor(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingFormalArtifactDraftingAnchorResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingFormalArtifactDraftingAnchorUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+      return toFullAccountingFormalArtifactDraftingAnchorResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-formal-artifact-drafting/ledger-draft-pack')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingFormalLedgerDraftPack(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingFormalLedgerDraftPackResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingFormalLedgerDraftPackUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+      return toFullAccountingFormalLedgerDraftPackResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(
+    ':slug/full-accounting-formal-artifact-drafting/posting-approval-draft-pack',
+  )
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingPostingApprovalDraftPack(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingPostingApprovalDraftPackResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingPostingApprovalDraftPackUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+      return toFullAccountingPostingApprovalDraftPackResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-formal-artifact-drafting/bank-evidence-draft-pack')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingBankReconciliationEvidenceDraftPack(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingBankReconciliationEvidenceDraftPackResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingBankReconciliationEvidenceDraftPackUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+      return toFullAccountingBankReconciliationEvidenceDraftPackResponseDto(
+        view,
+      );
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-formal-artifact-drafting/statement-draft-pack')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingTrialBalanceFinancialStatementDraftPack(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingTrialBalanceFinancialStatementDraftPackResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingTrialBalanceFinancialStatementDraftPackUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+      return toFullAccountingTrialBalanceFinancialStatementDraftPackResponseDto(
+        view,
+      );
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-formal-artifact-drafting/closeout')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingFormalArtifactDraftingCloseout(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingFormalArtifactDraftingCloseoutResponseDto> {
+    try {
+      const view =
+        await this.requestTenantFullAccountingFormalArtifactDraftingCloseoutUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+      return toFullAccountingFormalArtifactDraftingCloseoutResponseDto(view);
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);

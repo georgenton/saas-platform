@@ -5599,6 +5599,84 @@ export interface FullAccountingFormalReadinessCloseoutResponse {
   guardrails: string[];
 }
 
+export interface FullAccountingFormalArtifactDraftingCloseoutResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  closeoutStatus: string;
+  draftingAnchor: {
+    anchorStatus: string;
+    summary: {
+      laneCount: number;
+      readyLaneCount: number;
+      draftLaneCount: number;
+      professionalReviewLaneCount: number;
+      blockedLaneCount: number;
+    };
+  };
+  ledgerDraftPack: {
+    packStatus: string;
+    summary: {
+      draftCount: number;
+      readyDraftCount: number;
+      evidenceDraftCount: number;
+      previewReferenceCount: number;
+      blockedDraftCount: number;
+    };
+  };
+  postingApprovalDraftPack: {
+    packStatus: string;
+    summary: {
+      draftCount: number;
+      readyDraftCount: number;
+      accountantOwnedDraftCount: number;
+      riskFlagCount: number;
+      executionExclusionCount: number;
+    };
+  };
+  bankEvidenceDraftPack: {
+    packStatus: string;
+    summary: {
+      draftCount: number;
+      readyDraftCount: number;
+      summaryCount: number;
+      boundaryCount: number;
+      externalOnlyCount: number;
+    };
+  };
+  statementDraftPack: {
+    packStatus: string;
+    summary: {
+      draftCount: number;
+      readyDraftCount: number;
+      statementDraftCount: number;
+      professionalReviewCount: number;
+      boundaryCount: number;
+    };
+  };
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: string;
+    evidenceRefs: string[];
+  }>;
+  finalDecision: string;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockedChecklistCount: number;
+    draftingLaneCount: number;
+    ledgerDraftCount: number;
+    approvalDraftCount: number;
+    bankDraftCount: number;
+    statementDraftCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface AccountingOperationalCommandCenterResponse {
   tenantSlug: string;
   period: string;

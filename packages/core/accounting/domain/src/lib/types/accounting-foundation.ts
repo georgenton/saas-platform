@@ -341,6 +341,12 @@ export type FullAccountingGraduationDecision =
   | 'return_to_mvp_operations'
   | 'return_to_mvp_readiness'
   | 'do_not_graduate_full_accounting';
+export type FullAccountingProductDesignDecision =
+  | 'open_formal_readiness'
+  | 'continue_product_design'
+  | 'return_to_graduation'
+  | 'return_to_controlled_pilot'
+  | 'do_not_design_full_accounting_product';
 export type AccountingAdvancedFormalModuleKey =
   | 'formal_books'
   | 'certified_bank_reconciliation'
@@ -4425,6 +4431,223 @@ export interface TenantFullAccountingGraduationCloseoutView {
     scopeModuleCount: number;
     responsibilityAssignmentCount: number;
     riskControlCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingProductDesignAnchorView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  anchorStatus: AccountingReadinessStatus;
+  graduationCloseout: TenantFullAccountingGraduationCloseoutView;
+  designLanes: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    laneType:
+      | 'graduated_module'
+      | 'pilot_module'
+      | 'hardening_module'
+      | 'excluded_module'
+      | 'professional_boundary';
+    designMode: 'include' | 'limit' | 'harden' | 'exclude' | 'professional_review';
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    laneCount: number;
+    readyLaneCount: number;
+    includedLaneCount: number;
+    limitedLaneCount: number;
+    excludedLaneCount: number;
+    blockedLaneCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingProductScopeContractView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  contractStatus: AccountingReadinessStatus;
+  productDesignAnchor: TenantFullAccountingProductDesignAnchorView;
+  scopeItems: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    moduleType:
+      | 'ledger_operations'
+      | 'posting_workflow'
+      | 'professional_review'
+      | 'bank_reconciliation'
+      | 'trial_balance_statements'
+      | 'legal_books'
+      | 'statutory_certification';
+    scopeMode: 'included' | 'limited_pilot' | 'excluded';
+    entryCriteria: string;
+    exitCriteria: string;
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    itemCount: number;
+    readyItemCount: number;
+    includedItemCount: number;
+    limitedItemCount: number;
+    excludedItemCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingProductProfessionalResponsibilityMatrixView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  matrixStatus: AccountingReadinessStatus;
+  scopeContract: TenantFullAccountingProductScopeContractView;
+  responsibilities: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    responsibilityType:
+      | 'platform_assisted'
+      | 'operator_owned'
+      | 'external_accountant_approval'
+      | 'auditor_boundary'
+      | 'legal_representative_boundary'
+      | 'never_alone';
+    owner: AccountingAdvancedProfessionalOwner;
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    responsibilityCount: number;
+    readyResponsibilityCount: number;
+    platformAssistedCount: number;
+    operatorOwnedCount: number;
+    accountantApprovalCount: number;
+    neverAloneCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingOfficialArtifactBoundaryRegistryView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  registryStatus: AccountingReadinessStatus;
+  responsibilityMatrix: TenantFullAccountingProductProfessionalResponsibilityMatrixView;
+  artifacts: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    artifactType:
+      | 'ledger_draft_packet'
+      | 'posting_approval_packet'
+      | 'reconciliation_evidence_packet'
+      | 'trial_balance_preview'
+      | 'certified_reconciliation'
+      | 'signed_financial_statements'
+      | 'legal_books'
+      | 'statutory_filings';
+    artifactStatus:
+      | 'internal'
+      | 'draft'
+      | 'professional_review'
+      | 'external_only'
+      | 'excluded';
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    artifactCount: number;
+    readyArtifactCount: number;
+    internalArtifactCount: number;
+    draftArtifactCount: number;
+    professionalReviewArtifactCount: number;
+    externalOnlyArtifactCount: number;
+    excludedArtifactCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingWorkflowControlBlueprintView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  blueprintStatus: AccountingReadinessStatus;
+  artifactBoundaryRegistry: TenantFullAccountingOfficialArtifactBoundaryRegistryView;
+  workflowStages: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    stageType:
+      | 'intake'
+      | 'ledger_preparation'
+      | 'posting_approval'
+      | 'bank_evidence_review'
+      | 'trial_balance_preview'
+      | 'accountant_review'
+      | 'closeout_recommendation';
+    controlType:
+      | 'approval_required'
+      | 'rollback_condition'
+      | 'evidence_completeness'
+      | 'professional_review_gate';
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    stageCount: number;
+    readyStageCount: number;
+    approvalRequiredCount: number;
+    rollbackConditionCount: number;
+    evidenceCompletenessCount: number;
+    professionalReviewGateCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingProductDesignCloseoutView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  closeoutStatus: AccountingReadinessStatus;
+  productDesignAnchor: TenantFullAccountingProductDesignAnchorView;
+  scopeContract: TenantFullAccountingProductScopeContractView;
+  responsibilityMatrix: TenantFullAccountingProductProfessionalResponsibilityMatrixView;
+  artifactBoundaryRegistry: TenantFullAccountingOfficialArtifactBoundaryRegistryView;
+  workflowControlBlueprint: TenantFullAccountingWorkflowControlBlueprintView;
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    evidenceRefs: string[];
+  }>;
+  finalDecision: FullAccountingProductDesignDecision;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockedChecklistCount: number;
+    designLaneCount: number;
+    scopeItemCount: number;
+    responsibilityCount: number;
+    artifactCount: number;
+    workflowStageCount: number;
   };
   blockers: string[];
   nextStep: string;

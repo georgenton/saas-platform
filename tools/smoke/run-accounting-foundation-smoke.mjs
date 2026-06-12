@@ -1254,6 +1254,12 @@ const [
   fullAccountingProfessionalOperatingModel,
   fullAccountingGraduationRiskControlPack,
   fullAccountingGraduationCloseout,
+  fullAccountingProductDesignAnchor,
+  fullAccountingProductScopeContract,
+  fullAccountingProductProfessionalResponsibilityMatrix,
+  fullAccountingOfficialArtifactBoundaryRegistry,
+  fullAccountingWorkflowControlBlueprint,
+  fullAccountingProductDesignCloseout,
 ] = await Promise.all([
   apiRequest({
     baseUrl,
@@ -2138,6 +2144,46 @@ const [
     path: accountingPath(`/full-accounting-graduation/closeout?${periodQuery()}`),
     token,
   }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(`/full-accounting-product-design/anchor?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-product-design/scope-contract?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-product-design/responsibility-matrix?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-product-design/artifact-boundary-registry?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-product-design/workflow-control-blueprint?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-product-design/closeout?${periodQuery()}`,
+    ),
+    token,
+  }),
 ]);
 
 assertStatus(
@@ -2680,6 +2726,30 @@ assertStatus(
   'full accounting graduation closeout',
   fullAccountingGraduationCloseout.closeoutStatus,
 );
+assertStatus(
+  'full accounting product design anchor',
+  fullAccountingProductDesignAnchor.anchorStatus,
+);
+assertStatus(
+  'full accounting product scope contract',
+  fullAccountingProductScopeContract.contractStatus,
+);
+assertStatus(
+  'full accounting product professional responsibility matrix',
+  fullAccountingProductProfessionalResponsibilityMatrix.matrixStatus,
+);
+assertStatus(
+  'full accounting official artifact boundary registry',
+  fullAccountingOfficialArtifactBoundaryRegistry.registryStatus,
+);
+assertStatus(
+  'full accounting workflow control blueprint',
+  fullAccountingWorkflowControlBlueprint.blueprintStatus,
+);
+assertStatus(
+  'full accounting product design closeout',
+  fullAccountingProductDesignCloseout.closeoutStatus,
+);
 if (!Array.isArray(advancedDiscoveryCloseout.closeoutChecklist)) {
   throw new Error('advanced-discovery/closeout no devolvio checklist[].');
 }
@@ -2769,6 +2839,11 @@ if (!Array.isArray(fullAccountingControlledPilotCloseout.closeoutChecklist)) {
 if (!Array.isArray(fullAccountingGraduationCloseout.closeoutChecklist)) {
   throw new Error(
     'full-accounting-graduation/closeout no devolvio checklist[].',
+  );
+}
+if (!Array.isArray(fullAccountingProductDesignCloseout.closeoutChecklist)) {
+  throw new Error(
+    'full-accounting-product-design/closeout no devolvio checklist[].',
   );
 }
 printLine(

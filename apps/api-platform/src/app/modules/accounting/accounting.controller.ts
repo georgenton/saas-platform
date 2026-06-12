@@ -110,6 +110,11 @@ import {
   GetTenantFullAccountingProductScopeGraduationMatrixUseCase,
   GetTenantFullAccountingProfessionalOperatingModelUseCase,
   GetTenantFullAccountingGraduationRiskControlPackUseCase,
+  GetTenantFullAccountingProductDesignAnchorUseCase,
+  GetTenantFullAccountingProductScopeContractUseCase,
+  GetTenantFullAccountingProductProfessionalResponsibilityMatrixUseCase,
+  GetTenantFullAccountingOfficialArtifactBoundaryRegistryUseCase,
+  GetTenantFullAccountingWorkflowControlBlueprintUseCase,
   GetTenantAccountingAdvancedFormalProductScopeContractUseCase,
   GetTenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixUseCase,
   GetTenantAccountingAdvancedProfessionalReviewWorkflowDesignUseCase,
@@ -189,6 +194,7 @@ import {
   RequestTenantFullAccountingMvpOperationsCloseoutUseCase,
   RequestTenantFullAccountingControlledPilotCloseoutUseCase,
   RequestTenantFullAccountingGraduationCloseoutUseCase,
+  RequestTenantFullAccountingProductDesignCloseoutUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -343,6 +349,12 @@ import {
   FullAccountingProfessionalOperatingModelResponseDto,
   FullAccountingGraduationRiskControlPackResponseDto,
   FullAccountingGraduationCloseoutResponseDto,
+  FullAccountingProductDesignAnchorResponseDto,
+  FullAccountingProductScopeContractResponseDto,
+  FullAccountingProductProfessionalResponsibilityMatrixResponseDto,
+  FullAccountingOfficialArtifactBoundaryRegistryResponseDto,
+  FullAccountingWorkflowControlBlueprintResponseDto,
+  FullAccountingProductDesignCloseoutResponseDto,
   AccountingAdvancedProfessionalResponsibilityAssignmentMatrixResponseDto,
   AccountingAdvancedProfessionalReviewWorkflowDesignResponseDto,
   AccountingCertifiedBankEvidenceBoundaryResponseDto,
@@ -475,6 +487,12 @@ import {
   toFullAccountingProfessionalOperatingModelResponseDto,
   toFullAccountingGraduationRiskControlPackResponseDto,
   toFullAccountingGraduationCloseoutResponseDto,
+  toFullAccountingProductDesignAnchorResponseDto,
+  toFullAccountingProductScopeContractResponseDto,
+  toFullAccountingProductProfessionalResponsibilityMatrixResponseDto,
+  toFullAccountingOfficialArtifactBoundaryRegistryResponseDto,
+  toFullAccountingWorkflowControlBlueprintResponseDto,
+  toFullAccountingProductDesignCloseoutResponseDto,
   toAccountingAdvancedProfessionalResponsibilityAssignmentMatrixResponseDto,
   toAccountingAdvancedProfessionalReviewWorkflowDesignResponseDto,
   toAccountingCertifiedBankEvidenceBoundaryResponseDto,
@@ -879,6 +897,12 @@ export class AccountingController {
     private readonly getTenantFullAccountingProfessionalOperatingModelUseCase: GetTenantFullAccountingProfessionalOperatingModelUseCase,
     private readonly getTenantFullAccountingGraduationRiskControlPackUseCase: GetTenantFullAccountingGraduationRiskControlPackUseCase,
     private readonly requestTenantFullAccountingGraduationCloseoutUseCase: RequestTenantFullAccountingGraduationCloseoutUseCase,
+    private readonly getTenantFullAccountingProductDesignAnchorUseCase: GetTenantFullAccountingProductDesignAnchorUseCase,
+    private readonly getTenantFullAccountingProductScopeContractUseCase: GetTenantFullAccountingProductScopeContractUseCase,
+    private readonly getTenantFullAccountingProductProfessionalResponsibilityMatrixUseCase: GetTenantFullAccountingProductProfessionalResponsibilityMatrixUseCase,
+    private readonly getTenantFullAccountingOfficialArtifactBoundaryRegistryUseCase: GetTenantFullAccountingOfficialArtifactBoundaryRegistryUseCase,
+    private readonly getTenantFullAccountingWorkflowControlBlueprintUseCase: GetTenantFullAccountingWorkflowControlBlueprintUseCase,
+    private readonly requestTenantFullAccountingProductDesignCloseoutUseCase: RequestTenantFullAccountingProductDesignCloseoutUseCase,
   ) {}
 
   @Get(':slug/advanced-discovery/anchor')
@@ -4037,6 +4061,138 @@ export class AccountingController {
           { tenantSlug, period, year: Number.parseInt(year, 10) },
         );
       return toFullAccountingGraduationCloseoutResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-product-design/anchor')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingProductDesignAnchor(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingProductDesignAnchorResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingProductDesignAnchorUseCase.execute({
+          tenantSlug,
+          period,
+          year: Number.parseInt(year, 10),
+        });
+      return toFullAccountingProductDesignAnchorResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-product-design/scope-contract')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingProductScopeContract(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingProductScopeContractResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingProductScopeContractUseCase.execute({
+          tenantSlug,
+          period,
+          year: Number.parseInt(year, 10),
+        });
+      return toFullAccountingProductScopeContractResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-product-design/responsibility-matrix')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingProductProfessionalResponsibilityMatrix(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingProductProfessionalResponsibilityMatrixResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingProductProfessionalResponsibilityMatrixUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+      return toFullAccountingProductProfessionalResponsibilityMatrixResponseDto(
+        view,
+      );
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-product-design/artifact-boundary-registry')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingOfficialArtifactBoundaryRegistry(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingOfficialArtifactBoundaryRegistryResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingOfficialArtifactBoundaryRegistryUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+      return toFullAccountingOfficialArtifactBoundaryRegistryResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-product-design/workflow-control-blueprint')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingWorkflowControlBlueprint(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingWorkflowControlBlueprintResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingWorkflowControlBlueprintUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+      return toFullAccountingWorkflowControlBlueprintResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-product-design/closeout')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingProductDesignCloseout(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingProductDesignCloseoutResponseDto> {
+    try {
+      const view =
+        await this.requestTenantFullAccountingProductDesignCloseoutUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+      return toFullAccountingProductDesignCloseoutResponseDto(view);
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);

@@ -149,6 +149,7 @@ import {
   fetchFullAccountingCandidateCloseout,
   fetchFullAccountingControlledPilotCloseout,
   fetchFullAccountingGraduationCloseout,
+  fetchFullAccountingProductDesignCloseout,
   fetchFullAccountingMvpOperationsCloseout,
   fetchFullAccountingMvpReadinessCloseout,
   fetchAccountingPeriodCloseoutReport,
@@ -521,6 +522,7 @@ import {
   AccountingAdvancedGraduationArchiveHandoffCloseoutResponse,
   FullAccountingControlledPilotCloseoutResponse,
   FullAccountingGraduationCloseoutResponse,
+  FullAccountingProductDesignCloseoutResponse,
   FullAccountingCandidateCloseoutResponse,
   FullAccountingMvpOperationsCloseoutResponse,
   FullAccountingMvpReadinessCloseoutResponse,
@@ -2702,6 +2704,10 @@ export function App() {
     fullAccountingGraduationCloseout,
     setFullAccountingGraduationCloseout,
   ] = useState<FullAccountingGraduationCloseoutResponse | null>(null);
+  const [
+    fullAccountingProductDesignCloseout,
+    setFullAccountingProductDesignCloseout,
+  ] = useState<FullAccountingProductDesignCloseoutResponse | null>(null);
   const [
     taxComplianceSriFiscalEvidenceWorkspace,
     setTaxComplianceSriFiscalEvidenceWorkspace,
@@ -20871,6 +20877,7 @@ export function App() {
         nextFullAccountingMvpOperationsCloseout,
         nextFullAccountingControlledPilotCloseout,
         nextFullAccountingGraduationCloseout,
+        nextFullAccountingProductDesignCloseout,
       ] = accountingEnabled
         ? await Promise.all([
             fetchAccountingIntakeWorkspace(
@@ -21218,6 +21225,12 @@ export function App() {
               taxCompliancePeriod,
               year,
             ),
+            fetchFullAccountingProductDesignCloseout(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
           ])
         : [
             null,
@@ -21253,6 +21266,7 @@ export function App() {
             null,
             null,
             [],
+            null,
             null,
             null,
             null,
@@ -21593,6 +21607,9 @@ export function App() {
         );
         setFullAccountingGraduationCloseout(
           nextFullAccountingGraduationCloseout,
+        );
+        setFullAccountingProductDesignCloseout(
+          nextFullAccountingProductDesignCloseout,
         );
       });
     } catch (error) {
@@ -38150,8 +38167,103 @@ export function App() {
                                     </p>
                                   </div>
                                 ) : null}
+                                {fullAccountingProductDesignCloseout ? (
+                                  <div className={styles.invoiceItemCard}>
+                                    <div className={styles.invoiceCardHeader}>
+                                      <strong>
+                                        Full Accounting Product Design 0.6
+                                      </strong>
+                                      <span className={styles.statusPill}>
+                                        {humanizeKey(
+                                          fullAccountingProductDesignCloseout.closeoutStatus,
+                                        )}
+                                      </span>
+                                    </div>
+                                    <div className={styles.invoiceInlineGrid}>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Design
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingProductDesignCloseout
+                                              .productDesignAnchor.summary
+                                              .includedLaneCount
+                                          }{' '}
+                                          included
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Scope
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingProductDesignCloseout
+                                              .scopeContract.summary
+                                              .limitedItemCount
+                                          }{' '}
+                                          limited
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Responsibility
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingProductDesignCloseout
+                                              .responsibilityMatrix.summary
+                                              .accountantApprovalCount
+                                          }{' '}
+                                          approvals
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Artifacts
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingProductDesignCloseout
+                                              .artifactBoundaryRegistry.summary
+                                              .externalOnlyArtifactCount
+                                          }{' '}
+                                          external
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Workflow
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingProductDesignCloseout
+                                              .workflowControlBlueprint.summary
+                                              .professionalReviewGateCount
+                                          }{' '}
+                                          gates
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Decision
+                                        </span>
+                                        <strong>
+                                          {humanizeKey(
+                                            fullAccountingProductDesignCloseout.finalDecision,
+                                          )}
+                                        </strong>
+                                      </div>
+                                    </div>
+                                    <p className={styles.muted}>
+                                      {fullAccountingProductDesignCloseout.nextStep}
+                                    </p>
+                                  </div>
+                                ) : null}
                                 <p className={styles.muted}>
-                                  {fullAccountingGraduationCloseout?.nextStep ??
+                                  {fullAccountingProductDesignCloseout?.nextStep ??
+                                    fullAccountingGraduationCloseout?.nextStep ??
                                     fullAccountingControlledPilotCloseout?.nextStep ??
                                     fullAccountingMvpOperationsCloseout?.nextStep ??
                                     fullAccountingMvpReadinessCloseout?.nextStep ??

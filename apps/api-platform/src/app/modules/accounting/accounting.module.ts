@@ -121,6 +121,11 @@ import {
   GetTenantFullAccountingProductProfessionalResponsibilityMatrixUseCase,
   GetTenantFullAccountingOfficialArtifactBoundaryRegistryUseCase,
   GetTenantFullAccountingWorkflowControlBlueprintUseCase,
+  GetTenantFullAccountingFormalReadinessAnchorUseCase,
+  GetTenantFullAccountingPolicyTemplateRegistryUseCase,
+  GetTenantFullAccountingProfessionalPortalReadinessShellUseCase,
+  GetTenantFullAccountingFormalLedgerPostingReadinessPackUseCase,
+  GetTenantFullAccountingStatementBankFormalBoundaryPackUseCase,
   GetTenantAccountingAdvancedFormalProductScopeContractUseCase,
   GetTenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixUseCase,
   GetTenantAccountingAdvancedProfessionalReviewWorkflowDesignUseCase,
@@ -201,6 +206,7 @@ import {
   RequestTenantFullAccountingControlledPilotCloseoutUseCase,
   RequestTenantFullAccountingGraduationCloseoutUseCase,
   RequestTenantFullAccountingProductDesignCloseoutUseCase,
+  RequestTenantFullAccountingFormalReadinessCloseoutUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -1737,6 +1743,60 @@ import { AccountingController } from './accounting.controller';
       useFactory: (getTenantFullAccountingWorkflowControlBlueprintUseCase) =>
         new RequestTenantFullAccountingProductDesignCloseoutUseCase(
           getTenantFullAccountingWorkflowControlBlueprintUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingFormalReadinessAnchorUseCase,
+      inject: [RequestTenantFullAccountingProductDesignCloseoutUseCase],
+      useFactory: (requestTenantFullAccountingProductDesignCloseoutUseCase) =>
+        new GetTenantFullAccountingFormalReadinessAnchorUseCase(
+          requestTenantFullAccountingProductDesignCloseoutUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingPolicyTemplateRegistryUseCase,
+      inject: [GetTenantFullAccountingFormalReadinessAnchorUseCase],
+      useFactory: (getTenantFullAccountingFormalReadinessAnchorUseCase) =>
+        new GetTenantFullAccountingPolicyTemplateRegistryUseCase(
+          getTenantFullAccountingFormalReadinessAnchorUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingProfessionalPortalReadinessShellUseCase,
+      inject: [GetTenantFullAccountingPolicyTemplateRegistryUseCase],
+      useFactory: (getTenantFullAccountingPolicyTemplateRegistryUseCase) =>
+        new GetTenantFullAccountingProfessionalPortalReadinessShellUseCase(
+          getTenantFullAccountingPolicyTemplateRegistryUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingFormalLedgerPostingReadinessPackUseCase,
+      inject: [GetTenantFullAccountingProfessionalPortalReadinessShellUseCase],
+      useFactory: (
+        getTenantFullAccountingProfessionalPortalReadinessShellUseCase,
+      ) =>
+        new GetTenantFullAccountingFormalLedgerPostingReadinessPackUseCase(
+          getTenantFullAccountingProfessionalPortalReadinessShellUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingStatementBankFormalBoundaryPackUseCase,
+      inject: [GetTenantFullAccountingFormalLedgerPostingReadinessPackUseCase],
+      useFactory: (
+        getTenantFullAccountingFormalLedgerPostingReadinessPackUseCase,
+      ) =>
+        new GetTenantFullAccountingStatementBankFormalBoundaryPackUseCase(
+          getTenantFullAccountingFormalLedgerPostingReadinessPackUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantFullAccountingFormalReadinessCloseoutUseCase,
+      inject: [GetTenantFullAccountingStatementBankFormalBoundaryPackUseCase],
+      useFactory: (
+        getTenantFullAccountingStatementBankFormalBoundaryPackUseCase,
+      ) =>
+        new RequestTenantFullAccountingFormalReadinessCloseoutUseCase(
+          getTenantFullAccountingStatementBankFormalBoundaryPackUseCase,
         ),
     },
     {

@@ -347,6 +347,12 @@ export type FullAccountingProductDesignDecision =
   | 'return_to_graduation'
   | 'return_to_controlled_pilot'
   | 'do_not_design_full_accounting_product';
+export type FullAccountingFormalReadinessDecision =
+  | 'open_formal_artifact_drafting'
+  | 'continue_formal_readiness'
+  | 'return_to_product_design'
+  | 'return_to_graduation'
+  | 'do_not_open_formal_readiness';
 export type AccountingAdvancedFormalModuleKey =
   | 'formal_books'
   | 'certified_bank_reconciliation'
@@ -4648,6 +4654,208 @@ export interface TenantFullAccountingProductDesignCloseoutView {
     responsibilityCount: number;
     artifactCount: number;
     workflowStageCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingFormalReadinessAnchorView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  anchorStatus: AccountingReadinessStatus;
+  productDesignCloseout: TenantFullAccountingProductDesignCloseoutView;
+  readinessLanes: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    laneType:
+      | 'ledger'
+      | 'posting_approval'
+      | 'bank_evidence'
+      | 'statement_preview'
+      | 'professional_review'
+      | 'statutory_exclusion';
+    readinessMode:
+      | 'formal_ready'
+      | 'policy_required'
+      | 'professional_required'
+      | 'excluded'
+      | 'blocked';
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    laneCount: number;
+    readyLaneCount: number;
+    formalReadyLaneCount: number;
+    professionalRequiredLaneCount: number;
+    excludedLaneCount: number;
+    blockedLaneCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingPolicyTemplateRegistryView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  registryStatus: AccountingReadinessStatus;
+  formalReadinessAnchor: TenantFullAccountingFormalReadinessAnchorView;
+  templates: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    templateType:
+      | 'accounting_policy'
+      | 'posting_approval_policy'
+      | 'evidence_completeness_policy'
+      | 'professional_review_template'
+      | 'closeout_recommendation_template'
+      | 'excluded_statutory_template';
+    templateMode: 'ready' | 'requires_review' | 'excluded';
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    templateCount: number;
+    readyTemplateCount: number;
+    reviewTemplateCount: number;
+    excludedTemplateCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingProfessionalPortalReadinessShellView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  shellStatus: AccountingReadinessStatus;
+  policyTemplateRegistry: TenantFullAccountingPolicyTemplateRegistryView;
+  shellItems: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    shellType:
+      | 'external_accountant_workspace'
+      | 'review_queue'
+      | 'evidence_packet_intake'
+      | 'approval_rejection'
+      | 'professional_notes'
+      | 'signature_certification_exclusion';
+    owner: AccountingAdvancedProfessionalOwner;
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    shellItemCount: number;
+    readyShellItemCount: number;
+    accountantOwnedCount: number;
+    excludedShellItemCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingFormalLedgerPostingReadinessPackView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  packStatus: AccountingReadinessStatus;
+  professionalPortalShell: TenantFullAccountingProfessionalPortalReadinessShellView;
+  readinessItems: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    readinessType:
+      | 'ledger_structure'
+      | 'journal_batch'
+      | 'posting_approval_gate'
+      | 'reversal_readiness'
+      | 'period_lock_readiness'
+      | 'invariant_check';
+    controlMode: 'structure' | 'approval_gate' | 'rollback' | 'lock_preview' | 'invariant';
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    itemCount: number;
+    readyItemCount: number;
+    approvalGateCount: number;
+    rollbackCount: number;
+    invariantCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingStatementBankFormalBoundaryPackView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  packStatus: AccountingReadinessStatus;
+  ledgerPostingReadinessPack: TenantFullAccountingFormalLedgerPostingReadinessPackView;
+  boundaryItems: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    boundaryType:
+      | 'bank_evidence_readiness'
+      | 'certified_reconciliation_boundary'
+      | 'trial_balance_preview_readiness'
+      | 'financial_statement_draft_readiness'
+      | 'professional_review_requirement'
+      | 'external_certification_boundary';
+    boundaryMode: 'ready' | 'professional_review' | 'external_only' | 'excluded';
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    boundaryCount: number;
+    readyBoundaryCount: number;
+    professionalReviewCount: number;
+    externalOnlyCount: number;
+    excludedBoundaryCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingFormalReadinessCloseoutView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  closeoutStatus: AccountingReadinessStatus;
+  formalReadinessAnchor: TenantFullAccountingFormalReadinessAnchorView;
+  policyTemplateRegistry: TenantFullAccountingPolicyTemplateRegistryView;
+  professionalPortalShell: TenantFullAccountingProfessionalPortalReadinessShellView;
+  ledgerPostingReadinessPack: TenantFullAccountingFormalLedgerPostingReadinessPackView;
+  statementBankBoundaryPack: TenantFullAccountingStatementBankFormalBoundaryPackView;
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    evidenceRefs: string[];
+  }>;
+  finalDecision: FullAccountingFormalReadinessDecision;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockedChecklistCount: number;
+    readinessLaneCount: number;
+    templateCount: number;
+    portalShellItemCount: number;
+    ledgerPostingItemCount: number;
+    statementBankBoundaryCount: number;
   };
   blockers: string[];
   nextStep: string;

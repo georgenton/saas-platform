@@ -1260,6 +1260,12 @@ const [
   fullAccountingOfficialArtifactBoundaryRegistry,
   fullAccountingWorkflowControlBlueprint,
   fullAccountingProductDesignCloseout,
+  fullAccountingFormalReadinessAnchor,
+  fullAccountingPolicyTemplateRegistry,
+  fullAccountingProfessionalPortalReadinessShell,
+  fullAccountingFormalLedgerPostingReadinessPack,
+  fullAccountingStatementBankFormalBoundaryPack,
+  fullAccountingFormalReadinessCloseout,
 ] = await Promise.all([
   apiRequest({
     baseUrl,
@@ -2184,6 +2190,44 @@ const [
     ),
     token,
   }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(`/full-accounting-formal-readiness/anchor?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-formal-readiness/policy-template-registry?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-formal-readiness/professional-portal-shell?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-formal-readiness/ledger-posting-pack?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-formal-readiness/statement-bank-boundary?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(`/full-accounting-formal-readiness/closeout?${periodQuery()}`),
+    token,
+  }),
 ]);
 
 assertStatus(
@@ -2750,6 +2794,30 @@ assertStatus(
   'full accounting product design closeout',
   fullAccountingProductDesignCloseout.closeoutStatus,
 );
+assertStatus(
+  'full accounting formal readiness anchor',
+  fullAccountingFormalReadinessAnchor.anchorStatus,
+);
+assertStatus(
+  'full accounting policy template registry',
+  fullAccountingPolicyTemplateRegistry.registryStatus,
+);
+assertStatus(
+  'full accounting professional portal readiness shell',
+  fullAccountingProfessionalPortalReadinessShell.shellStatus,
+);
+assertStatus(
+  'full accounting formal ledger posting readiness pack',
+  fullAccountingFormalLedgerPostingReadinessPack.packStatus,
+);
+assertStatus(
+  'full accounting statement bank formal boundary pack',
+  fullAccountingStatementBankFormalBoundaryPack.packStatus,
+);
+assertStatus(
+  'full accounting formal readiness closeout',
+  fullAccountingFormalReadinessCloseout.closeoutStatus,
+);
 if (!Array.isArray(advancedDiscoveryCloseout.closeoutChecklist)) {
   throw new Error('advanced-discovery/closeout no devolvio checklist[].');
 }
@@ -2844,6 +2912,11 @@ if (!Array.isArray(fullAccountingGraduationCloseout.closeoutChecklist)) {
 if (!Array.isArray(fullAccountingProductDesignCloseout.closeoutChecklist)) {
   throw new Error(
     'full-accounting-product-design/closeout no devolvio checklist[].',
+  );
+}
+if (!Array.isArray(fullAccountingFormalReadinessCloseout.closeoutChecklist)) {
+  throw new Error(
+    'full-accounting-formal-readiness/closeout no devolvio checklist[].',
   );
 }
 printLine(

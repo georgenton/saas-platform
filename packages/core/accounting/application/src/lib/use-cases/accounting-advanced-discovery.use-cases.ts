@@ -16,6 +16,7 @@ import {
   AccountingAdvancedFormalRecordAssemblyDecision,
   AccountingAdvancedFormalRecordCloseoutDecision,
   AccountingAdvancedGraduationArchiveHandoffDecision,
+  FullAccountingCandidateDecision,
   AccountingAdvancedFormalModuleKey,
   AccountingAdvancedProfessionalOwner,
   AccountingAdvancedPilotEnrollmentStatus,
@@ -117,6 +118,12 @@ import {
   TenantAccountingAdvancedProfessionalReviewWorkflowDesignView,
   TenantAccountingAdvancedProfessionalCloseoutAttestationBoundaryView,
   TenantAccountingAdvancedProductScopeDecisionWorkspaceView,
+  TenantFullAccountingBankReconciliationBoundaryView,
+  TenantFullAccountingCandidateAnchorView,
+  TenantFullAccountingCandidateCloseoutView,
+  TenantFullAccountingCoreLedgerScopeBlueprintView,
+  TenantFullAccountingFinancialStatementsBlueprintView,
+  TenantFullAccountingLegalBooksStatutoryBoundaryView,
   TenantAccountingAdvancedReturnedEvidenceValidationWorkspaceView,
   TenantAccountingAdvancedReturnedArtifactRegistryView,
   TenantAccountingAdvancedRecordConsistencyReviewWorkspaceView,
@@ -8375,6 +8382,420 @@ export class RequestTenantAccountingAdvancedGraduationArchiveHandoffCloseoutUseC
   }
 }
 
+export class GetTenantFullAccountingCandidateAnchorUseCase {
+  constructor(
+    private readonly requestTenantAccountingAdvancedGraduationArchiveHandoffCloseoutUseCase: RequestTenantAccountingAdvancedGraduationArchiveHandoffCloseoutUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantFullAccountingCandidateAnchorView> {
+    const graduationCloseout =
+      await this.requestTenantAccountingAdvancedGraduationArchiveHandoffCloseoutUseCase.execute(
+        input,
+      );
+    const candidateSignals: TenantFullAccountingCandidateAnchorView['candidateSignals'] =
+      [
+        fullAccountingCandidateSignal(
+          'ledger',
+          'Core ledger candidate signal',
+          graduationCloseout.closeoutStatus,
+          'ledger',
+          graduationCloseout.finalDecision ===
+            'graduate_to_full_accounting_candidate'
+            ? 'candidate_ready'
+            : 'needs_discovery',
+          ['advanced_graduation_archive_handoff_closeout'],
+        ),
+        fullAccountingCandidateSignal(
+          'bank_reconciliation',
+          'Bank reconciliation candidate signal',
+          graduationCloseout.graduationSignalMatrix.matrixStatus,
+          'bank_reconciliation',
+          'candidate_ready',
+          ['advanced_graduation_signal_matrix'],
+        ),
+        fullAccountingCandidateSignal(
+          'financial_statements',
+          'Financial statements candidate signal',
+          graduationCloseout.productScopeDecision.decisionStatus,
+          'financial_statements',
+          'candidate_ready',
+          ['advanced_product_scope_decision_workspace'],
+        ),
+        fullAccountingCandidateSignal(
+          'legal_books',
+          'Legal books statutory boundary signal',
+          'ready',
+          'legal_books',
+          'needs_discovery',
+          ['advanced_professional_closeout_boundary'],
+        ),
+        fullAccountingCandidateSignal(
+          'professional_operations',
+          'Professional operations signal',
+          graduationCloseout.commandCenter.commandStatus,
+          'professional_operations',
+          'candidate_ready',
+          ['advanced_graduation_archive_handoff_command_center'],
+        ),
+      ];
+    const blockers =
+      graduationCloseout.finalDecision === 'graduate_to_full_accounting_candidate'
+        ? [...graduationCloseout.blockers]
+        : unique([
+            ...graduationCloseout.blockers,
+            `Graduation decision is ${graduationCloseout.finalDecision}.`,
+          ]);
+    const anchorStatus = resolveStatus(
+      candidateSignals.map((signal) => signal.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      anchorStatus,
+      graduationCloseout,
+      candidateSignals,
+      summary: {
+        signalCount: candidateSignals.length,
+        readySignalCount: candidateSignals.filter(
+          (signal) => signal.status === 'ready',
+        ).length,
+        needsDiscoverySignalCount: candidateSignals.filter(
+          (signal) => signal.candidateState === 'needs_discovery',
+        ).length,
+        blockedSignalCount: candidateSignals.filter(
+          (signal) => signal.status === 'blocked',
+        ).length,
+        graduationCandidateCount:
+          graduationCloseout.productScopeDecision.summary
+            .fullAccountingCandidateCount,
+      },
+      blockers,
+      nextStep:
+        anchorStatus === 'blocked'
+          ? 'Volver al graduation/archive handoff check antes de abrir candidato.'
+          : 'Definir core ledger scope blueprint.',
+      guardrails: [
+        'Full Accounting Candidate 0.1 evalua producto; no implementa ledger real.',
+        'La decision de abrir full Accounting MVP queda para el closeout del candidato.',
+      ],
+    };
+  }
+}
+
+export class GetTenantFullAccountingCoreLedgerScopeBlueprintUseCase {
+  constructor(
+    private readonly getTenantFullAccountingCandidateAnchorUseCase: GetTenantFullAccountingCandidateAnchorUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantFullAccountingCoreLedgerScopeBlueprintView> {
+    const candidateAnchor =
+      await this.getTenantFullAccountingCandidateAnchorUseCase.execute(input);
+    const ledgerScopeItems: TenantFullAccountingCoreLedgerScopeBlueprintView['ledgerScopeItems'] =
+      [
+        fullAccountingLedgerScopeItem('chart_of_accounts', 'Chart of accounts scope', candidateAnchor.anchorStatus, 'chart_of_accounts', 'candidate_scope_only', ['accounting_chart_workspace']),
+        fullAccountingLedgerScopeItem('journal_entries', 'Journal entries scope', candidateAnchor.anchorStatus, 'journal_entries', 'requires_persistence_design', ['accounting_journal_registry']),
+        fullAccountingLedgerScopeItem('posting_rules', 'Posting rules scope', candidateAnchor.anchorStatus, 'posting_rules', 'requires_professional_policy', ['advanced_product_scope_decision_workspace']),
+        fullAccountingLedgerScopeItem('period_locks', 'Period locks scope', candidateAnchor.anchorStatus, 'period_locks', 'requires_persistence_design', ['accounting_period_lock_readiness']),
+        fullAccountingLedgerScopeItem('opening_balances', 'Opening balances scope', candidateAnchor.anchorStatus, 'opening_balances', 'candidate_scope_only', ['accounting_opening_balance_workspace']),
+        fullAccountingLedgerScopeItem('adjustments', 'Adjustment entries scope', candidateAnchor.anchorStatus, 'adjustments', 'requires_professional_policy', ['advanced_formal_artifact_drafting_closeout']),
+      ];
+    const blockers = [...candidateAnchor.blockers];
+    const blueprintStatus = resolveStatus(
+      ledgerScopeItems.map((item) => item.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      blueprintStatus,
+      candidateAnchor,
+      ledgerScopeItems,
+      summary: {
+        itemCount: ledgerScopeItems.length,
+        readyItemCount: ledgerScopeItems.filter(
+          (item) => item.status === 'ready',
+        ).length,
+        persistenceDesignCount: ledgerScopeItems.filter(
+          (item) => item.implementationMode === 'requires_persistence_design',
+        ).length,
+        professionalPolicyCount: ledgerScopeItems.filter(
+          (item) => item.implementationMode === 'requires_professional_policy',
+        ).length,
+      },
+      blockers,
+      nextStep: 'Definir boundary de bank reconciliation formal.',
+      guardrails: [
+        'Core ledger scope blueprint no postea asientos ni modifica libros.',
+        'Posting rules requieren politica profesional antes de implementacion.',
+      ],
+    };
+  }
+}
+
+export class GetTenantFullAccountingBankReconciliationBoundaryUseCase {
+  constructor(
+    private readonly getTenantFullAccountingCoreLedgerScopeBlueprintUseCase: GetTenantFullAccountingCoreLedgerScopeBlueprintUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantFullAccountingBankReconciliationBoundaryView> {
+    const ledgerScopeBlueprint =
+      await this.getTenantFullAccountingCoreLedgerScopeBlueprintUseCase.execute(
+        input,
+      );
+    const bankBoundaryItems: TenantFullAccountingBankReconciliationBoundaryView['bankBoundaryItems'] =
+      [
+        fullAccountingBankBoundaryItem('bank_statement_import', 'Bank statement import boundary', ledgerScopeBlueprint.blueprintStatus, 'bank_statement_import', 'platform_candidate', ['accounting_bank_statement_import_workspace']),
+        fullAccountingBankBoundaryItem('matching_rules', 'Matching rules boundary', ledgerScopeBlueprint.blueprintStatus, 'matching_rules', 'platform_candidate', ['accounting_bank_reconciliation_workspace']),
+        fullAccountingBankBoundaryItem('exception_resolution', 'Bank exception resolution boundary', ledgerScopeBlueprint.blueprintStatus, 'exception_resolution', 'operator_review', ['accounting_corrections_queue']),
+        fullAccountingBankBoundaryItem('cash_closeout', 'Cash closeout boundary', ledgerScopeBlueprint.blueprintStatus, 'cash_closeout', 'operator_review', ['accounting_period_cash_closeout_readiness']),
+        fullAccountingBankBoundaryItem('certification_boundary', 'Bank certification boundary', 'ready', 'certification_boundary', 'external_accountant', ['accounting_certified_bank_evidence_boundary']),
+      ];
+    const blockers = [...ledgerScopeBlueprint.blockers];
+    const boundaryStatus = resolveStatus(
+      bankBoundaryItems.map((item) => item.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      boundaryStatus,
+      ledgerScopeBlueprint,
+      bankBoundaryItems,
+      summary: {
+        itemCount: bankBoundaryItems.length,
+        readyItemCount: bankBoundaryItems.filter(
+          (item) => item.status === 'ready',
+        ).length,
+        accountantOwnedItemCount: bankBoundaryItems.filter(
+          (item) => item.ownership === 'external_accountant',
+        ).length,
+        notImplementedItemCount: bankBoundaryItems.filter(
+          (item) => item.ownership === 'not_implemented_yet',
+        ).length,
+      },
+      blockers,
+      nextStep: 'Definir blueprint de financial statements.',
+      guardrails: [
+        'Bank reconciliation boundary no certifica bancos ni saldos.',
+        'La certificacion bancaria queda en frontera profesional externa.',
+      ],
+    };
+  }
+}
+
+export class GetTenantFullAccountingFinancialStatementsBlueprintUseCase {
+  constructor(
+    private readonly getTenantFullAccountingBankReconciliationBoundaryUseCase: GetTenantFullAccountingBankReconciliationBoundaryUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantFullAccountingFinancialStatementsBlueprintView> {
+    const bankReconciliationBoundary =
+      await this.getTenantFullAccountingBankReconciliationBoundaryUseCase.execute(
+        input,
+      );
+    const statementItems: TenantFullAccountingFinancialStatementsBlueprintView['statementItems'] =
+      [
+        fullAccountingStatementItem('trial_balance', 'Trial balance blueprint', bankReconciliationBoundary.boundaryStatus, 'trial_balance', 'blueprint_ready', ['accounting_trial_balance_workspace']),
+        fullAccountingStatementItem('balance_sheet', 'Balance sheet blueprint', bankReconciliationBoundary.boundaryStatus, 'balance_sheet', 'needs_ledger', ['accounting_financial_statement_preview']),
+        fullAccountingStatementItem('income_statement', 'Income statement blueprint', bankReconciliationBoundary.boundaryStatus, 'income_statement', 'needs_ledger', ['accounting_financial_statement_preview']),
+        fullAccountingStatementItem('comparatives', 'Comparative statements blueprint', bankReconciliationBoundary.boundaryStatus, 'comparatives', 'needs_ledger', ['advanced_multi_period_financial_statement_workspace']),
+        fullAccountingStatementItem('adjustment_disclosures', 'Adjustment disclosures blueprint', bankReconciliationBoundary.boundaryStatus, 'adjustment_disclosures', 'needs_professional_review', ['advanced_adjustment_draft_pack']),
+        fullAccountingStatementItem('professional_review', 'Financial statement professional review boundary', 'ready', 'professional_review', 'needs_professional_review', ['accounting_financial_statement_final_review_packet']),
+      ];
+    const blockers = [...bankReconciliationBoundary.blockers];
+    const blueprintStatus = resolveStatus(
+      statementItems.map((item) => item.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      blueprintStatus,
+      bankReconciliationBoundary,
+      statementItems,
+      summary: {
+        itemCount: statementItems.length,
+        readyItemCount: statementItems.filter(
+          (item) => item.status === 'ready',
+        ).length,
+        ledgerDependentItemCount: statementItems.filter(
+          (item) => item.readiness === 'needs_ledger',
+        ).length,
+        professionalReviewItemCount: statementItems.filter(
+          (item) => item.readiness === 'needs_professional_review',
+        ).length,
+      },
+      blockers,
+      nextStep: 'Definir legal books and statutory boundary blueprint.',
+      guardrails: [
+        'Financial statements blueprint no emite estados financieros oficiales.',
+        'Todo estado final requiere revision profesional externa.',
+      ],
+    };
+  }
+}
+
+export class GetTenantFullAccountingLegalBooksStatutoryBoundaryUseCase {
+  constructor(
+    private readonly getTenantFullAccountingFinancialStatementsBlueprintUseCase: GetTenantFullAccountingFinancialStatementsBlueprintUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantFullAccountingLegalBooksStatutoryBoundaryView> {
+    const financialStatementsBlueprint =
+      await this.getTenantFullAccountingFinancialStatementsBlueprintUseCase.execute(
+        input,
+      );
+    const statutoryBoundaryItems: TenantFullAccountingLegalBooksStatutoryBoundaryView['statutoryBoundaryItems'] =
+      [
+        fullAccountingStatutoryBoundaryItem('legal_books', 'Legal books boundary', financialStatementsBlueprint.blueprintStatus, 'legal_books', 'external_accountant', ['accounting_legal_books_readiness_packet'], 'Libros oficiales requieren responsabilidad profesional.'),
+        fullAccountingStatutoryBoundaryItem('statutory_custody', 'Statutory custody boundary', financialStatementsBlueprint.blueprintStatus, 'statutory_custody', 'operator', ['advanced_archive_handoff_package'], 'Custodia estatutaria no se ejecuta automaticamente.'),
+        fullAccountingStatutoryBoundaryItem('legalization', 'Legalization boundary', 'ready', 'legalization', 'legal_representative', ['advanced_legalization_boundary_packet'], 'Legalizacion ocurre fuera de la plataforma.'),
+        fullAccountingStatutoryBoundaryItem('professional_signature', 'Professional signature boundary', 'ready', 'professional_signature', 'external_accountant', ['advanced_formal_signatory_registry'], 'Firma profesional requiere acto externo verificable.'),
+        fullAccountingStatutoryBoundaryItem('platform_non_certification', 'Platform non-certification guardrail', 'ready', 'platform_non_certification', 'platform', ['advanced_accounting_guardrails'], 'La plataforma no certifica libros ni estados financieros.'),
+      ];
+    const blockers = [...financialStatementsBlueprint.blockers];
+    const boundaryStatus = resolveStatus(
+      statutoryBoundaryItems.map((item) => item.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      boundaryStatus,
+      financialStatementsBlueprint,
+      statutoryBoundaryItems,
+      summary: {
+        itemCount: statutoryBoundaryItems.length,
+        readyItemCount: statutoryBoundaryItems.filter(
+          (item) => item.status === 'ready',
+        ).length,
+        professionalOwnedItemCount: statutoryBoundaryItems.filter(
+          (item) =>
+            item.owner === 'external_accountant' ||
+            item.owner === 'legal_representative',
+        ).length,
+        platformGuardrailItemCount: statutoryBoundaryItems.filter(
+          (item) => item.boundaryType === 'platform_non_certification',
+        ).length,
+      },
+      blockers,
+      nextStep: 'Cerrar Full Accounting Candidate 0.1.',
+      guardrails: [
+        'Legal books boundary no legaliza ni custodia libros oficiales.',
+        'La plataforma conserva preparacion y trazabilidad, no certificacion.',
+      ],
+    };
+  }
+}
+
+export class RequestTenantFullAccountingCandidateCloseoutUseCase {
+  constructor(
+    private readonly getTenantFullAccountingLegalBooksStatutoryBoundaryUseCase: GetTenantFullAccountingLegalBooksStatutoryBoundaryUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantFullAccountingCandidateCloseoutView> {
+    const legalBooksStatutoryBoundary =
+      await this.getTenantFullAccountingLegalBooksStatutoryBoundaryUseCase.execute(
+        input,
+      );
+    const { financialStatementsBlueprint } = legalBooksStatutoryBoundary;
+    const { bankReconciliationBoundary } = financialStatementsBlueprint;
+    const { ledgerScopeBlueprint } = bankReconciliationBoundary;
+    const { candidateAnchor } = ledgerScopeBlueprint;
+    const closeoutChecklist: TenantFullAccountingCandidateCloseoutView['closeoutChecklist'] =
+      [
+        fullAccountingCandidateCloseoutCheck('candidate_anchor', 'Full Accounting candidate anchor', candidateAnchor.anchorStatus, ['full_accounting_candidate_anchor']),
+        fullAccountingCandidateCloseoutCheck('ledger_scope', 'Core ledger scope blueprint', ledgerScopeBlueprint.blueprintStatus, ['full_accounting_core_ledger_scope_blueprint']),
+        fullAccountingCandidateCloseoutCheck('bank_boundary', 'Bank reconciliation product boundary', bankReconciliationBoundary.boundaryStatus, ['full_accounting_bank_reconciliation_boundary']),
+        fullAccountingCandidateCloseoutCheck('financial_statements', 'Financial statements candidate blueprint', financialStatementsBlueprint.blueprintStatus, ['full_accounting_financial_statements_blueprint']),
+        fullAccountingCandidateCloseoutCheck('legal_books_boundary', 'Legal books statutory boundary blueprint', legalBooksStatutoryBoundary.boundaryStatus, ['full_accounting_legal_books_statutory_boundary']),
+      ];
+    const blockers = unique([
+      ...candidateAnchor.blockers,
+      ...ledgerScopeBlueprint.blockers,
+      ...bankReconciliationBoundary.blockers,
+      ...financialStatementsBlueprint.blockers,
+      ...legalBooksStatutoryBoundary.blockers,
+    ]);
+    const closeoutStatus = resolveStatus(
+      closeoutChecklist.map((item) => item.status),
+      blockers,
+    );
+    const finalDecision = fullAccountingCandidateDecisionFromStatus(
+      closeoutStatus,
+      candidateAnchor,
+      ledgerScopeBlueprint,
+      legalBooksStatutoryBoundary,
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      closeoutStatus,
+      candidateAnchor,
+      ledgerScopeBlueprint,
+      bankReconciliationBoundary,
+      financialStatementsBlueprint,
+      legalBooksStatutoryBoundary,
+      closeoutChecklist,
+      finalDecision,
+      summary: {
+        checklistCount: closeoutChecklist.length,
+        readyChecklistCount: closeoutChecklist.filter(
+          (item) => item.status === 'ready',
+        ).length,
+        blockedChecklistCount: closeoutChecklist.filter(
+          (item) => item.status === 'blocked',
+        ).length,
+        ledgerScopeItemCount: ledgerScopeBlueprint.summary.itemCount,
+        bankBoundaryItemCount: bankReconciliationBoundary.summary.itemCount,
+        financialStatementItemCount: financialStatementsBlueprint.summary.itemCount,
+        statutoryBoundaryItemCount: legalBooksStatutoryBoundary.summary.itemCount,
+      },
+      blockers,
+      nextStep:
+        finalDecision === 'open_full_accounting_mvp'
+          ? 'Definir Full Accounting MVP 0.2 con ledger persistente.'
+          : finalDecision === 'continue_candidate_discovery'
+            ? 'Completar discovery antes de abrir MVP.'
+            : finalDecision === 'return_to_accounting_advanced_hardening'
+              ? 'Volver a Accounting Advanced hardening.'
+              : finalDecision === 'archive_handoff_only'
+                ? 'Cerrar con archive handoff sin full Accounting.'
+                : 'No abrir full Accounting para este periodo.',
+      guardrails: [
+        'Full Accounting Candidate 0.1 no implementa postings ni ledger persistente.',
+        'No emite estados financieros, libros legales ni certificaciones profesionales.',
+      ],
+    };
+  }
+}
+
 function check(
   key: string,
   label: string,
@@ -9997,6 +10418,97 @@ function graduationArchiveHandoffDecisionFromStatus(
     return 'continue_accounting_advanced_hardening';
   }
   return 'do_not_graduate_or_handoff';
+}
+
+function fullAccountingCandidateSignal(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  signalType: TenantFullAccountingCandidateAnchorView['candidateSignals'][number]['signalType'],
+  candidateState: TenantFullAccountingCandidateAnchorView['candidateSignals'][number]['candidateState'],
+  evidenceRefs: string[],
+): TenantFullAccountingCandidateAnchorView['candidateSignals'][number] {
+  return { key, label, status, signalType, candidateState, evidenceRefs };
+}
+
+function fullAccountingLedgerScopeItem(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  scopeType: TenantFullAccountingCoreLedgerScopeBlueprintView['ledgerScopeItems'][number]['scopeType'],
+  implementationMode: TenantFullAccountingCoreLedgerScopeBlueprintView['ledgerScopeItems'][number]['implementationMode'],
+  evidenceRefs: string[],
+): TenantFullAccountingCoreLedgerScopeBlueprintView['ledgerScopeItems'][number] {
+  return { key, label, status, scopeType, implementationMode, evidenceRefs };
+}
+
+function fullAccountingBankBoundaryItem(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  boundaryType: TenantFullAccountingBankReconciliationBoundaryView['bankBoundaryItems'][number]['boundaryType'],
+  ownership: TenantFullAccountingBankReconciliationBoundaryView['bankBoundaryItems'][number]['ownership'],
+  evidenceRefs: string[],
+): TenantFullAccountingBankReconciliationBoundaryView['bankBoundaryItems'][number] {
+  return { key, label, status, boundaryType, ownership, evidenceRefs };
+}
+
+function fullAccountingStatementItem(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  statementType: TenantFullAccountingFinancialStatementsBlueprintView['statementItems'][number]['statementType'],
+  readiness: TenantFullAccountingFinancialStatementsBlueprintView['statementItems'][number]['readiness'],
+  evidenceRefs: string[],
+): TenantFullAccountingFinancialStatementsBlueprintView['statementItems'][number] {
+  return { key, label, status, statementType, readiness, evidenceRefs };
+}
+
+function fullAccountingStatutoryBoundaryItem(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  boundaryType: TenantFullAccountingLegalBooksStatutoryBoundaryView['statutoryBoundaryItems'][number]['boundaryType'],
+  owner: AccountingAdvancedProfessionalOwner,
+  evidenceRefs: string[],
+  guardrail: string,
+): TenantFullAccountingLegalBooksStatutoryBoundaryView['statutoryBoundaryItems'][number] {
+  return { key, label, status, boundaryType, owner, evidenceRefs, guardrail };
+}
+
+function fullAccountingCandidateCloseoutCheck(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  evidenceRefs: string[],
+): TenantFullAccountingCandidateCloseoutView['closeoutChecklist'][number] {
+  return { key, label, status, evidenceRefs };
+}
+
+function fullAccountingCandidateDecisionFromStatus(
+  status: AccountingReadinessStatus,
+  candidateAnchor: TenantFullAccountingCandidateAnchorView,
+  ledgerScopeBlueprint: TenantFullAccountingCoreLedgerScopeBlueprintView,
+  legalBooksStatutoryBoundary: TenantFullAccountingLegalBooksStatutoryBoundaryView,
+  blockers: string[],
+): FullAccountingCandidateDecision {
+  if (blockers.length > 0 || status === 'blocked') {
+    return 'return_to_accounting_advanced_hardening';
+  }
+  if (
+    candidateAnchor.summary.graduationCandidateCount > 0 &&
+    ledgerScopeBlueprint.summary.persistenceDesignCount > 0 &&
+    legalBooksStatutoryBoundary.summary.platformGuardrailItemCount > 0
+  ) {
+    return 'open_full_accounting_mvp';
+  }
+  if (candidateAnchor.summary.needsDiscoverySignalCount > 0) {
+    return 'continue_candidate_discovery';
+  }
+  if (candidateAnchor.graduationCloseout.finalDecision === 'ready_for_archive_handoff_only') {
+    return 'archive_handoff_only';
+  }
+  return 'do_not_open_full_accounting';
 }
 
 function formalProductDesignDecisionFromStatus(

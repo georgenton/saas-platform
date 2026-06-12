@@ -311,6 +311,12 @@ export type AccountingAdvancedGraduationArchiveHandoffDecision =
   | 'continue_accounting_advanced_hardening'
   | 'return_to_formal_record_closeout'
   | 'do_not_graduate_or_handoff';
+export type FullAccountingCandidateDecision =
+  | 'open_full_accounting_mvp'
+  | 'continue_candidate_discovery'
+  | 'return_to_accounting_advanced_hardening'
+  | 'archive_handoff_only'
+  | 'do_not_open_full_accounting';
 export type AccountingAdvancedFormalModuleKey =
   | 'formal_books'
   | 'certified_bank_reconciliation'
@@ -3360,6 +3366,214 @@ export interface TenantAccountingAdvancedGraduationArchiveHandoffCloseoutView {
     handoffItemCount: number;
     graduationSignalCount: number;
     scopeDecisionCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingCandidateAnchorView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  anchorStatus: AccountingReadinessStatus;
+  graduationCloseout: TenantAccountingAdvancedGraduationArchiveHandoffCloseoutView;
+  candidateSignals: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    signalType:
+      | 'ledger'
+      | 'bank_reconciliation'
+      | 'financial_statements'
+      | 'legal_books'
+      | 'professional_operations';
+    candidateState:
+      | 'candidate_ready'
+      | 'needs_discovery'
+      | 'return_to_advanced'
+      | 'archive_only'
+      | 'blocked';
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    signalCount: number;
+    readySignalCount: number;
+    needsDiscoverySignalCount: number;
+    blockedSignalCount: number;
+    graduationCandidateCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingCoreLedgerScopeBlueprintView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  blueprintStatus: AccountingReadinessStatus;
+  candidateAnchor: TenantFullAccountingCandidateAnchorView;
+  ledgerScopeItems: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    scopeType:
+      | 'chart_of_accounts'
+      | 'journal_entries'
+      | 'posting_rules'
+      | 'period_locks'
+      | 'opening_balances'
+      | 'adjustments';
+    implementationMode:
+      | 'candidate_scope_only'
+      | 'requires_persistence_design'
+      | 'requires_professional_policy'
+      | 'out_of_scope_for_candidate';
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    itemCount: number;
+    readyItemCount: number;
+    persistenceDesignCount: number;
+    professionalPolicyCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingBankReconciliationBoundaryView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  boundaryStatus: AccountingReadinessStatus;
+  ledgerScopeBlueprint: TenantFullAccountingCoreLedgerScopeBlueprintView;
+  bankBoundaryItems: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    boundaryType:
+      | 'bank_statement_import'
+      | 'matching_rules'
+      | 'exception_resolution'
+      | 'cash_closeout'
+      | 'certification_boundary';
+    ownership:
+      | 'platform_candidate'
+      | 'operator_review'
+      | 'external_accountant'
+      | 'not_implemented_yet';
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    itemCount: number;
+    readyItemCount: number;
+    accountantOwnedItemCount: number;
+    notImplementedItemCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingFinancialStatementsBlueprintView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  blueprintStatus: AccountingReadinessStatus;
+  bankReconciliationBoundary: TenantFullAccountingBankReconciliationBoundaryView;
+  statementItems: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    statementType:
+      | 'trial_balance'
+      | 'balance_sheet'
+      | 'income_statement'
+      | 'comparatives'
+      | 'adjustment_disclosures'
+      | 'professional_review';
+    readiness:
+      | 'blueprint_ready'
+      | 'needs_ledger'
+      | 'needs_bank_reconciliation'
+      | 'needs_professional_review';
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    itemCount: number;
+    readyItemCount: number;
+    ledgerDependentItemCount: number;
+    professionalReviewItemCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingLegalBooksStatutoryBoundaryView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  boundaryStatus: AccountingReadinessStatus;
+  financialStatementsBlueprint: TenantFullAccountingFinancialStatementsBlueprintView;
+  statutoryBoundaryItems: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    boundaryType:
+      | 'legal_books'
+      | 'statutory_custody'
+      | 'legalization'
+      | 'professional_signature'
+      | 'platform_non_certification';
+    owner: AccountingAdvancedProfessionalOwner;
+    evidenceRefs: string[];
+    guardrail: string;
+  }>;
+  summary: {
+    itemCount: number;
+    readyItemCount: number;
+    professionalOwnedItemCount: number;
+    platformGuardrailItemCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingCandidateCloseoutView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  closeoutStatus: AccountingReadinessStatus;
+  candidateAnchor: TenantFullAccountingCandidateAnchorView;
+  ledgerScopeBlueprint: TenantFullAccountingCoreLedgerScopeBlueprintView;
+  bankReconciliationBoundary: TenantFullAccountingBankReconciliationBoundaryView;
+  financialStatementsBlueprint: TenantFullAccountingFinancialStatementsBlueprintView;
+  legalBooksStatutoryBoundary: TenantFullAccountingLegalBooksStatutoryBoundaryView;
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    evidenceRefs: string[];
+  }>;
+  finalDecision: FullAccountingCandidateDecision;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockedChecklistCount: number;
+    ledgerScopeItemCount: number;
+    bankBoundaryItemCount: number;
+    financialStatementItemCount: number;
+    statutoryBoundaryItemCount: number;
   };
   blockers: string[];
   nextStep: string;

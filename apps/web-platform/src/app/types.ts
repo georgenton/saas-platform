@@ -5059,6 +5059,79 @@ export interface AccountingAdvancedGraduationArchiveHandoffCloseoutResponse {
   guardrails: string[];
 }
 
+export interface FullAccountingCandidateCloseoutResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  closeoutStatus: string;
+  candidateAnchor: {
+    anchorStatus: string;
+    summary: {
+      signalCount: number;
+      readySignalCount: number;
+      needsDiscoverySignalCount: number;
+      blockedSignalCount: number;
+      graduationCandidateCount: number;
+    };
+  };
+  ledgerScopeBlueprint: {
+    blueprintStatus: string;
+    summary: {
+      itemCount: number;
+      readyItemCount: number;
+      persistenceDesignCount: number;
+      professionalPolicyCount: number;
+    };
+  };
+  bankReconciliationBoundary: {
+    boundaryStatus: string;
+    summary: {
+      itemCount: number;
+      readyItemCount: number;
+      accountantOwnedItemCount: number;
+      notImplementedItemCount: number;
+    };
+  };
+  financialStatementsBlueprint: {
+    blueprintStatus: string;
+    summary: {
+      itemCount: number;
+      readyItemCount: number;
+      ledgerDependentItemCount: number;
+      professionalReviewItemCount: number;
+    };
+  };
+  legalBooksStatutoryBoundary: {
+    boundaryStatus: string;
+    summary: {
+      itemCount: number;
+      readyItemCount: number;
+      professionalOwnedItemCount: number;
+      platformGuardrailItemCount: number;
+    };
+  };
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: string;
+    evidenceRefs: string[];
+  }>;
+  finalDecision: string;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockedChecklistCount: number;
+    ledgerScopeItemCount: number;
+    bankBoundaryItemCount: number;
+    financialStatementItemCount: number;
+    statutoryBoundaryItemCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface AccountingOperationalCommandCenterResponse {
   tenantSlug: string;
   period: string;

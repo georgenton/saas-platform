@@ -95,6 +95,12 @@ import {
   TenantAccountingAdvancedProfessionalReviewWorkflowDesignView,
   TenantAccountingAdvancedProfessionalCloseoutAttestationBoundaryView,
   TenantAccountingAdvancedProductScopeDecisionWorkspaceView,
+  TenantFullAccountingBankReconciliationBoundaryView,
+  TenantFullAccountingCandidateAnchorView,
+  TenantFullAccountingCandidateCloseoutView,
+  TenantFullAccountingCoreLedgerScopeBlueprintView,
+  TenantFullAccountingFinancialStatementsBlueprintView,
+  TenantFullAccountingLegalBooksStatutoryBoundaryView,
   TenantAccountingAdvancedReturnedEvidenceValidationWorkspaceView,
   TenantAccountingAdvancedReturnedArtifactRegistryView,
   TenantAccountingAdvancedRecordConsistencyReviewWorkspaceView,
@@ -307,6 +313,18 @@ export type AccountingAdvancedGraduationArchiveHandoffCommandCenterResponseDto =
   Serialized<TenantAccountingAdvancedGraduationArchiveHandoffCommandCenterView>;
 export type AccountingAdvancedGraduationArchiveHandoffCloseoutResponseDto =
   Serialized<TenantAccountingAdvancedGraduationArchiveHandoffCloseoutView>;
+export type FullAccountingCandidateAnchorResponseDto =
+  Serialized<TenantFullAccountingCandidateAnchorView>;
+export type FullAccountingCoreLedgerScopeBlueprintResponseDto =
+  Serialized<TenantFullAccountingCoreLedgerScopeBlueprintView>;
+export type FullAccountingBankReconciliationBoundaryResponseDto =
+  Serialized<TenantFullAccountingBankReconciliationBoundaryView>;
+export type FullAccountingFinancialStatementsBlueprintResponseDto =
+  Serialized<TenantFullAccountingFinancialStatementsBlueprintView>;
+export type FullAccountingLegalBooksStatutoryBoundaryResponseDto =
+  Serialized<TenantFullAccountingLegalBooksStatutoryBoundaryView>;
+export type FullAccountingCandidateCloseoutResponseDto =
+  Serialized<TenantFullAccountingCandidateCloseoutView>;
 
 export function toAccountingAdvancedDiscoveryAnchorResponseDto(
   view: TenantAccountingAdvancedDiscoveryAnchorView,
@@ -917,6 +935,42 @@ export function toAccountingAdvancedGraduationArchiveHandoffCommandCenterRespons
 export function toAccountingAdvancedGraduationArchiveHandoffCloseoutResponseDto(
   view: TenantAccountingAdvancedGraduationArchiveHandoffCloseoutView,
 ): AccountingAdvancedGraduationArchiveHandoffCloseoutResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingCandidateAnchorResponseDto(
+  view: TenantFullAccountingCandidateAnchorView,
+): FullAccountingCandidateAnchorResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingCoreLedgerScopeBlueprintResponseDto(
+  view: TenantFullAccountingCoreLedgerScopeBlueprintView,
+): FullAccountingCoreLedgerScopeBlueprintResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingBankReconciliationBoundaryResponseDto(
+  view: TenantFullAccountingBankReconciliationBoundaryView,
+): FullAccountingBankReconciliationBoundaryResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingFinancialStatementsBlueprintResponseDto(
+  view: TenantFullAccountingFinancialStatementsBlueprintView,
+): FullAccountingFinancialStatementsBlueprintResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingLegalBooksStatutoryBoundaryResponseDto(
+  view: TenantFullAccountingLegalBooksStatutoryBoundaryView,
+): FullAccountingLegalBooksStatutoryBoundaryResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingCandidateCloseoutResponseDto(
+  view: TenantFullAccountingCandidateCloseoutView,
+): FullAccountingCandidateCloseoutResponseDto {
   return serialize(view);
 }
 

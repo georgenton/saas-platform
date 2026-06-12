@@ -91,6 +91,11 @@ import {
   GetTenantAccountingAdvancedGraduationSignalMatrixUseCase,
   GetTenantAccountingAdvancedProductScopeDecisionWorkspaceUseCase,
   GetTenantAccountingAdvancedGraduationArchiveHandoffCommandCenterUseCase,
+  GetTenantFullAccountingCandidateAnchorUseCase,
+  GetTenantFullAccountingCoreLedgerScopeBlueprintUseCase,
+  GetTenantFullAccountingBankReconciliationBoundaryUseCase,
+  GetTenantFullAccountingFinancialStatementsBlueprintUseCase,
+  GetTenantFullAccountingLegalBooksStatutoryBoundaryUseCase,
   GetTenantAccountingAdvancedFormalProductScopeContractUseCase,
   GetTenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixUseCase,
   GetTenantAccountingAdvancedProfessionalReviewWorkflowDesignUseCase,
@@ -165,6 +170,7 @@ import {
   RequestTenantAccountingAdvancedFormalRecordAssemblyCloseoutUseCase,
   RequestTenantAccountingAdvancedFormalRecordCloseoutCloseoutUseCase,
   RequestTenantAccountingAdvancedGraduationArchiveHandoffCloseoutUseCase,
+  RequestTenantFullAccountingCandidateCloseoutUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -1377,6 +1383,66 @@ import { AccountingController } from './accounting.controller';
       ) =>
         new RequestTenantAccountingAdvancedGraduationArchiveHandoffCloseoutUseCase(
           getTenantAccountingAdvancedGraduationArchiveHandoffCommandCenterUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingCandidateAnchorUseCase,
+      inject: [
+        RequestTenantAccountingAdvancedGraduationArchiveHandoffCloseoutUseCase,
+      ],
+      useFactory: (
+        requestTenantAccountingAdvancedGraduationArchiveHandoffCloseoutUseCase,
+      ) =>
+        new GetTenantFullAccountingCandidateAnchorUseCase(
+          requestTenantAccountingAdvancedGraduationArchiveHandoffCloseoutUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingCoreLedgerScopeBlueprintUseCase,
+      inject: [GetTenantFullAccountingCandidateAnchorUseCase],
+      useFactory: (getTenantFullAccountingCandidateAnchorUseCase) =>
+        new GetTenantFullAccountingCoreLedgerScopeBlueprintUseCase(
+          getTenantFullAccountingCandidateAnchorUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingBankReconciliationBoundaryUseCase,
+      inject: [GetTenantFullAccountingCoreLedgerScopeBlueprintUseCase],
+      useFactory: (
+        getTenantFullAccountingCoreLedgerScopeBlueprintUseCase,
+      ) =>
+        new GetTenantFullAccountingBankReconciliationBoundaryUseCase(
+          getTenantFullAccountingCoreLedgerScopeBlueprintUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingFinancialStatementsBlueprintUseCase,
+      inject: [GetTenantFullAccountingBankReconciliationBoundaryUseCase],
+      useFactory: (
+        getTenantFullAccountingBankReconciliationBoundaryUseCase,
+      ) =>
+        new GetTenantFullAccountingFinancialStatementsBlueprintUseCase(
+          getTenantFullAccountingBankReconciliationBoundaryUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingLegalBooksStatutoryBoundaryUseCase,
+      inject: [GetTenantFullAccountingFinancialStatementsBlueprintUseCase],
+      useFactory: (
+        getTenantFullAccountingFinancialStatementsBlueprintUseCase,
+      ) =>
+        new GetTenantFullAccountingLegalBooksStatutoryBoundaryUseCase(
+          getTenantFullAccountingFinancialStatementsBlueprintUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantFullAccountingCandidateCloseoutUseCase,
+      inject: [GetTenantFullAccountingLegalBooksStatutoryBoundaryUseCase],
+      useFactory: (
+        getTenantFullAccountingLegalBooksStatutoryBoundaryUseCase,
+      ) =>
+        new RequestTenantFullAccountingCandidateCloseoutUseCase(
+          getTenantFullAccountingLegalBooksStatutoryBoundaryUseCase,
         ),
     },
     {

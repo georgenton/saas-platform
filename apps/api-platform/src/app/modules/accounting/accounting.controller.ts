@@ -85,6 +85,11 @@ import {
   GetTenantAccountingAdvancedGraduationSignalMatrixUseCase,
   GetTenantAccountingAdvancedProductScopeDecisionWorkspaceUseCase,
   GetTenantAccountingAdvancedGraduationArchiveHandoffCommandCenterUseCase,
+  GetTenantFullAccountingCandidateAnchorUseCase,
+  GetTenantFullAccountingCoreLedgerScopeBlueprintUseCase,
+  GetTenantFullAccountingBankReconciliationBoundaryUseCase,
+  GetTenantFullAccountingFinancialStatementsBlueprintUseCase,
+  GetTenantFullAccountingLegalBooksStatutoryBoundaryUseCase,
   GetTenantAccountingAdvancedFormalProductScopeContractUseCase,
   GetTenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixUseCase,
   GetTenantAccountingAdvancedProfessionalReviewWorkflowDesignUseCase,
@@ -159,6 +164,7 @@ import {
   RequestTenantAccountingAdvancedFormalRecordAssemblyCloseoutUseCase,
   RequestTenantAccountingAdvancedFormalRecordCloseoutCloseoutUseCase,
   RequestTenantAccountingAdvancedGraduationArchiveHandoffCloseoutUseCase,
+  RequestTenantFullAccountingCandidateCloseoutUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -283,6 +289,12 @@ import {
   AccountingAdvancedProductScopeDecisionWorkspaceResponseDto,
   AccountingAdvancedGraduationArchiveHandoffCommandCenterResponseDto,
   AccountingAdvancedGraduationArchiveHandoffCloseoutResponseDto,
+  FullAccountingCandidateAnchorResponseDto,
+  FullAccountingCoreLedgerScopeBlueprintResponseDto,
+  FullAccountingBankReconciliationBoundaryResponseDto,
+  FullAccountingFinancialStatementsBlueprintResponseDto,
+  FullAccountingLegalBooksStatutoryBoundaryResponseDto,
+  FullAccountingCandidateCloseoutResponseDto,
   AccountingAdvancedProfessionalResponsibilityAssignmentMatrixResponseDto,
   AccountingAdvancedProfessionalReviewWorkflowDesignResponseDto,
   AccountingCertifiedBankEvidenceBoundaryResponseDto,
@@ -385,6 +397,12 @@ import {
   toAccountingAdvancedProductScopeDecisionWorkspaceResponseDto,
   toAccountingAdvancedGraduationArchiveHandoffCommandCenterResponseDto,
   toAccountingAdvancedGraduationArchiveHandoffCloseoutResponseDto,
+  toFullAccountingCandidateAnchorResponseDto,
+  toFullAccountingCoreLedgerScopeBlueprintResponseDto,
+  toFullAccountingBankReconciliationBoundaryResponseDto,
+  toFullAccountingFinancialStatementsBlueprintResponseDto,
+  toFullAccountingLegalBooksStatutoryBoundaryResponseDto,
+  toFullAccountingCandidateCloseoutResponseDto,
   toAccountingAdvancedProfessionalResponsibilityAssignmentMatrixResponseDto,
   toAccountingAdvancedProfessionalReviewWorkflowDesignResponseDto,
   toAccountingCertifiedBankEvidenceBoundaryResponseDto,
@@ -759,6 +777,12 @@ export class AccountingController {
     private readonly getTenantAccountingAdvancedProductScopeDecisionWorkspaceUseCase: GetTenantAccountingAdvancedProductScopeDecisionWorkspaceUseCase,
     private readonly getTenantAccountingAdvancedGraduationArchiveHandoffCommandCenterUseCase: GetTenantAccountingAdvancedGraduationArchiveHandoffCommandCenterUseCase,
     private readonly requestTenantAccountingAdvancedGraduationArchiveHandoffCloseoutUseCase: RequestTenantAccountingAdvancedGraduationArchiveHandoffCloseoutUseCase,
+    private readonly getTenantFullAccountingCandidateAnchorUseCase: GetTenantFullAccountingCandidateAnchorUseCase,
+    private readonly getTenantFullAccountingCoreLedgerScopeBlueprintUseCase: GetTenantFullAccountingCoreLedgerScopeBlueprintUseCase,
+    private readonly getTenantFullAccountingBankReconciliationBoundaryUseCase: GetTenantFullAccountingBankReconciliationBoundaryUseCase,
+    private readonly getTenantFullAccountingFinancialStatementsBlueprintUseCase: GetTenantFullAccountingFinancialStatementsBlueprintUseCase,
+    private readonly getTenantFullAccountingLegalBooksStatutoryBoundaryUseCase: GetTenantFullAccountingLegalBooksStatutoryBoundaryUseCase,
+    private readonly requestTenantFullAccountingCandidateCloseoutUseCase: RequestTenantFullAccountingCandidateCloseoutUseCase,
   ) {}
 
   @Get(':slug/advanced-discovery/anchor')
@@ -3248,6 +3272,148 @@ export class AccountingController {
       return toAccountingAdvancedGraduationArchiveHandoffCloseoutResponseDto(
         view,
       );
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-candidate/anchor')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingCandidateAnchor(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingCandidateAnchorResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingCandidateAnchorUseCase.execute({
+          tenantSlug,
+          period,
+          year: Number.parseInt(year, 10),
+        });
+
+      return toFullAccountingCandidateAnchorResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-candidate/core-ledger-scope')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingCoreLedgerScopeBlueprint(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingCoreLedgerScopeBlueprintResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingCoreLedgerScopeBlueprintUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+
+      return toFullAccountingCoreLedgerScopeBlueprintResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-candidate/bank-reconciliation-boundary')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingBankReconciliationBoundary(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingBankReconciliationBoundaryResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingBankReconciliationBoundaryUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+
+      return toFullAccountingBankReconciliationBoundaryResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-candidate/financial-statements-blueprint')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingFinancialStatementsBlueprint(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingFinancialStatementsBlueprintResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingFinancialStatementsBlueprintUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+
+      return toFullAccountingFinancialStatementsBlueprintResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-candidate/legal-books-boundary')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingLegalBooksStatutoryBoundary(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingLegalBooksStatutoryBoundaryResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingLegalBooksStatutoryBoundaryUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+
+      return toFullAccountingLegalBooksStatutoryBoundaryResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-candidate/closeout')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingCandidateCloseout(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingCandidateCloseoutResponseDto> {
+    try {
+      const view =
+        await this.requestTenantFullAccountingCandidateCloseoutUseCase.execute({
+          tenantSlug,
+          period,
+          year: Number.parseInt(year, 10),
+        });
+
+      return toFullAccountingCandidateCloseoutResponseDto(view);
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);

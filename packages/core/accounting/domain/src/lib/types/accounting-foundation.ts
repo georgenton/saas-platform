@@ -323,6 +323,12 @@ export type FullAccountingMvpReadinessDecision =
   | 'return_to_candidate_discovery'
   | 'return_to_accounting_advanced_hardening'
   | 'do_not_open_mvp';
+export type FullAccountingMvpOperationsDecision =
+  | 'advance_to_controlled_pilot'
+  | 'continue_operations_hardening'
+  | 'return_to_mvp_readiness'
+  | 'return_to_candidate_discovery'
+  | 'stop_full_accounting_mvp';
 export type AccountingAdvancedFormalModuleKey =
   | 'formal_books'
   | 'certified_bank_reconciliation'
@@ -3789,6 +3795,211 @@ export interface TenantFullAccountingMvpReadinessCloseoutView {
     postingPolicyItemCount: number;
     bankReadinessItemCount: number;
     statementReadinessItemCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingMvpOperationsAnchorView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  anchorStatus: AccountingReadinessStatus;
+  readinessCloseout: TenantFullAccountingMvpReadinessCloseoutView;
+  operationLanes: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    laneType:
+      | 'ledger_workbench'
+      | 'posting_draft'
+      | 'bank_reconciliation'
+      | 'trial_balance_preview'
+      | 'operations_closeout';
+    operationMode:
+      | 'draft_only'
+      | 'simulation_only'
+      | 'preview_only'
+      | 'needs_hardening'
+      | 'blocked';
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    laneCount: number;
+    readyLaneCount: number;
+    simulationLaneCount: number;
+    previewLaneCount: number;
+    blockedLaneCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingLedgerWorkbenchMvpView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  workbenchStatus: AccountingReadinessStatus;
+  operationsAnchor: TenantFullAccountingMvpOperationsAnchorView;
+  ledgerWorkItems: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    workType:
+      | 'journal_batch_draft'
+      | 'journal_line_review'
+      | 'balance_snapshot_preview'
+      | 'invariant_check'
+      | 'period_lock_preview';
+    workMode: 'draft' | 'simulation' | 'preview' | 'blocked';
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    itemCount: number;
+    readyItemCount: number;
+    draftItemCount: number;
+    simulationItemCount: number;
+    previewItemCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingPostingDraftLaneView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  laneStatus: AccountingReadinessStatus;
+  ledgerWorkbench: TenantFullAccountingLedgerWorkbenchMvpView;
+  draftItems: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    draftState:
+      | 'draft'
+      | 'pending_approval'
+      | 'approved_for_simulation'
+      | 'returned'
+      | 'blocked';
+    approvalOwner: AccountingAdvancedProfessionalOwner;
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    draftCount: number;
+    readyDraftCount: number;
+    pendingApprovalCount: number;
+    simulationApprovedCount: number;
+    blockedDraftCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingBankReconciliationWorkbenchMvpView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  workbenchStatus: AccountingReadinessStatus;
+  postingDraftLane: TenantFullAccountingPostingDraftLaneView;
+  reconciliationItems: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    reconciliationType:
+      | 'statement_batch'
+      | 'candidate_match'
+      | 'exception_review'
+      | 'cutoff_review'
+      | 'reconciliation_packet';
+    workMode:
+      | 'prepared'
+      | 'candidate'
+      | 'operator_review'
+      | 'professional_boundary';
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    itemCount: number;
+    readyItemCount: number;
+    candidateMatchCount: number;
+    exceptionReviewCount: number;
+    professionalBoundaryCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingTrialBalancePreviewWorkbenchView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  previewStatus: AccountingReadinessStatus;
+  bankReconciliationWorkbench: TenantFullAccountingBankReconciliationWorkbenchMvpView;
+  previewItems: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    previewType:
+      | 'trial_balance'
+      | 'balance_variance'
+      | 'approval_warning'
+      | 'bank_dependency'
+      | 'adjustment_trace';
+    dependency:
+      | 'ledger_workbench'
+      | 'posting_simulation'
+      | 'bank_workbench'
+      | 'professional_review';
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    itemCount: number;
+    readyItemCount: number;
+    warningCount: number;
+    bankDependencyCount: number;
+    professionalReviewCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingMvpOperationsCloseoutView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  closeoutStatus: AccountingReadinessStatus;
+  operationsAnchor: TenantFullAccountingMvpOperationsAnchorView;
+  ledgerWorkbench: TenantFullAccountingLedgerWorkbenchMvpView;
+  postingDraftLane: TenantFullAccountingPostingDraftLaneView;
+  bankReconciliationWorkbench: TenantFullAccountingBankReconciliationWorkbenchMvpView;
+  trialBalancePreviewWorkbench: TenantFullAccountingTrialBalancePreviewWorkbenchView;
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    evidenceRefs: string[];
+  }>;
+  finalDecision: FullAccountingMvpOperationsDecision;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockedChecklistCount: number;
+    ledgerWorkItemCount: number;
+    postingDraftCount: number;
+    reconciliationItemCount: number;
+    previewItemCount: number;
   };
   blockers: string[];
   nextStep: string;

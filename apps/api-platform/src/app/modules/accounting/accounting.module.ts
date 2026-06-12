@@ -101,6 +101,11 @@ import {
   GetTenantFullAccountingPostingPolicyApprovalBoundaryUseCase,
   GetTenantFullAccountingBankFeedReconciliationMvpReadinessUseCase,
   GetTenantFullAccountingTrialBalanceStatementReadinessUseCase,
+  GetTenantFullAccountingMvpOperationsAnchorUseCase,
+  GetTenantFullAccountingLedgerWorkbenchMvpUseCase,
+  GetTenantFullAccountingPostingDraftLaneUseCase,
+  GetTenantFullAccountingBankReconciliationWorkbenchMvpUseCase,
+  GetTenantFullAccountingTrialBalancePreviewWorkbenchUseCase,
   GetTenantAccountingAdvancedFormalProductScopeContractUseCase,
   GetTenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixUseCase,
   GetTenantAccountingAdvancedProfessionalReviewWorkflowDesignUseCase,
@@ -177,6 +182,7 @@ import {
   RequestTenantAccountingAdvancedGraduationArchiveHandoffCloseoutUseCase,
   RequestTenantFullAccountingCandidateCloseoutUseCase,
   RequestTenantFullAccountingMvpReadinessCloseoutUseCase,
+  RequestTenantFullAccountingMvpOperationsCloseoutUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -1507,6 +1513,58 @@ import { AccountingController } from './accounting.controller';
       ) =>
         new RequestTenantFullAccountingMvpReadinessCloseoutUseCase(
           getTenantFullAccountingTrialBalanceStatementReadinessUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingMvpOperationsAnchorUseCase,
+      inject: [RequestTenantFullAccountingMvpReadinessCloseoutUseCase],
+      useFactory: (requestTenantFullAccountingMvpReadinessCloseoutUseCase) =>
+        new GetTenantFullAccountingMvpOperationsAnchorUseCase(
+          requestTenantFullAccountingMvpReadinessCloseoutUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingLedgerWorkbenchMvpUseCase,
+      inject: [GetTenantFullAccountingMvpOperationsAnchorUseCase],
+      useFactory: (getTenantFullAccountingMvpOperationsAnchorUseCase) =>
+        new GetTenantFullAccountingLedgerWorkbenchMvpUseCase(
+          getTenantFullAccountingMvpOperationsAnchorUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingPostingDraftLaneUseCase,
+      inject: [GetTenantFullAccountingLedgerWorkbenchMvpUseCase],
+      useFactory: (getTenantFullAccountingLedgerWorkbenchMvpUseCase) =>
+        new GetTenantFullAccountingPostingDraftLaneUseCase(
+          getTenantFullAccountingLedgerWorkbenchMvpUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingBankReconciliationWorkbenchMvpUseCase,
+      inject: [GetTenantFullAccountingPostingDraftLaneUseCase],
+      useFactory: (getTenantFullAccountingPostingDraftLaneUseCase) =>
+        new GetTenantFullAccountingBankReconciliationWorkbenchMvpUseCase(
+          getTenantFullAccountingPostingDraftLaneUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingTrialBalancePreviewWorkbenchUseCase,
+      inject: [GetTenantFullAccountingBankReconciliationWorkbenchMvpUseCase],
+      useFactory: (
+        getTenantFullAccountingBankReconciliationWorkbenchMvpUseCase,
+      ) =>
+        new GetTenantFullAccountingTrialBalancePreviewWorkbenchUseCase(
+          getTenantFullAccountingBankReconciliationWorkbenchMvpUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantFullAccountingMvpOperationsCloseoutUseCase,
+      inject: [GetTenantFullAccountingTrialBalancePreviewWorkbenchUseCase],
+      useFactory: (
+        getTenantFullAccountingTrialBalancePreviewWorkbenchUseCase,
+      ) =>
+        new RequestTenantFullAccountingMvpOperationsCloseoutUseCase(
+          getTenantFullAccountingTrialBalancePreviewWorkbenchUseCase,
         ),
     },
     {

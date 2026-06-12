@@ -152,6 +152,7 @@ import {
   fetchFullAccountingFormalReadinessCloseout,
   fetchFullAccountingFormalArtifactDraftingCloseout,
   fetchFullAccountingProfessionalReviewExecutionCloseout,
+  fetchFullAccountingFormalApprovalWorkflowCloseout,
   fetchFullAccountingProductDesignCloseout,
   fetchFullAccountingMvpOperationsCloseout,
   fetchFullAccountingMvpReadinessCloseout,
@@ -528,6 +529,7 @@ import {
   FullAccountingFormalReadinessCloseoutResponse,
   FullAccountingFormalArtifactDraftingCloseoutResponse,
   FullAccountingProfessionalReviewExecutionCloseoutResponse,
+  FullAccountingFormalApprovalWorkflowCloseoutResponse,
   FullAccountingProductDesignCloseoutResponse,
   FullAccountingCandidateCloseoutResponse,
   FullAccountingMvpOperationsCloseoutResponse,
@@ -2731,6 +2733,12 @@ export function App() {
     useState<FullAccountingProfessionalReviewExecutionCloseoutResponse | null>(
       null,
     );
+  const [
+    fullAccountingFormalApprovalWorkflowCloseout,
+    setFullAccountingFormalApprovalWorkflowCloseout,
+  ] = useState<FullAccountingFormalApprovalWorkflowCloseoutResponse | null>(
+    null,
+  );
   const [
     taxComplianceSriFiscalEvidenceWorkspace,
     setTaxComplianceSriFiscalEvidenceWorkspace,
@@ -20904,6 +20912,7 @@ export function App() {
         nextFullAccountingFormalReadinessCloseout,
         nextFullAccountingFormalArtifactDraftingCloseout,
         nextFullAccountingProfessionalReviewExecutionCloseout,
+        nextFullAccountingFormalApprovalWorkflowCloseout,
       ] = accountingEnabled
         ? await Promise.all([
             fetchAccountingIntakeWorkspace(
@@ -21275,6 +21284,12 @@ export function App() {
               taxCompliancePeriod,
               year,
             ),
+            fetchFullAccountingFormalApprovalWorkflowCloseout(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
           ])
         : [
             null,
@@ -21310,6 +21325,7 @@ export function App() {
             null,
             null,
             [],
+            null,
             null,
             null,
             null,
@@ -21666,6 +21682,9 @@ export function App() {
         );
         setFullAccountingProfessionalReviewExecutionCloseout(
           nextFullAccountingProfessionalReviewExecutionCloseout,
+        );
+        setFullAccountingFormalApprovalWorkflowCloseout(
+          nextFullAccountingFormalApprovalWorkflowCloseout,
         );
       });
     } catch (error) {
@@ -38609,8 +38628,110 @@ export function App() {
                                     </p>
                                   </div>
                                 ) : null}
+                                {fullAccountingFormalApprovalWorkflowCloseout ? (
+                                  <div className={styles.invoiceItemCard}>
+                                    <div className={styles.invoiceCardHeader}>
+                                      <strong>
+                                        Full Accounting Formal Approval Workflow
+                                        1.0
+                                      </strong>
+                                      <span className={styles.statusPill}>
+                                        {humanizeKey(
+                                          fullAccountingFormalApprovalWorkflowCloseout.closeoutStatus,
+                                        )}
+                                      </span>
+                                    </div>
+                                    <div className={styles.invoiceInlineGrid}>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Gates
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingFormalApprovalWorkflowCloseout
+                                              .approvalAnchor.summary
+                                              .readyGateCount
+                                          }
+                                          /
+                                          {
+                                            fullAccountingFormalApprovalWorkflowCloseout
+                                              .approvalAnchor.summary.gateCount
+                                          }
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Authority
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingFormalApprovalWorkflowCloseout
+                                              .authorityMatrix.summary
+                                              .authorityCount
+                                          }{' '}
+                                          owners
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Evidence
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingFormalApprovalWorkflowCloseout
+                                              .evidencePack.summary
+                                              .readyEvidenceItemCount
+                                          }{' '}
+                                          ready
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Decisions
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingFormalApprovalWorkflowCloseout
+                                              .decisionWorkspace.summary
+                                              .approvedForSignatureFlowCount
+                                          }{' '}
+                                          approved
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Command
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingFormalApprovalWorkflowCloseout
+                                              .commandCenter.summary
+                                              .readyLaneCount
+                                          }{' '}
+                                          lanes
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Decision
+                                        </span>
+                                        <strong>
+                                          {humanizeKey(
+                                            fullAccountingFormalApprovalWorkflowCloseout.finalDecision,
+                                          )}
+                                        </strong>
+                                      </div>
+                                    </div>
+                                    <p className={styles.muted}>
+                                      {
+                                        fullAccountingFormalApprovalWorkflowCloseout.nextStep
+                                      }
+                                    </p>
+                                  </div>
+                                ) : null}
                                 <p className={styles.muted}>
-                                  {fullAccountingProfessionalReviewExecutionCloseout?.nextStep ??
+                                  {fullAccountingFormalApprovalWorkflowCloseout?.nextStep ??
+                                    fullAccountingProfessionalReviewExecutionCloseout?.nextStep ??
                                     fullAccountingFormalArtifactDraftingCloseout?.nextStep ??
                                     fullAccountingFormalReadinessCloseout?.nextStep ??
                                     fullAccountingProductDesignCloseout?.nextStep ??

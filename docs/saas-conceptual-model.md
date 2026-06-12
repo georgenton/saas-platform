@@ -2566,6 +2566,39 @@ Guardrail: professional review execution 0.9 is still pre-approval. It captures
 review findings, change requests and recommendations, but does not approve,
 post, sign, certify, legalize, submit or file official artifacts.
 
+### Full Accounting formal approval workflow 1.0
+
+After professional review execution 0.9, full Accounting can record controlled
+internal approval workflow decisions over reviewed drafts. This is the approval
+desk after the review table: owners can approve for a future signature flow,
+request changes, require external review or reject a draft, while the platform
+still does not sign, certify, legalize, post or file anything official.
+
+1. `Full Accounting Formal Approval Workflow Anchor`
+   - checks that professional review closeout, recommendations, change requests
+     and signature/certification boundaries are visible before approval opens
+2. `Approval Authority Matrix`
+   - maps ledger, posting, bank evidence, trial balance, financial statement and
+     professional boundary approvals to accountant, auditor and legal
+     representative ownership
+3. `Formal Approval Evidence Pack`
+   - assembles the evidence required for each approval authority without
+     turning evidence readiness into official approval
+4. `Approval Decision Workspace`
+   - records approve-for-signature-flow, require-changes, require-external-review
+     and rejected decisions as workflow decisions only
+5. `Formal Approval Command Center`
+   - consolidates gates, authorities, evidence and decisions into one operating
+     view for the formal approval workflow
+6. `Full Accounting Formal Approval Workflow Closeout`
+   - decides whether to open signature/certification boundary, continue formal
+     approval, return to professional review, return to artifact drafting or
+     stop approving formal artifacts
+
+Guardrail: formal approval workflow 1.0 records controlled approval decisions
+inside the workflow only. It does not post, sign, certify, legalize, submit,
+file or issue official artifacts.
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal
@@ -2726,6 +2759,10 @@ product. Its current scope is intentionally operational and review-oriented:
     captures professional findings, change requests and recommendations across
     the draft packets before any formal approval, signature, certification or
     external legal act can open.
+45. Full Accounting formal approval workflow 1.0 as the approval desk. It
+    records controlled approval decisions, authority boundaries and evidence
+    packs before any signature, certification, legalization, posting or filing
+    can happen.
 
 Boundary: this foundation still does not perform bank reconciliation, lock
 against certified bank feeds, lock official legal books, issue official

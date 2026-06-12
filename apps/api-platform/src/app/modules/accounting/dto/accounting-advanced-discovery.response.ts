@@ -113,6 +113,9 @@ import {
   TenantFullAccountingGraduationCloseoutView,
   TenantFullAccountingGraduationEvidenceDossierView,
   TenantFullAccountingGraduationRiskControlPackView,
+  TenantFullAccountingFormalLedgerPostingReadinessPackView,
+  TenantFullAccountingFormalReadinessAnchorView,
+  TenantFullAccountingFormalReadinessCloseoutView,
   TenantFullAccountingOfficialArtifactBoundaryRegistryView,
   TenantFullAccountingLedgerWorkbenchMvpView,
   TenantFullAccountingPilotAccountantReviewRoomView,
@@ -125,6 +128,9 @@ import {
   TenantFullAccountingProductProfessionalResponsibilityMatrixView,
   TenantFullAccountingProductScopeContractView,
   TenantFullAccountingProfessionalOperatingModelView,
+  TenantFullAccountingProfessionalPortalReadinessShellView,
+  TenantFullAccountingPolicyTemplateRegistryView,
+  TenantFullAccountingStatementBankFormalBoundaryPackView,
   TenantFullAccountingWorkflowControlBlueprintView,
   TenantFullAccountingPostingDraftLaneView,
   TenantFullAccountingBankReconciliationWorkbenchMvpView,
@@ -415,6 +421,18 @@ export type FullAccountingWorkflowControlBlueprintResponseDto =
   Serialized<TenantFullAccountingWorkflowControlBlueprintView>;
 export type FullAccountingProductDesignCloseoutResponseDto =
   Serialized<TenantFullAccountingProductDesignCloseoutView>;
+export type FullAccountingFormalReadinessAnchorResponseDto =
+  Serialized<TenantFullAccountingFormalReadinessAnchorView>;
+export type FullAccountingPolicyTemplateRegistryResponseDto =
+  Serialized<TenantFullAccountingPolicyTemplateRegistryView>;
+export type FullAccountingProfessionalPortalReadinessShellResponseDto =
+  Serialized<TenantFullAccountingProfessionalPortalReadinessShellView>;
+export type FullAccountingFormalLedgerPostingReadinessPackResponseDto =
+  Serialized<TenantFullAccountingFormalLedgerPostingReadinessPackView>;
+export type FullAccountingStatementBankFormalBoundaryPackResponseDto =
+  Serialized<TenantFullAccountingStatementBankFormalBoundaryPackView>;
+export type FullAccountingFormalReadinessCloseoutResponseDto =
+  Serialized<TenantFullAccountingFormalReadinessCloseoutView>;
 
 export function toAccountingAdvancedDiscoveryAnchorResponseDto(
   view: TenantAccountingAdvancedDiscoveryAnchorView,
@@ -1241,6 +1259,42 @@ export function toFullAccountingWorkflowControlBlueprintResponseDto(
 export function toFullAccountingProductDesignCloseoutResponseDto(
   view: TenantFullAccountingProductDesignCloseoutView,
 ): FullAccountingProductDesignCloseoutResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingFormalReadinessAnchorResponseDto(
+  view: TenantFullAccountingFormalReadinessAnchorView,
+): FullAccountingFormalReadinessAnchorResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingPolicyTemplateRegistryResponseDto(
+  view: TenantFullAccountingPolicyTemplateRegistryView,
+): FullAccountingPolicyTemplateRegistryResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingProfessionalPortalReadinessShellResponseDto(
+  view: TenantFullAccountingProfessionalPortalReadinessShellView,
+): FullAccountingProfessionalPortalReadinessShellResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingFormalLedgerPostingReadinessPackResponseDto(
+  view: TenantFullAccountingFormalLedgerPostingReadinessPackView,
+): FullAccountingFormalLedgerPostingReadinessPackResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingStatementBankFormalBoundaryPackResponseDto(
+  view: TenantFullAccountingStatementBankFormalBoundaryPackView,
+): FullAccountingStatementBankFormalBoundaryPackResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingFormalReadinessCloseoutResponseDto(
+  view: TenantFullAccountingFormalReadinessCloseoutView,
+): FullAccountingFormalReadinessCloseoutResponseDto {
   return serialize(view);
 }
 

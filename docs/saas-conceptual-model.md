@@ -2468,6 +2468,37 @@ Guardrail: product design 0.6 is still design-only. It does not create official
 postings, certified reconciliations, statutory financial statements, legal
 books or filings.
 
+### Full Accounting formal readiness 0.7
+
+After product design 0.6, full Accounting can prepare formal readiness before
+drafting official-looking artifacts. This is the permit desk after engineering:
+it prepares policies, templates, professional portal shells and formal
+boundaries without posting, certifying, signing or filing.
+
+1. `Full Accounting Formal Readiness Anchor`
+   - converts product design closeout into readiness lanes for ledger, posting,
+     bank evidence, statement preview, professional review and statutory
+     exclusions
+2. `Policy & Template Registry`
+   - prepares accounting policy, posting approval, evidence completeness,
+     professional review and closeout recommendation templates
+3. `Professional Portal Readiness Shell`
+   - prepares external accountant workspace, review queue, evidence intake,
+     approval/rejection and professional notes shells
+4. `Formal Ledger & Posting Readiness Pack`
+   - prepares ledger structure, journal batch, posting approval, reversal,
+     period lock and invariant readiness
+5. `Statement & Bank Formal Boundary Pack`
+   - prepares bank evidence, certified reconciliation boundary, trial balance
+     preview, statement draft, professional review and external certification
+     boundaries
+6. `Full Accounting Formal Readiness Closeout`
+   - decides whether to open formal artifact drafting, continue readiness,
+     return to product design, return to graduation or stop readiness
+
+Guardrail: formal readiness 0.7 prepares conditions only. It does not draft,
+post, certify, sign, legalize or file formal accounting artifacts.
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal
@@ -2617,6 +2648,9 @@ product. Its current scope is intentionally operational and review-oriented:
 41. Full Accounting product design 0.6 as the engineering table. It defines
     product scope, professional responsibility, artifact boundaries and workflow
     controls before any formal readiness or official execution opens.
+42. Full Accounting formal readiness 0.7 as the permit desk. It prepares
+    policies, templates, professional portal shells, ledger/posting readiness
+    and bank/statement formal boundaries before artifact drafting.
 
 Boundary: this foundation still does not perform bank reconciliation, lock
 against certified bank feeds, lock official legal books, issue official

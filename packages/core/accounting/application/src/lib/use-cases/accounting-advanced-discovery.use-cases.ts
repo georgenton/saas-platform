@@ -19,6 +19,7 @@ import {
   FullAccountingCandidateDecision,
   FullAccountingControlledPilotDecision,
   FullAccountingGraduationDecision,
+  FullAccountingFormalReadinessDecision,
   FullAccountingProductDesignDecision,
   FullAccountingMvpReadinessDecision,
   FullAccountingMvpOperationsDecision,
@@ -141,6 +142,9 @@ import {
   TenantFullAccountingGraduationCloseoutView,
   TenantFullAccountingGraduationEvidenceDossierView,
   TenantFullAccountingGraduationRiskControlPackView,
+  TenantFullAccountingFormalLedgerPostingReadinessPackView,
+  TenantFullAccountingFormalReadinessAnchorView,
+  TenantFullAccountingFormalReadinessCloseoutView,
   TenantFullAccountingOfficialArtifactBoundaryRegistryView,
   TenantFullAccountingLedgerWorkbenchMvpView,
   TenantFullAccountingPilotAccountantReviewRoomView,
@@ -153,6 +157,9 @@ import {
   TenantFullAccountingProductProfessionalResponsibilityMatrixView,
   TenantFullAccountingProductScopeContractView,
   TenantFullAccountingProfessionalOperatingModelView,
+  TenantFullAccountingProfessionalPortalReadinessShellView,
+  TenantFullAccountingPolicyTemplateRegistryView,
+  TenantFullAccountingStatementBankFormalBoundaryPackView,
   TenantFullAccountingWorkflowControlBlueprintView,
   TenantFullAccountingPostingDraftLaneView,
   TenantFullAccountingBankReconciliationWorkbenchMvpView,
@@ -10361,6 +10368,304 @@ export class RequestTenantFullAccountingProductDesignCloseoutUseCase {
   }
 }
 
+export class GetTenantFullAccountingFormalReadinessAnchorUseCase {
+  constructor(
+    private readonly requestTenantFullAccountingProductDesignCloseoutUseCase: RequestTenantFullAccountingProductDesignCloseoutUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingFormalReadinessAnchorView> {
+    const productDesignCloseout =
+      await this.requestTenantFullAccountingProductDesignCloseoutUseCase.execute(input);
+    const readinessLanes: TenantFullAccountingFormalReadinessAnchorView['readinessLanes'] = [
+      fullAccountingFormalReadinessLane('ledger', 'Formal ledger readiness lane', productDesignCloseout.scopeContract.contractStatus, 'ledger', 'formal_ready', ['full_accounting_product_scope_contract']),
+      fullAccountingFormalReadinessLane('posting_approval', 'Posting approval readiness lane', productDesignCloseout.responsibilityMatrix.matrixStatus, 'posting_approval', 'policy_required', ['full_accounting_product_professional_responsibility_matrix']),
+      fullAccountingFormalReadinessLane('bank_evidence', 'Bank evidence readiness lane', productDesignCloseout.artifactBoundaryRegistry.registryStatus, 'bank_evidence', 'professional_required', ['full_accounting_official_artifact_boundary_registry']),
+      fullAccountingFormalReadinessLane('statement_preview', 'Statement preview readiness lane', productDesignCloseout.workflowControlBlueprint.blueprintStatus, 'statement_preview', 'professional_required', ['full_accounting_workflow_control_blueprint']),
+      fullAccountingFormalReadinessLane('professional_review', 'Professional review readiness lane', productDesignCloseout.closeoutStatus, 'professional_review', 'professional_required', ['full_accounting_product_design_closeout']),
+      fullAccountingFormalReadinessLane('statutory_exclusion', 'Statutory exclusion readiness lane', 'ready', 'statutory_exclusion', 'excluded', ['full_accounting_official_artifact_boundary_registry']),
+    ];
+    const blockers =
+      productDesignCloseout.finalDecision === 'open_formal_readiness'
+        ? [...productDesignCloseout.blockers]
+        : unique([
+            ...productDesignCloseout.blockers,
+            `Full Accounting product design decision is ${productDesignCloseout.finalDecision}.`,
+          ]);
+    const anchorStatus = resolveStatus(readinessLanes.map((lane) => lane.status), blockers);
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      anchorStatus,
+      productDesignCloseout,
+      readinessLanes,
+      summary: {
+        laneCount: readinessLanes.length,
+        readyLaneCount: readinessLanes.filter((lane) => lane.status === 'ready').length,
+        formalReadyLaneCount: readinessLanes.filter((lane) => lane.readinessMode === 'formal_ready').length,
+        professionalRequiredLaneCount: readinessLanes.filter((lane) => lane.readinessMode === 'professional_required').length,
+        excludedLaneCount: readinessLanes.filter((lane) => lane.readinessMode === 'excluded').length,
+        blockedLaneCount: readinessLanes.filter((lane) => lane.status === 'blocked').length,
+      },
+      blockers,
+      nextStep: 'Preparar policy and template registry.',
+      guardrails: [
+        'Formal readiness 0.7 prepara condiciones; no ejecuta actos oficiales.',
+        'Statutory exclusions permanecen fuera del producto.',
+      ],
+    };
+  }
+}
+
+export class GetTenantFullAccountingPolicyTemplateRegistryUseCase {
+  constructor(
+    private readonly getTenantFullAccountingFormalReadinessAnchorUseCase: GetTenantFullAccountingFormalReadinessAnchorUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingPolicyTemplateRegistryView> {
+    const formalReadinessAnchor =
+      await this.getTenantFullAccountingFormalReadinessAnchorUseCase.execute(input);
+    const templates: TenantFullAccountingPolicyTemplateRegistryView['templates'] = [
+      fullAccountingPolicyTemplate('accounting_policy', 'Accounting policy template', formalReadinessAnchor.anchorStatus, 'accounting_policy', 'ready', ['full_accounting_product_scope_contract']),
+      fullAccountingPolicyTemplate('posting_approval_policy', 'Posting approval policy template', formalReadinessAnchor.anchorStatus, 'posting_approval_policy', 'requires_review', ['full_accounting_product_professional_responsibility_matrix']),
+      fullAccountingPolicyTemplate('evidence_completeness_policy', 'Evidence completeness policy template', formalReadinessAnchor.anchorStatus, 'evidence_completeness_policy', 'ready', ['full_accounting_workflow_control_blueprint']),
+      fullAccountingPolicyTemplate('professional_review_template', 'Professional review template', formalReadinessAnchor.anchorStatus, 'professional_review_template', 'requires_review', ['full_accounting_product_design_closeout']),
+      fullAccountingPolicyTemplate('closeout_recommendation_template', 'Closeout recommendation template', 'ready', 'closeout_recommendation_template', 'ready', ['full_accounting_workflow_control_blueprint']),
+      fullAccountingPolicyTemplate('excluded_statutory_template', 'Excluded statutory template', 'ready', 'excluded_statutory_template', 'excluded', ['full_accounting_official_artifact_boundary_registry']),
+    ];
+    const blockers = [...formalReadinessAnchor.blockers];
+    const registryStatus = resolveStatus(templates.map((template) => template.status), blockers);
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      registryStatus,
+      formalReadinessAnchor,
+      templates,
+      summary: {
+        templateCount: templates.length,
+        readyTemplateCount: templates.filter((template) => template.status === 'ready').length,
+        reviewTemplateCount: templates.filter((template) => template.templateMode === 'requires_review').length,
+        excludedTemplateCount: templates.filter((template) => template.templateMode === 'excluded').length,
+      },
+      blockers,
+      nextStep: 'Preparar professional portal readiness shell.',
+      guardrails: [
+        'Policy templates no constituyen asesoria contable oficial.',
+        'Templates estatutarios excluidos no deben usarse para filing o legal books.',
+      ],
+    };
+  }
+}
+
+export class GetTenantFullAccountingProfessionalPortalReadinessShellUseCase {
+  constructor(
+    private readonly getTenantFullAccountingPolicyTemplateRegistryUseCase: GetTenantFullAccountingPolicyTemplateRegistryUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingProfessionalPortalReadinessShellView> {
+    const policyTemplateRegistry =
+      await this.getTenantFullAccountingPolicyTemplateRegistryUseCase.execute(input);
+    const shellItems: TenantFullAccountingProfessionalPortalReadinessShellView['shellItems'] = [
+      fullAccountingProfessionalPortalShellItem('external_accountant_workspace', 'External accountant workspace shell', policyTemplateRegistry.registryStatus, 'external_accountant_workspace', 'external_accountant', ['full_accounting_policy_template_registry']),
+      fullAccountingProfessionalPortalShellItem('review_queue', 'Professional review queue shell', policyTemplateRegistry.registryStatus, 'review_queue', 'external_accountant', ['full_accounting_policy_template_registry']),
+      fullAccountingProfessionalPortalShellItem('evidence_packet_intake', 'Evidence packet intake shell', policyTemplateRegistry.registryStatus, 'evidence_packet_intake', 'operator', ['full_accounting_official_artifact_boundary_registry']),
+      fullAccountingProfessionalPortalShellItem('approval_rejection', 'Approval rejection shell', policyTemplateRegistry.registryStatus, 'approval_rejection', 'external_accountant', ['full_accounting_product_professional_responsibility_matrix']),
+      fullAccountingProfessionalPortalShellItem('professional_notes', 'Professional notes shell', 'ready', 'professional_notes', 'external_accountant', ['full_accounting_product_design_closeout']),
+      fullAccountingProfessionalPortalShellItem('signature_certification_exclusion', 'Signature and certification exclusion shell', 'ready', 'signature_certification_exclusion', 'platform', ['full_accounting_official_artifact_boundary_registry']),
+    ];
+    const blockers = [...policyTemplateRegistry.blockers];
+    const shellStatus = resolveStatus(shellItems.map((item) => item.status), blockers);
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      shellStatus,
+      policyTemplateRegistry,
+      shellItems,
+      summary: {
+        shellItemCount: shellItems.length,
+        readyShellItemCount: shellItems.filter((item) => item.status === 'ready').length,
+        accountantOwnedCount: shellItems.filter((item) => item.owner === 'external_accountant').length,
+        excludedShellItemCount: shellItems.filter((item) => item.shellType === 'signature_certification_exclusion').length,
+      },
+      blockers,
+      nextStep: 'Preparar formal ledger and posting readiness pack.',
+      guardrails: [
+        'Portal shell no firma, certifica ni legaliza.',
+        'Professional notes son evidencia de revision, no dictamen oficial.',
+      ],
+    };
+  }
+}
+
+export class GetTenantFullAccountingFormalLedgerPostingReadinessPackUseCase {
+  constructor(
+    private readonly getTenantFullAccountingProfessionalPortalReadinessShellUseCase: GetTenantFullAccountingProfessionalPortalReadinessShellUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingFormalLedgerPostingReadinessPackView> {
+    const professionalPortalShell =
+      await this.getTenantFullAccountingProfessionalPortalReadinessShellUseCase.execute(input);
+    const readinessItems: TenantFullAccountingFormalLedgerPostingReadinessPackView['readinessItems'] = [
+      fullAccountingLedgerPostingReadinessItem('ledger_structure', 'Ledger structure readiness', professionalPortalShell.shellStatus, 'ledger_structure', 'structure', ['full_accounting_product_scope_contract']),
+      fullAccountingLedgerPostingReadinessItem('journal_batch', 'Journal batch readiness', professionalPortalShell.shellStatus, 'journal_batch', 'structure', ['full_accounting_product_scope_contract']),
+      fullAccountingLedgerPostingReadinessItem('posting_approval_gate', 'Posting approval gate readiness', professionalPortalShell.shellStatus, 'posting_approval_gate', 'approval_gate', ['full_accounting_product_professional_responsibility_matrix']),
+      fullAccountingLedgerPostingReadinessItem('reversal_readiness', 'Reversal readiness', professionalPortalShell.shellStatus, 'reversal_readiness', 'rollback', ['full_accounting_graduation_risk_control_pack']),
+      fullAccountingLedgerPostingReadinessItem('period_lock_readiness', 'Period lock readiness', professionalPortalShell.shellStatus, 'period_lock_readiness', 'lock_preview', ['accounting_period_lock_readiness']),
+      fullAccountingLedgerPostingReadinessItem('invariant_check', 'Ledger invariant check readiness', 'ready', 'invariant_check', 'invariant', ['full_accounting_workflow_control_blueprint']),
+    ];
+    const blockers = [...professionalPortalShell.blockers];
+    const packStatus = resolveStatus(readinessItems.map((item) => item.status), blockers);
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      packStatus,
+      professionalPortalShell,
+      readinessItems,
+      summary: {
+        itemCount: readinessItems.length,
+        readyItemCount: readinessItems.filter((item) => item.status === 'ready').length,
+        approvalGateCount: readinessItems.filter((item) => item.controlMode === 'approval_gate').length,
+        rollbackCount: readinessItems.filter((item) => item.controlMode === 'rollback').length,
+        invariantCount: readinessItems.filter((item) => item.controlMode === 'invariant').length,
+      },
+      blockers,
+      nextStep: 'Preparar statement and bank formal boundary pack.',
+      guardrails: [
+        'Ledger/posting readiness no postea asientos.',
+        'Period locks son readiness/previews hasta que exista ejecucion formal.',
+      ],
+    };
+  }
+}
+
+export class GetTenantFullAccountingStatementBankFormalBoundaryPackUseCase {
+  constructor(
+    private readonly getTenantFullAccountingFormalLedgerPostingReadinessPackUseCase: GetTenantFullAccountingFormalLedgerPostingReadinessPackUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingStatementBankFormalBoundaryPackView> {
+    const ledgerPostingReadinessPack =
+      await this.getTenantFullAccountingFormalLedgerPostingReadinessPackUseCase.execute(input);
+    const boundaryItems: TenantFullAccountingStatementBankFormalBoundaryPackView['boundaryItems'] = [
+      fullAccountingStatementBankBoundaryItem('bank_evidence_readiness', 'Bank evidence readiness', ledgerPostingReadinessPack.packStatus, 'bank_evidence_readiness', 'ready', ['full_accounting_official_artifact_boundary_registry']),
+      fullAccountingStatementBankBoundaryItem('certified_reconciliation_boundary', 'Certified reconciliation boundary', 'ready', 'certified_reconciliation_boundary', 'external_only', ['full_accounting_official_artifact_boundary_registry']),
+      fullAccountingStatementBankBoundaryItem('trial_balance_preview_readiness', 'Trial balance preview readiness', ledgerPostingReadinessPack.packStatus, 'trial_balance_preview_readiness', 'ready', ['full_accounting_workflow_control_blueprint']),
+      fullAccountingStatementBankBoundaryItem('financial_statement_draft_readiness', 'Financial statement draft readiness', ledgerPostingReadinessPack.packStatus, 'financial_statement_draft_readiness', 'professional_review', ['full_accounting_product_scope_contract']),
+      fullAccountingStatementBankBoundaryItem('professional_review_requirement', 'Professional review requirement', ledgerPostingReadinessPack.packStatus, 'professional_review_requirement', 'professional_review', ['full_accounting_professional_portal_readiness_shell']),
+      fullAccountingStatementBankBoundaryItem('external_certification_boundary', 'External certification boundary', 'ready', 'external_certification_boundary', 'external_only', ['full_accounting_official_artifact_boundary_registry']),
+    ];
+    const blockers = [...ledgerPostingReadinessPack.blockers];
+    const packStatus = resolveStatus(boundaryItems.map((item) => item.status), blockers);
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      packStatus,
+      ledgerPostingReadinessPack,
+      boundaryItems,
+      summary: {
+        boundaryCount: boundaryItems.length,
+        readyBoundaryCount: boundaryItems.filter((item) => item.status === 'ready').length,
+        professionalReviewCount: boundaryItems.filter((item) => item.boundaryMode === 'professional_review').length,
+        externalOnlyCount: boundaryItems.filter((item) => item.boundaryMode === 'external_only').length,
+        excludedBoundaryCount: boundaryItems.filter((item) => item.boundaryMode === 'excluded').length,
+      },
+      blockers,
+      nextStep: 'Cerrar Full Accounting formal readiness 0.7.',
+      guardrails: [
+        'Boundary pack no certifica conciliaciones.',
+        'Draft statements requieren revision profesional antes de cualquier uso formal.',
+      ],
+    };
+  }
+}
+
+export class RequestTenantFullAccountingFormalReadinessCloseoutUseCase {
+  constructor(
+    private readonly getTenantFullAccountingStatementBankFormalBoundaryPackUseCase: GetTenantFullAccountingStatementBankFormalBoundaryPackUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingFormalReadinessCloseoutView> {
+    const statementBankBoundaryPack =
+      await this.getTenantFullAccountingStatementBankFormalBoundaryPackUseCase.execute(input);
+    const { ledgerPostingReadinessPack } = statementBankBoundaryPack;
+    const { professionalPortalShell } = ledgerPostingReadinessPack;
+    const { policyTemplateRegistry } = professionalPortalShell;
+    const { formalReadinessAnchor } = policyTemplateRegistry;
+    const closeoutChecklist: TenantFullAccountingFormalReadinessCloseoutView['closeoutChecklist'] = [
+      fullAccountingFormalReadinessCloseoutCheck('formal_readiness_anchor', 'Full Accounting formal readiness anchor', formalReadinessAnchor.anchorStatus, ['full_accounting_formal_readiness_anchor']),
+      fullAccountingFormalReadinessCloseoutCheck('policy_template_registry', 'Policy and template registry', policyTemplateRegistry.registryStatus, ['full_accounting_policy_template_registry']),
+      fullAccountingFormalReadinessCloseoutCheck('professional_portal_shell', 'Professional portal readiness shell', professionalPortalShell.shellStatus, ['full_accounting_professional_portal_readiness_shell']),
+      fullAccountingFormalReadinessCloseoutCheck('ledger_posting_pack', 'Formal ledger and posting readiness pack', ledgerPostingReadinessPack.packStatus, ['full_accounting_formal_ledger_posting_readiness_pack']),
+      fullAccountingFormalReadinessCloseoutCheck('statement_bank_boundary_pack', 'Statement and bank formal boundary pack', statementBankBoundaryPack.packStatus, ['full_accounting_statement_bank_formal_boundary_pack']),
+    ];
+    const blockers = unique([
+      ...formalReadinessAnchor.blockers,
+      ...policyTemplateRegistry.blockers,
+      ...professionalPortalShell.blockers,
+      ...ledgerPostingReadinessPack.blockers,
+      ...statementBankBoundaryPack.blockers,
+    ]);
+    const closeoutStatus = resolveStatus(closeoutChecklist.map((item) => item.status), blockers);
+    const finalDecision = fullAccountingFormalReadinessDecisionFromStatus(
+      closeoutStatus,
+      formalReadinessAnchor,
+      policyTemplateRegistry,
+      professionalPortalShell,
+      ledgerPostingReadinessPack,
+      statementBankBoundaryPack,
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      closeoutStatus,
+      formalReadinessAnchor,
+      policyTemplateRegistry,
+      professionalPortalShell,
+      ledgerPostingReadinessPack,
+      statementBankBoundaryPack,
+      closeoutChecklist,
+      finalDecision,
+      summary: {
+        checklistCount: closeoutChecklist.length,
+        readyChecklistCount: closeoutChecklist.filter((item) => item.status === 'ready').length,
+        blockedChecklistCount: closeoutChecklist.filter((item) => item.status === 'blocked').length,
+        readinessLaneCount: formalReadinessAnchor.summary.laneCount,
+        templateCount: policyTemplateRegistry.summary.templateCount,
+        portalShellItemCount: professionalPortalShell.summary.shellItemCount,
+        ledgerPostingItemCount: ledgerPostingReadinessPack.summary.itemCount,
+        statementBankBoundaryCount: statementBankBoundaryPack.summary.boundaryCount,
+      },
+      blockers,
+      nextStep:
+        finalDecision === 'open_formal_artifact_drafting'
+          ? 'Preparar Full Accounting formal artifact drafting 0.8.'
+          : finalDecision === 'continue_formal_readiness'
+            ? 'Continuar formal readiness antes de drafting.'
+            : finalDecision === 'return_to_product_design'
+              ? 'Volver a Full Accounting product design 0.6.'
+              : finalDecision === 'return_to_graduation'
+                ? 'Volver a Full Accounting graduation 0.5.'
+                : 'No abrir formal readiness por ahora.',
+      guardrails: [
+        'Formal readiness closeout no redacta artefactos formales.',
+        'Artifact drafting debe abrirse en un slice separado antes de cualquier ejecucion formal.',
+      ],
+    };
+  }
+}
+
 function check(
   key: string,
   label: string,
@@ -12525,6 +12830,99 @@ function fullAccountingProductDesignDecisionFromStatus(
     return 'continue_product_design';
   }
   return 'do_not_design_full_accounting_product';
+}
+
+function fullAccountingFormalReadinessLane(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  laneType: TenantFullAccountingFormalReadinessAnchorView['readinessLanes'][number]['laneType'],
+  readinessMode: TenantFullAccountingFormalReadinessAnchorView['readinessLanes'][number]['readinessMode'],
+  evidenceRefs: string[],
+): TenantFullAccountingFormalReadinessAnchorView['readinessLanes'][number] {
+  return { key, label, status, laneType, readinessMode, evidenceRefs };
+}
+
+function fullAccountingPolicyTemplate(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  templateType: TenantFullAccountingPolicyTemplateRegistryView['templates'][number]['templateType'],
+  templateMode: TenantFullAccountingPolicyTemplateRegistryView['templates'][number]['templateMode'],
+  evidenceRefs: string[],
+): TenantFullAccountingPolicyTemplateRegistryView['templates'][number] {
+  return { key, label, status, templateType, templateMode, evidenceRefs };
+}
+
+function fullAccountingProfessionalPortalShellItem(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  shellType: TenantFullAccountingProfessionalPortalReadinessShellView['shellItems'][number]['shellType'],
+  owner: AccountingAdvancedProfessionalOwner,
+  evidenceRefs: string[],
+): TenantFullAccountingProfessionalPortalReadinessShellView['shellItems'][number] {
+  return { key, label, status, shellType, owner, evidenceRefs };
+}
+
+function fullAccountingLedgerPostingReadinessItem(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  readinessType: TenantFullAccountingFormalLedgerPostingReadinessPackView['readinessItems'][number]['readinessType'],
+  controlMode: TenantFullAccountingFormalLedgerPostingReadinessPackView['readinessItems'][number]['controlMode'],
+  evidenceRefs: string[],
+): TenantFullAccountingFormalLedgerPostingReadinessPackView['readinessItems'][number] {
+  return { key, label, status, readinessType, controlMode, evidenceRefs };
+}
+
+function fullAccountingStatementBankBoundaryItem(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  boundaryType: TenantFullAccountingStatementBankFormalBoundaryPackView['boundaryItems'][number]['boundaryType'],
+  boundaryMode: TenantFullAccountingStatementBankFormalBoundaryPackView['boundaryItems'][number]['boundaryMode'],
+  evidenceRefs: string[],
+): TenantFullAccountingStatementBankFormalBoundaryPackView['boundaryItems'][number] {
+  return { key, label, status, boundaryType, boundaryMode, evidenceRefs };
+}
+
+function fullAccountingFormalReadinessCloseoutCheck(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  evidenceRefs: string[],
+): TenantFullAccountingFormalReadinessCloseoutView['closeoutChecklist'][number] {
+  return { key, label, status, evidenceRefs };
+}
+
+function fullAccountingFormalReadinessDecisionFromStatus(
+  status: AccountingReadinessStatus,
+  formalReadinessAnchor: TenantFullAccountingFormalReadinessAnchorView,
+  policyTemplateRegistry: TenantFullAccountingPolicyTemplateRegistryView,
+  professionalPortalShell: TenantFullAccountingProfessionalPortalReadinessShellView,
+  ledgerPostingReadinessPack: TenantFullAccountingFormalLedgerPostingReadinessPackView,
+  statementBankBoundaryPack: TenantFullAccountingStatementBankFormalBoundaryPackView,
+  blockers: string[],
+): FullAccountingFormalReadinessDecision {
+  if (blockers.length > 0 || status === 'blocked') {
+    return 'return_to_product_design';
+  }
+  if (formalReadinessAnchor.summary.formalReadyLaneCount === 0) {
+    return 'return_to_graduation';
+  }
+  if (
+    policyTemplateRegistry.summary.reviewTemplateCount > 0 &&
+    professionalPortalShell.summary.accountantOwnedCount > 0 &&
+    ledgerPostingReadinessPack.summary.approvalGateCount > 0 &&
+    statementBankBoundaryPack.summary.professionalReviewCount > 0
+  ) {
+    return 'open_formal_artifact_drafting';
+  }
+  if (statementBankBoundaryPack.summary.externalOnlyCount > 0) {
+    return 'continue_formal_readiness';
+  }
+  return 'do_not_open_formal_readiness';
 }
 
 function formalProductDesignDecisionFromStatus(

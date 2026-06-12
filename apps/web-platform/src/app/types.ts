@@ -5522,6 +5522,83 @@ export interface FullAccountingProductDesignCloseoutResponse {
   guardrails: string[];
 }
 
+export interface FullAccountingFormalReadinessCloseoutResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  closeoutStatus: string;
+  formalReadinessAnchor: {
+    anchorStatus: string;
+    summary: {
+      laneCount: number;
+      readyLaneCount: number;
+      formalReadyLaneCount: number;
+      professionalRequiredLaneCount: number;
+      excludedLaneCount: number;
+      blockedLaneCount: number;
+    };
+  };
+  policyTemplateRegistry: {
+    registryStatus: string;
+    summary: {
+      templateCount: number;
+      readyTemplateCount: number;
+      reviewTemplateCount: number;
+      excludedTemplateCount: number;
+    };
+  };
+  professionalPortalShell: {
+    shellStatus: string;
+    summary: {
+      shellItemCount: number;
+      readyShellItemCount: number;
+      accountantOwnedCount: number;
+      excludedShellItemCount: number;
+    };
+  };
+  ledgerPostingReadinessPack: {
+    packStatus: string;
+    summary: {
+      itemCount: number;
+      readyItemCount: number;
+      approvalGateCount: number;
+      rollbackCount: number;
+      invariantCount: number;
+    };
+  };
+  statementBankBoundaryPack: {
+    packStatus: string;
+    summary: {
+      boundaryCount: number;
+      readyBoundaryCount: number;
+      professionalReviewCount: number;
+      externalOnlyCount: number;
+      excludedBoundaryCount: number;
+    };
+  };
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: string;
+    evidenceRefs: string[];
+  }>;
+  finalDecision: string;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockedChecklistCount: number;
+    readinessLaneCount: number;
+    templateCount: number;
+    portalShellItemCount: number;
+    ledgerPostingItemCount: number;
+    statementBankBoundaryCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface AccountingOperationalCommandCenterResponse {
   tenantSlug: string;
   period: string;

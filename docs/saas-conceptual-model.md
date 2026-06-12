@@ -2284,6 +2284,39 @@ Guardrail: this is a roadmap decision layer. It does not archive records,
 perform statutory accounting, open full Accounting automatically, issue books or
 replace professional judgment.
 
+### Full Accounting candidate 0.1
+
+After the graduation/archive handoff check, the platform can evaluate full
+Accounting as a candidate product without implementing statutory accounting yet.
+This layer is the architectural survey: it marks where the future building
+would stand, what foundations it needs and which parts still require
+professional ownership.
+
+1. `Full Accounting Candidate Anchor`
+   - converts graduation/archive handoff closeout into candidate signals for
+     ledger, bank reconciliation, financial statements, legal books and
+     professional operations
+2. `Core Ledger Scope Blueprint`
+   - defines chart of accounts, journal entries, posting rules, period locks,
+     opening balances and adjustments as candidate scope
+3. `Bank Reconciliation Product Boundary`
+   - separates statement import, matching rules, exception resolution, cash
+     closeout and certification boundary
+4. `Financial Statements Candidate Blueprint`
+   - outlines trial balance, balance sheet, income statement, comparatives,
+     adjustment disclosures and professional review
+5. `Legal Books & Statutory Boundary Blueprint`
+   - maps legal books, custody, legalization, professional signature and
+     platform non-certification
+6. `Full Accounting Candidate Closeout`
+   - decides whether to open a full Accounting MVP, continue candidate
+     discovery, return to Accounting Advanced hardening, hand off archive only
+     or stop
+
+Guardrail: candidate 0.1 is not full Accounting. It does not persist a ledger,
+post journal entries, reconcile banks, issue statements, legalize books or
+certify balances.
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal
@@ -2414,6 +2447,9 @@ product. Its current scope is intentionally operational and review-oriented:
 35. Accounting Advanced graduation and archive handoff check as the roadmap
     customs desk. It separates archive handoff from full Accounting graduation,
     using signals and scope decisions before opening any larger product.
+36. Full Accounting candidate 0.1 as the architectural survey. It scopes ledger,
+    bank reconciliation, financial statements and legal/statutory boundaries
+    without implementing postings, statements, legal books or certifications.
 
 Boundary: this foundation still does not perform bank reconciliation, lock
 against certified bank feeds, lock official legal books, issue official

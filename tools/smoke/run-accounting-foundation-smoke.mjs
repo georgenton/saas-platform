@@ -1224,6 +1224,12 @@ const [
   advancedProductScopeDecisionWorkspace,
   advancedGraduationArchiveHandoffCommandCenter,
   advancedGraduationArchiveHandoffCloseout,
+  fullAccountingCandidateAnchor,
+  fullAccountingCoreLedgerScopeBlueprint,
+  fullAccountingBankReconciliationBoundary,
+  fullAccountingFinancialStatementsBlueprint,
+  fullAccountingLegalBooksStatutoryBoundary,
+  fullAccountingCandidateCloseout,
 ] = await Promise.all([
   apiRequest({
     baseUrl,
@@ -1922,6 +1928,44 @@ const [
     ),
     token,
   }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(`/full-accounting-candidate/anchor?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-candidate/core-ledger-scope?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-candidate/bank-reconciliation-boundary?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-candidate/financial-statements-blueprint?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-candidate/legal-books-boundary?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(`/full-accounting-candidate/closeout?${periodQuery()}`),
+    token,
+  }),
 ]);
 
 assertStatus(
@@ -2344,6 +2388,30 @@ assertStatus(
   'accounting advanced graduation archive handoff closeout',
   advancedGraduationArchiveHandoffCloseout.closeoutStatus,
 );
+assertStatus(
+  'full accounting candidate anchor',
+  fullAccountingCandidateAnchor.anchorStatus,
+);
+assertStatus(
+  'full accounting core ledger scope blueprint',
+  fullAccountingCoreLedgerScopeBlueprint.blueprintStatus,
+);
+assertStatus(
+  'full accounting bank reconciliation boundary',
+  fullAccountingBankReconciliationBoundary.boundaryStatus,
+);
+assertStatus(
+  'full accounting financial statements blueprint',
+  fullAccountingFinancialStatementsBlueprint.blueprintStatus,
+);
+assertStatus(
+  'full accounting legal books statutory boundary',
+  fullAccountingLegalBooksStatutoryBoundary.boundaryStatus,
+);
+assertStatus(
+  'full accounting candidate closeout',
+  fullAccountingCandidateCloseout.closeoutStatus,
+);
 if (!Array.isArray(advancedDiscoveryCloseout.closeoutChecklist)) {
   throw new Error('advanced-discovery/closeout no devolvio checklist[].');
 }
@@ -2408,6 +2476,11 @@ if (!Array.isArray(advancedFormalRecordCloseoutCloseout.closeoutChecklist)) {
 if (!Array.isArray(advancedGraduationArchiveHandoffCloseout.closeoutChecklist)) {
   throw new Error(
     'advanced-graduation-archive-handoff/closeout no devolvio checklist[].',
+  );
+}
+if (!Array.isArray(fullAccountingCandidateCloseout.closeoutChecklist)) {
+  throw new Error(
+    'full-accounting-candidate/closeout no devolvio checklist[].',
   );
 }
 printLine(

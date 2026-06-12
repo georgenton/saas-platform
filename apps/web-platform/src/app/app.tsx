@@ -146,6 +146,7 @@ import {
   fetchAccountingAdvancedFormalRecordAssemblyCloseout,
   fetchAccountingAdvancedFormalRecordCloseoutCloseout,
   fetchAccountingAdvancedGraduationArchiveHandoffCloseout,
+  fetchFullAccountingCandidateCloseout,
   fetchAccountingPeriodCloseoutReport,
   fetchAccountingPeriodCloseoutReadiness,
   fetchAccountingPeriodCashCloseoutReadiness,
@@ -514,6 +515,7 @@ import {
   AccountingAdvancedFormalRecordAssemblyCloseoutResponse,
   AccountingAdvancedFormalRecordCloseoutCloseoutResponse,
   AccountingAdvancedGraduationArchiveHandoffCloseoutResponse,
+  FullAccountingCandidateCloseoutResponse,
   AccountingLegalBooksReadinessPacketResponse,
   AccountingCloseoutCertificationReadinessResponse,
   AccountingCorrectionsQueueResponse,
@@ -2672,6 +2674,10 @@ export function App() {
     useState<AccountingAdvancedGraduationArchiveHandoffCloseoutResponse | null>(
       null,
     );
+  const [
+    fullAccountingCandidateCloseout,
+    setFullAccountingCandidateCloseout,
+  ] = useState<FullAccountingCandidateCloseoutResponse | null>(null);
   const [
     taxComplianceSriFiscalEvidenceWorkspace,
     setTaxComplianceSriFiscalEvidenceWorkspace,
@@ -20836,6 +20842,7 @@ export function App() {
         nextAccountingAdvancedFormalRecordAssemblyCloseout,
         nextAccountingAdvancedFormalRecordCloseoutCloseout,
         nextAccountingAdvancedGraduationArchiveHandoffCloseout,
+        nextFullAccountingCandidateCloseout,
       ] = accountingEnabled
         ? await Promise.all([
             fetchAccountingIntakeWorkspace(
@@ -21153,6 +21160,12 @@ export function App() {
               taxCompliancePeriod,
               year,
             ),
+            fetchFullAccountingCandidateCloseout(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
           ])
         : [
             null,
@@ -21188,6 +21201,7 @@ export function App() {
             null,
             null,
             [],
+            null,
             null,
             null,
             null,
@@ -21508,6 +21522,9 @@ export function App() {
         );
         setAccountingAdvancedGraduationArchiveHandoffCloseout(
           nextAccountingAdvancedGraduationArchiveHandoffCloseout,
+        );
+        setFullAccountingCandidateCloseout(
+          nextFullAccountingCandidateCloseout,
         );
       });
     } catch (error) {
@@ -37573,8 +37590,113 @@ export function App() {
                                     </p>
                                   </div>
                                 ) : null}
+                                {fullAccountingCandidateCloseout ? (
+                                  <div className={styles.invoiceItemCard}>
+                                    <div className={styles.invoiceCardHeader}>
+                                      <strong>
+                                        Full Accounting Candidate 0.1
+                                      </strong>
+                                      <span className={styles.statusPill}>
+                                        {humanizeKey(
+                                          fullAccountingCandidateCloseout.closeoutStatus,
+                                        )}
+                                      </span>
+                                    </div>
+                                    <div className={styles.invoiceInlineGrid}>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Candidate signals
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingCandidateCloseout
+                                              .candidateAnchor.summary
+                                              .readySignalCount
+                                          }
+                                          /
+                                          {
+                                            fullAccountingCandidateCloseout
+                                              .candidateAnchor.summary
+                                              .signalCount
+                                          }
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Ledger scope
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingCandidateCloseout
+                                              .ledgerScopeBlueprint.summary
+                                              .persistenceDesignCount
+                                          }{' '}
+                                          persistence
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Bank boundary
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingCandidateCloseout
+                                              .bankReconciliationBoundary
+                                              .summary.readyItemCount
+                                          }
+                                          /
+                                          {
+                                            fullAccountingCandidateCloseout
+                                              .bankReconciliationBoundary
+                                              .summary.itemCount
+                                          }
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Statements
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingCandidateCloseout
+                                              .financialStatementsBlueprint
+                                              .summary.ledgerDependentItemCount
+                                          }{' '}
+                                          ledger
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Statutory
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingCandidateCloseout
+                                              .legalBooksStatutoryBoundary
+                                              .summary.professionalOwnedItemCount
+                                          }{' '}
+                                          professional
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Decision
+                                        </span>
+                                        <strong>
+                                          {humanizeKey(
+                                            fullAccountingCandidateCloseout.finalDecision,
+                                          )}
+                                        </strong>
+                                      </div>
+                                    </div>
+                                    <p className={styles.muted}>
+                                      {fullAccountingCandidateCloseout.nextStep}
+                                    </p>
+                                  </div>
+                                ) : null}
                                 <p className={styles.muted}>
-                                  {accountingAdvancedGraduationArchiveHandoffCloseout?.nextStep ??
+                                  {fullAccountingCandidateCloseout?.nextStep ??
+                                    accountingAdvancedGraduationArchiveHandoffCloseout?.nextStep ??
                                     accountingAdvancedFormalRecordCloseoutCloseout?.nextStep ??
                                     accountingAdvancedFormalRecordAssemblyCloseout?.nextStep ??
                                     accountingAdvancedExternalResultIntakeCloseout?.nextStep ??

@@ -18,6 +18,7 @@ import {
   AccountingAdvancedGraduationArchiveHandoffDecision,
   FullAccountingCandidateDecision,
   FullAccountingControlledPilotDecision,
+  FullAccountingGraduationDecision,
   FullAccountingMvpReadinessDecision,
   FullAccountingMvpOperationsDecision,
   AccountingAdvancedFormalModuleKey,
@@ -135,11 +136,17 @@ import {
   TenantFullAccountingMvpOperationsCloseoutView,
   TenantFullAccountingControlledPilotAnchorView,
   TenantFullAccountingControlledPilotCloseoutView,
+  TenantFullAccountingGraduationAnchorView,
+  TenantFullAccountingGraduationCloseoutView,
+  TenantFullAccountingGraduationEvidenceDossierView,
+  TenantFullAccountingGraduationRiskControlPackView,
   TenantFullAccountingLedgerWorkbenchMvpView,
   TenantFullAccountingPilotAccountantReviewRoomView,
   TenantFullAccountingPilotEnrollmentPeriodFreezeView,
   TenantFullAccountingPilotOutcomePacketView,
   TenantFullAccountingPilotRunbookWorkspaceView,
+  TenantFullAccountingProductScopeGraduationMatrixView,
+  TenantFullAccountingProfessionalOperatingModelView,
   TenantFullAccountingPostingDraftLaneView,
   TenantFullAccountingBankReconciliationWorkbenchMvpView,
   TenantFullAccountingTrialBalancePreviewWorkbenchView,
@@ -9736,6 +9743,309 @@ export class RequestTenantFullAccountingControlledPilotCloseoutUseCase {
   }
 }
 
+export class GetTenantFullAccountingGraduationAnchorUseCase {
+  constructor(
+    private readonly requestTenantFullAccountingControlledPilotCloseoutUseCase: RequestTenantFullAccountingControlledPilotCloseoutUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingGraduationAnchorView> {
+    const controlledPilotCloseout =
+      await this.requestTenantFullAccountingControlledPilotCloseoutUseCase.execute(input);
+    const graduationLanes: TenantFullAccountingGraduationAnchorView['graduationLanes'] = [
+      fullAccountingGraduationLane('ledger', 'Ledger graduation lane', controlledPilotCloseout.pilotAnchor.anchorStatus, 'ledger', 'graduable', ['full_accounting_controlled_pilot_anchor']),
+      fullAccountingGraduationLane('posting', 'Posting workflow graduation lane', controlledPilotCloseout.runbookWorkspace.runbookStatus, 'posting', 'graduable', ['full_accounting_pilot_runbook_workspace']),
+      fullAccountingGraduationLane('bank_reconciliation', 'Bank reconciliation graduation lane', controlledPilotCloseout.outcomePacket.outcomeStatus, 'bank_reconciliation', 'needs_more_pilot', ['full_accounting_pilot_outcome_packet']),
+      fullAccountingGraduationLane('financial_statements', 'Financial statements graduation lane', controlledPilotCloseout.accountantReviewRoom.reviewStatus, 'financial_statements', 'needs_hardening', ['full_accounting_pilot_accountant_review_room']),
+      fullAccountingGraduationLane('statutory_boundary', 'Statutory boundary lane', 'ready', 'statutory_boundary', 'excluded', ['full_accounting_mvp_operations_closeout']),
+      fullAccountingGraduationLane('professional_operations', 'Professional operations lane', controlledPilotCloseout.closeoutStatus, 'professional_operations', 'graduable', ['full_accounting_controlled_pilot_closeout']),
+    ];
+    const blockers =
+      controlledPilotCloseout.finalDecision === 'prepare_full_accounting_graduation'
+        ? [...controlledPilotCloseout.blockers]
+        : unique([
+            ...controlledPilotCloseout.blockers,
+            `Full Accounting controlled pilot decision is ${controlledPilotCloseout.finalDecision}.`,
+          ]);
+    const anchorStatus = resolveStatus(graduationLanes.map((lane) => lane.status), blockers);
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      anchorStatus,
+      controlledPilotCloseout,
+      graduationLanes,
+      summary: {
+        laneCount: graduationLanes.length,
+        readyLaneCount: graduationLanes.filter((lane) => lane.status === 'ready').length,
+        graduableLaneCount: graduationLanes.filter((lane) => lane.graduationSignal === 'graduable').length,
+        needsMorePilotLaneCount: graduationLanes.filter((lane) => lane.graduationSignal === 'needs_more_pilot').length,
+        statutoryBoundaryLaneCount: graduationLanes.filter((lane) => lane.laneType === 'statutory_boundary').length,
+        blockedLaneCount: graduationLanes.filter((lane) => lane.status === 'blocked').length,
+      },
+      blockers,
+      nextStep: 'Armar graduation evidence dossier.',
+      guardrails: [
+        'Graduation anchor no abre producto oficial.',
+        'La graduacion requiere alcance, modelo profesional y controles de riesgo separados.',
+      ],
+    };
+  }
+}
+
+export class GetTenantFullAccountingGraduationEvidenceDossierUseCase {
+  constructor(
+    private readonly getTenantFullAccountingGraduationAnchorUseCase: GetTenantFullAccountingGraduationAnchorUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingGraduationEvidenceDossierView> {
+    const graduationAnchor =
+      await this.getTenantFullAccountingGraduationAnchorUseCase.execute(input);
+    const evidenceSections: TenantFullAccountingGraduationEvidenceDossierView['evidenceSections'] = [
+      fullAccountingGraduationEvidenceSection('pilot_snapshot', 'Controlled pilot snapshot', graduationAnchor.anchorStatus, 'pilot_snapshot', ['full_accounting_controlled_pilot_closeout']),
+      fullAccountingGraduationEvidenceSection('runbook_result', 'Pilot runbook results', graduationAnchor.controlledPilotCloseout.runbookWorkspace.runbookStatus, 'runbook_result', ['full_accounting_pilot_runbook_workspace']),
+      fullAccountingGraduationEvidenceSection('accountant_recommendation', 'Accountant recommendation evidence', graduationAnchor.controlledPilotCloseout.accountantReviewRoom.reviewStatus, 'accountant_recommendation', ['full_accounting_pilot_accountant_review_room']),
+      fullAccountingGraduationEvidenceSection('acceptance_signal', 'Accountant acceptance signal evidence', graduationAnchor.controlledPilotCloseout.outcomePacket.outcomeStatus, 'acceptance_signal', ['full_accounting_pilot_outcome_packet']),
+      fullAccountingGraduationEvidenceSection('repeated_blocker', 'Repeated blocker evidence', graduationAnchor.blockers.length > 0 ? 'blocked' : 'ready', 'repeated_blocker', ['full_accounting_controlled_pilot_closeout']),
+      fullAccountingGraduationEvidenceSection('guardrail_evidence', 'Graduation guardrail evidence', 'ready', 'guardrail_evidence', ['full_accounting_mvp_operations_closeout']),
+    ];
+    const blockers = [...graduationAnchor.blockers];
+    const dossierStatus = resolveStatus(evidenceSections.map((section) => section.status), blockers);
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      dossierStatus,
+      graduationAnchor,
+      evidenceSections,
+      summary: {
+        sectionCount: evidenceSections.length,
+        readySectionCount: evidenceSections.filter((section) => section.status === 'ready').length,
+        snapshotSectionCount: evidenceSections.filter((section) => section.sectionType === 'pilot_snapshot').length,
+        accountantRecommendationCount: evidenceSections.filter((section) => section.sectionType === 'accountant_recommendation').length,
+        acceptanceSignalCount: evidenceSections.filter((section) => section.sectionType === 'acceptance_signal').length,
+        blockerSectionCount: evidenceSections.filter((section) => section.sectionType === 'repeated_blocker' && section.status === 'blocked').length,
+      },
+      blockers,
+      nextStep: 'Definir product scope graduation matrix.',
+      guardrails: [
+        'El dossier documenta evidencia; no certifica saldos.',
+        'Las recomendaciones del contador son insumo de graduacion, no aprobacion estatutaria.',
+      ],
+    };
+  }
+}
+
+export class GetTenantFullAccountingProductScopeGraduationMatrixUseCase {
+  constructor(
+    private readonly getTenantFullAccountingGraduationEvidenceDossierUseCase: GetTenantFullAccountingGraduationEvidenceDossierUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingProductScopeGraduationMatrixView> {
+    const graduationEvidenceDossier =
+      await this.getTenantFullAccountingGraduationEvidenceDossierUseCase.execute(input);
+    const moduleDecisions: TenantFullAccountingProductScopeGraduationMatrixView['moduleDecisions'] = [
+      fullAccountingGraduationModuleDecision('ledger', 'Ledger module scope', graduationEvidenceDossier.dossierStatus, 'ledger', 'graduate', ['full_accounting_graduation_anchor']),
+      fullAccountingGraduationModuleDecision('posting_workflow', 'Posting workflow module scope', graduationEvidenceDossier.dossierStatus, 'posting_workflow', 'graduate', ['full_accounting_pilot_runbook_workspace']),
+      fullAccountingGraduationModuleDecision('bank_reconciliation', 'Bank reconciliation module scope', graduationEvidenceDossier.dossierStatus, 'bank_reconciliation', 'pilot_more', ['full_accounting_pilot_outcome_packet']),
+      fullAccountingGraduationModuleDecision('trial_balance_statements', 'Trial balance and statements module scope', graduationEvidenceDossier.dossierStatus, 'trial_balance_statements', 'harden', ['full_accounting_pilot_accountant_review_room']),
+      fullAccountingGraduationModuleDecision('legal_books', 'Legal books module scope', 'ready', 'legal_books', 'exclude', ['full_accounting_legal_books_boundary']),
+      fullAccountingGraduationModuleDecision('professional_review', 'Professional review module scope', graduationEvidenceDossier.dossierStatus, 'professional_review', 'graduate', ['full_accounting_pilot_accountant_review_room']),
+    ];
+    const blockers = [...graduationEvidenceDossier.blockers];
+    const matrixStatus = resolveStatus(moduleDecisions.map((decision) => decision.status), blockers);
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      matrixStatus,
+      graduationEvidenceDossier,
+      moduleDecisions,
+      summary: {
+        moduleCount: moduleDecisions.length,
+        readyModuleCount: moduleDecisions.filter((decision) => decision.status === 'ready').length,
+        graduateModuleCount: moduleDecisions.filter((decision) => decision.scopeDecision === 'graduate').length,
+        pilotMoreModuleCount: moduleDecisions.filter((decision) => decision.scopeDecision === 'pilot_more').length,
+        hardenModuleCount: moduleDecisions.filter((decision) => decision.scopeDecision === 'harden').length,
+        excludedModuleCount: moduleDecisions.filter((decision) => decision.scopeDecision === 'exclude').length,
+      },
+      blockers,
+      nextStep: 'Definir professional operating model.',
+      guardrails: [
+        'La matriz puede excluir legal books aunque otros modulos graduen.',
+        'Scope graduate no significa emitir artefactos oficiales en este slice.',
+      ],
+    };
+  }
+}
+
+export class GetTenantFullAccountingProfessionalOperatingModelUseCase {
+  constructor(
+    private readonly getTenantFullAccountingProductScopeGraduationMatrixUseCase: GetTenantFullAccountingProductScopeGraduationMatrixUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingProfessionalOperatingModelView> {
+    const productScopeMatrix =
+      await this.getTenantFullAccountingProductScopeGraduationMatrixUseCase.execute(input);
+    const responsibilityAssignments: TenantFullAccountingProfessionalOperatingModelView['responsibilityAssignments'] = [
+      fullAccountingProfessionalResponsibility('ledger_operation', 'Ledger operation responsibility', productScopeMatrix.matrixStatus, 'ledger_operation', 'operator', 'platform_assisted', ['full_accounting_product_scope_graduation_matrix']),
+      fullAccountingProfessionalResponsibility('posting_approval', 'Posting approval responsibility', productScopeMatrix.matrixStatus, 'posting_approval', 'external_accountant', 'human_approval', ['full_accounting_pilot_accountant_review_room']),
+      fullAccountingProfessionalResponsibility('bank_review', 'Bank review responsibility', productScopeMatrix.matrixStatus, 'bank_review', 'external_accountant', 'human_approval', ['full_accounting_pilot_outcome_packet']),
+      fullAccountingProfessionalResponsibility('statement_review', 'Statement review responsibility', productScopeMatrix.matrixStatus, 'statement_review', 'external_accountant', 'external_professional', ['full_accounting_financial_statements_blueprint']),
+      fullAccountingProfessionalResponsibility('statutory_boundary', 'Statutory boundary responsibility', 'ready', 'statutory_boundary', 'legal_representative', 'excluded', ['full_accounting_legal_books_boundary']),
+      fullAccountingProfessionalResponsibility('exception_resolution', 'Exception resolution responsibility', productScopeMatrix.matrixStatus, 'exception_resolution', 'operator', 'platform_assisted', ['accounting_corrections_queue']),
+    ];
+    const blockers = [...productScopeMatrix.blockers];
+    const modelStatus = resolveStatus(responsibilityAssignments.map((assignment) => assignment.status), blockers);
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      modelStatus,
+      productScopeMatrix,
+      responsibilityAssignments,
+      summary: {
+        assignmentCount: responsibilityAssignments.length,
+        readyAssignmentCount: responsibilityAssignments.filter((assignment) => assignment.status === 'ready').length,
+        platformAssistedCount: responsibilityAssignments.filter((assignment) => assignment.automationBoundary === 'platform_assisted').length,
+        humanApprovalCount: responsibilityAssignments.filter((assignment) => assignment.automationBoundary === 'human_approval').length,
+        externalProfessionalCount: responsibilityAssignments.filter((assignment) => assignment.automationBoundary === 'external_professional').length,
+        excludedAssignmentCount: responsibilityAssignments.filter((assignment) => assignment.automationBoundary === 'excluded').length,
+      },
+      blockers,
+      nextStep: 'Preparar graduation risk and control pack.',
+      guardrails: [
+        'El modelo profesional conserva aprobaciones humanas donde hay riesgo contable.',
+        'La plataforma asiste operaciones; no reemplaza contador, auditor ni representante legal.',
+      ],
+    };
+  }
+}
+
+export class GetTenantFullAccountingGraduationRiskControlPackUseCase {
+  constructor(
+    private readonly getTenantFullAccountingProfessionalOperatingModelUseCase: GetTenantFullAccountingProfessionalOperatingModelUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingGraduationRiskControlPackView> {
+    const professionalOperatingModel =
+      await this.getTenantFullAccountingProfessionalOperatingModelUseCase.execute(input);
+    const riskControls: TenantFullAccountingGraduationRiskControlPackView['riskControls'] = [
+      fullAccountingGraduationRiskControl('posting_error', 'Posting error control', professionalOperatingModel.modelStatus, 'posting_error', 'preventive', ['full_accounting_professional_operating_model']),
+      fullAccountingGraduationRiskControl('bank_reconciliation_error', 'Bank reconciliation error control', professionalOperatingModel.modelStatus, 'bank_reconciliation_error', 'detective', ['full_accounting_product_scope_graduation_matrix']),
+      fullAccountingGraduationRiskControl('statement_misstatement', 'Statement misstatement control', professionalOperatingModel.modelStatus, 'statement_misstatement', 'professional_review', ['full_accounting_financial_statements_blueprint']),
+      fullAccountingGraduationRiskControl('statutory_non_compliance', 'Statutory non-compliance boundary', 'ready', 'statutory_non_compliance', 'excluded', ['full_accounting_legal_books_boundary']),
+      fullAccountingGraduationRiskControl('professional_boundary', 'Professional boundary control', professionalOperatingModel.modelStatus, 'professional_boundary', 'professional_review', ['full_accounting_pilot_accountant_review_room']),
+      fullAccountingGraduationRiskControl('rollback_condition', 'Graduation rollback condition', 'ready', 'rollback_condition', 'rollback', ['full_accounting_controlled_pilot_closeout']),
+    ];
+    const blockers = [...professionalOperatingModel.blockers];
+    const packStatus = resolveStatus(riskControls.map((control) => control.status), blockers);
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      packStatus,
+      professionalOperatingModel,
+      riskControls,
+      summary: {
+        controlCount: riskControls.length,
+        readyControlCount: riskControls.filter((control) => control.status === 'ready').length,
+        preventiveControlCount: riskControls.filter((control) => control.controlMode === 'preventive').length,
+        detectiveControlCount: riskControls.filter((control) => control.controlMode === 'detective').length,
+        professionalReviewControlCount: riskControls.filter((control) => control.controlMode === 'professional_review').length,
+        rollbackControlCount: riskControls.filter((control) => control.controlMode === 'rollback').length,
+      },
+      blockers,
+      nextStep: 'Cerrar Full Accounting graduation 0.5.',
+      guardrails: [
+        'Risk controls son precondiciones de graduacion, no controles regulatorios certificados.',
+        'Rollback sigue disponible si el producto no debe graduar.',
+      ],
+    };
+  }
+}
+
+export class RequestTenantFullAccountingGraduationCloseoutUseCase {
+  constructor(
+    private readonly getTenantFullAccountingGraduationRiskControlPackUseCase: GetTenantFullAccountingGraduationRiskControlPackUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingGraduationCloseoutView> {
+    const riskControlPack =
+      await this.getTenantFullAccountingGraduationRiskControlPackUseCase.execute(input);
+    const { professionalOperatingModel } = riskControlPack;
+    const { productScopeMatrix } = professionalOperatingModel;
+    const { graduationEvidenceDossier } = productScopeMatrix;
+    const { graduationAnchor } = graduationEvidenceDossier;
+    const closeoutChecklist: TenantFullAccountingGraduationCloseoutView['closeoutChecklist'] = [
+      fullAccountingGraduationCloseoutCheck('graduation_anchor', 'Full Accounting graduation anchor', graduationAnchor.anchorStatus, ['full_accounting_graduation_anchor']),
+      fullAccountingGraduationCloseoutCheck('evidence_dossier', 'Graduation evidence dossier', graduationEvidenceDossier.dossierStatus, ['full_accounting_graduation_evidence_dossier']),
+      fullAccountingGraduationCloseoutCheck('scope_matrix', 'Product scope graduation matrix', productScopeMatrix.matrixStatus, ['full_accounting_product_scope_graduation_matrix']),
+      fullAccountingGraduationCloseoutCheck('professional_model', 'Professional operating model', professionalOperatingModel.modelStatus, ['full_accounting_professional_operating_model']),
+      fullAccountingGraduationCloseoutCheck('risk_control_pack', 'Graduation risk and control pack', riskControlPack.packStatus, ['full_accounting_graduation_risk_control_pack']),
+    ];
+    const blockers = unique([
+      ...graduationAnchor.blockers,
+      ...graduationEvidenceDossier.blockers,
+      ...productScopeMatrix.blockers,
+      ...professionalOperatingModel.blockers,
+      ...riskControlPack.blockers,
+    ]);
+    const closeoutStatus = resolveStatus(closeoutChecklist.map((item) => item.status), blockers);
+    const finalDecision = fullAccountingGraduationDecisionFromStatus(
+      closeoutStatus,
+      graduationAnchor,
+      productScopeMatrix,
+      professionalOperatingModel,
+      riskControlPack,
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      closeoutStatus,
+      graduationAnchor,
+      graduationEvidenceDossier,
+      productScopeMatrix,
+      professionalOperatingModel,
+      riskControlPack,
+      closeoutChecklist,
+      finalDecision,
+      summary: {
+        checklistCount: closeoutChecklist.length,
+        readyChecklistCount: closeoutChecklist.filter((item) => item.status === 'ready').length,
+        blockedChecklistCount: closeoutChecklist.filter((item) => item.status === 'blocked').length,
+        graduationLaneCount: graduationAnchor.summary.laneCount,
+        evidenceSectionCount: graduationEvidenceDossier.summary.sectionCount,
+        scopeModuleCount: productScopeMatrix.summary.moduleCount,
+        responsibilityAssignmentCount: professionalOperatingModel.summary.assignmentCount,
+        riskControlCount: riskControlPack.summary.controlCount,
+      },
+      blockers,
+      nextStep:
+        finalDecision === 'graduate_to_full_accounting_product_design'
+          ? 'Preparar Full Accounting product design 0.6.'
+          : finalDecision === 'continue_controlled_pilot'
+            ? 'Continuar piloto controlado antes de graduar.'
+            : finalDecision === 'return_to_mvp_operations'
+              ? 'Volver a Full Accounting MVP Operations 0.3.'
+              : finalDecision === 'return_to_mvp_readiness'
+                ? 'Volver a Full Accounting MVP Readiness 0.2.'
+                : 'No graduar Full Accounting por ahora.',
+      guardrails: [
+        'Graduation 0.5 decide si disenar producto; no emite contabilidad oficial.',
+        'Legal books, estados financieros oficiales y certificaciones quedan fuera hasta product design formal.',
+      ],
+    };
+  }
+}
+
 function check(
   key: string,
   label: string,
@@ -11714,6 +12024,97 @@ function fullAccountingControlledPilotDecisionFromStatus(
     return 'continue_controlled_pilot';
   }
   return 'stop_full_accounting_mvp';
+}
+
+function fullAccountingGraduationLane(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  laneType: TenantFullAccountingGraduationAnchorView['graduationLanes'][number]['laneType'],
+  graduationSignal: TenantFullAccountingGraduationAnchorView['graduationLanes'][number]['graduationSignal'],
+  evidenceRefs: string[],
+): TenantFullAccountingGraduationAnchorView['graduationLanes'][number] {
+  return { key, label, status, laneType, graduationSignal, evidenceRefs };
+}
+
+function fullAccountingGraduationEvidenceSection(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  sectionType: TenantFullAccountingGraduationEvidenceDossierView['evidenceSections'][number]['sectionType'],
+  evidenceRefs: string[],
+): TenantFullAccountingGraduationEvidenceDossierView['evidenceSections'][number] {
+  return { key, label, status, sectionType, evidenceRefs };
+}
+
+function fullAccountingGraduationModuleDecision(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  moduleType: TenantFullAccountingProductScopeGraduationMatrixView['moduleDecisions'][number]['moduleType'],
+  scopeDecision: TenantFullAccountingProductScopeGraduationMatrixView['moduleDecisions'][number]['scopeDecision'],
+  evidenceRefs: string[],
+): TenantFullAccountingProductScopeGraduationMatrixView['moduleDecisions'][number] {
+  return { key, label, status, moduleType, scopeDecision, evidenceRefs };
+}
+
+function fullAccountingProfessionalResponsibility(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  activityType: TenantFullAccountingProfessionalOperatingModelView['responsibilityAssignments'][number]['activityType'],
+  owner: AccountingAdvancedProfessionalOwner,
+  automationBoundary: TenantFullAccountingProfessionalOperatingModelView['responsibilityAssignments'][number]['automationBoundary'],
+  evidenceRefs: string[],
+): TenantFullAccountingProfessionalOperatingModelView['responsibilityAssignments'][number] {
+  return { key, label, status, activityType, owner, automationBoundary, evidenceRefs };
+}
+
+function fullAccountingGraduationRiskControl(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  riskType: TenantFullAccountingGraduationRiskControlPackView['riskControls'][number]['riskType'],
+  controlMode: TenantFullAccountingGraduationRiskControlPackView['riskControls'][number]['controlMode'],
+  evidenceRefs: string[],
+): TenantFullAccountingGraduationRiskControlPackView['riskControls'][number] {
+  return { key, label, status, riskType, controlMode, evidenceRefs };
+}
+
+function fullAccountingGraduationCloseoutCheck(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  evidenceRefs: string[],
+): TenantFullAccountingGraduationCloseoutView['closeoutChecklist'][number] {
+  return { key, label, status, evidenceRefs };
+}
+
+function fullAccountingGraduationDecisionFromStatus(
+  status: AccountingReadinessStatus,
+  graduationAnchor: TenantFullAccountingGraduationAnchorView,
+  productScopeMatrix: TenantFullAccountingProductScopeGraduationMatrixView,
+  professionalOperatingModel: TenantFullAccountingProfessionalOperatingModelView,
+  riskControlPack: TenantFullAccountingGraduationRiskControlPackView,
+  blockers: string[],
+): FullAccountingGraduationDecision {
+  if (blockers.length > 0 || status === 'blocked') {
+    return 'return_to_mvp_operations';
+  }
+  if (graduationAnchor.summary.graduableLaneCount === 0) {
+    return 'return_to_mvp_readiness';
+  }
+  if (
+    productScopeMatrix.summary.graduateModuleCount > 0 &&
+    professionalOperatingModel.summary.humanApprovalCount > 0 &&
+    riskControlPack.summary.rollbackControlCount > 0
+  ) {
+    return 'graduate_to_full_accounting_product_design';
+  }
+  if (graduationAnchor.summary.needsMorePilotLaneCount > 0) {
+    return 'continue_controlled_pilot';
+  }
+  return 'do_not_graduate_full_accounting';
 }
 
 function formalProductDesignDecisionFromStatus(

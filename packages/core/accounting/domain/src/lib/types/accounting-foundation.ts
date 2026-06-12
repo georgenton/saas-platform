@@ -335,6 +335,12 @@ export type FullAccountingControlledPilotDecision =
   | 'return_to_mvp_operations'
   | 'return_to_mvp_readiness'
   | 'stop_full_accounting_mvp';
+export type FullAccountingGraduationDecision =
+  | 'graduate_to_full_accounting_product_design'
+  | 'continue_controlled_pilot'
+  | 'return_to_mvp_operations'
+  | 'return_to_mvp_readiness'
+  | 'do_not_graduate_full_accounting';
 export type AccountingAdvancedFormalModuleKey =
   | 'formal_books'
   | 'certified_bank_reconciliation'
@@ -4206,6 +4212,219 @@ export interface TenantFullAccountingControlledPilotCloseoutView {
     runbookStepCount: number;
     reviewItemCount: number;
     outcomeSignalCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingGraduationAnchorView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  anchorStatus: AccountingReadinessStatus;
+  controlledPilotCloseout: TenantFullAccountingControlledPilotCloseoutView;
+  graduationLanes: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    laneType:
+      | 'ledger'
+      | 'posting'
+      | 'bank_reconciliation'
+      | 'financial_statements'
+      | 'statutory_boundary'
+      | 'professional_operations';
+    graduationSignal:
+      | 'graduable'
+      | 'needs_more_pilot'
+      | 'needs_hardening'
+      | 'excluded'
+      | 'blocked';
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    laneCount: number;
+    readyLaneCount: number;
+    graduableLaneCount: number;
+    needsMorePilotLaneCount: number;
+    statutoryBoundaryLaneCount: number;
+    blockedLaneCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingGraduationEvidenceDossierView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  dossierStatus: AccountingReadinessStatus;
+  graduationAnchor: TenantFullAccountingGraduationAnchorView;
+  evidenceSections: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    sectionType:
+      | 'pilot_snapshot'
+      | 'runbook_result'
+      | 'accountant_recommendation'
+      | 'acceptance_signal'
+      | 'repeated_blocker'
+      | 'guardrail_evidence';
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    sectionCount: number;
+    readySectionCount: number;
+    snapshotSectionCount: number;
+    accountantRecommendationCount: number;
+    acceptanceSignalCount: number;
+    blockerSectionCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingProductScopeGraduationMatrixView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  matrixStatus: AccountingReadinessStatus;
+  graduationEvidenceDossier: TenantFullAccountingGraduationEvidenceDossierView;
+  moduleDecisions: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    moduleType:
+      | 'ledger'
+      | 'posting_workflow'
+      | 'bank_reconciliation'
+      | 'trial_balance_statements'
+      | 'legal_books'
+      | 'professional_review';
+    scopeDecision: 'graduate' | 'pilot_more' | 'harden' | 'exclude' | 'blocked';
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    moduleCount: number;
+    readyModuleCount: number;
+    graduateModuleCount: number;
+    pilotMoreModuleCount: number;
+    hardenModuleCount: number;
+    excludedModuleCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingProfessionalOperatingModelView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  modelStatus: AccountingReadinessStatus;
+  productScopeMatrix: TenantFullAccountingProductScopeGraduationMatrixView;
+  responsibilityAssignments: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    activityType:
+      | 'ledger_operation'
+      | 'posting_approval'
+      | 'bank_review'
+      | 'statement_review'
+      | 'statutory_boundary'
+      | 'exception_resolution';
+    owner: AccountingAdvancedProfessionalOwner;
+    automationBoundary: 'platform_assisted' | 'human_approval' | 'external_professional' | 'excluded';
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    assignmentCount: number;
+    readyAssignmentCount: number;
+    platformAssistedCount: number;
+    humanApprovalCount: number;
+    externalProfessionalCount: number;
+    excludedAssignmentCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingGraduationRiskControlPackView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  packStatus: AccountingReadinessStatus;
+  professionalOperatingModel: TenantFullAccountingProfessionalOperatingModelView;
+  riskControls: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    riskType:
+      | 'posting_error'
+      | 'bank_reconciliation_error'
+      | 'statement_misstatement'
+      | 'statutory_non_compliance'
+      | 'professional_boundary'
+      | 'rollback_condition';
+    controlMode:
+      | 'preventive'
+      | 'detective'
+      | 'professional_review'
+      | 'rollback'
+      | 'excluded';
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    controlCount: number;
+    readyControlCount: number;
+    preventiveControlCount: number;
+    detectiveControlCount: number;
+    professionalReviewControlCount: number;
+    rollbackControlCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingGraduationCloseoutView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  closeoutStatus: AccountingReadinessStatus;
+  graduationAnchor: TenantFullAccountingGraduationAnchorView;
+  graduationEvidenceDossier: TenantFullAccountingGraduationEvidenceDossierView;
+  productScopeMatrix: TenantFullAccountingProductScopeGraduationMatrixView;
+  professionalOperatingModel: TenantFullAccountingProfessionalOperatingModelView;
+  riskControlPack: TenantFullAccountingGraduationRiskControlPackView;
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    evidenceRefs: string[];
+  }>;
+  finalDecision: FullAccountingGraduationDecision;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockedChecklistCount: number;
+    graduationLaneCount: number;
+    evidenceSectionCount: number;
+    scopeModuleCount: number;
+    responsibilityAssignmentCount: number;
+    riskControlCount: number;
   };
   blockers: string[];
   nextStep: string;

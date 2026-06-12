@@ -111,6 +111,11 @@ import {
   GetTenantFullAccountingPilotRunbookWorkspaceUseCase,
   GetTenantFullAccountingPilotAccountantReviewRoomUseCase,
   GetTenantFullAccountingPilotOutcomePacketUseCase,
+  GetTenantFullAccountingGraduationAnchorUseCase,
+  GetTenantFullAccountingGraduationEvidenceDossierUseCase,
+  GetTenantFullAccountingProductScopeGraduationMatrixUseCase,
+  GetTenantFullAccountingProfessionalOperatingModelUseCase,
+  GetTenantFullAccountingGraduationRiskControlPackUseCase,
   GetTenantAccountingAdvancedFormalProductScopeContractUseCase,
   GetTenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixUseCase,
   GetTenantAccountingAdvancedProfessionalReviewWorkflowDesignUseCase,
@@ -189,6 +194,7 @@ import {
   RequestTenantFullAccountingMvpReadinessCloseoutUseCase,
   RequestTenantFullAccountingMvpOperationsCloseoutUseCase,
   RequestTenantFullAccountingControlledPilotCloseoutUseCase,
+  RequestTenantFullAccountingGraduationCloseoutUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -1623,6 +1629,56 @@ import { AccountingController } from './accounting.controller';
       useFactory: (getTenantFullAccountingPilotOutcomePacketUseCase) =>
         new RequestTenantFullAccountingControlledPilotCloseoutUseCase(
           getTenantFullAccountingPilotOutcomePacketUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingGraduationAnchorUseCase,
+      inject: [RequestTenantFullAccountingControlledPilotCloseoutUseCase],
+      useFactory: (requestTenantFullAccountingControlledPilotCloseoutUseCase) =>
+        new GetTenantFullAccountingGraduationAnchorUseCase(
+          requestTenantFullAccountingControlledPilotCloseoutUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingGraduationEvidenceDossierUseCase,
+      inject: [GetTenantFullAccountingGraduationAnchorUseCase],
+      useFactory: (getTenantFullAccountingGraduationAnchorUseCase) =>
+        new GetTenantFullAccountingGraduationEvidenceDossierUseCase(
+          getTenantFullAccountingGraduationAnchorUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingProductScopeGraduationMatrixUseCase,
+      inject: [GetTenantFullAccountingGraduationEvidenceDossierUseCase],
+      useFactory: (getTenantFullAccountingGraduationEvidenceDossierUseCase) =>
+        new GetTenantFullAccountingProductScopeGraduationMatrixUseCase(
+          getTenantFullAccountingGraduationEvidenceDossierUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingProfessionalOperatingModelUseCase,
+      inject: [GetTenantFullAccountingProductScopeGraduationMatrixUseCase],
+      useFactory: (
+        getTenantFullAccountingProductScopeGraduationMatrixUseCase,
+      ) =>
+        new GetTenantFullAccountingProfessionalOperatingModelUseCase(
+          getTenantFullAccountingProductScopeGraduationMatrixUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingGraduationRiskControlPackUseCase,
+      inject: [GetTenantFullAccountingProfessionalOperatingModelUseCase],
+      useFactory: (getTenantFullAccountingProfessionalOperatingModelUseCase) =>
+        new GetTenantFullAccountingGraduationRiskControlPackUseCase(
+          getTenantFullAccountingProfessionalOperatingModelUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantFullAccountingGraduationCloseoutUseCase,
+      inject: [GetTenantFullAccountingGraduationRiskControlPackUseCase],
+      useFactory: (getTenantFullAccountingGraduationRiskControlPackUseCase) =>
+        new RequestTenantFullAccountingGraduationCloseoutUseCase(
+          getTenantFullAccountingGraduationRiskControlPackUseCase,
         ),
     },
     {

@@ -109,11 +109,17 @@ import {
   TenantFullAccountingMvpOperationsCloseoutView,
   TenantFullAccountingControlledPilotAnchorView,
   TenantFullAccountingControlledPilotCloseoutView,
+  TenantFullAccountingGraduationAnchorView,
+  TenantFullAccountingGraduationCloseoutView,
+  TenantFullAccountingGraduationEvidenceDossierView,
+  TenantFullAccountingGraduationRiskControlPackView,
   TenantFullAccountingLedgerWorkbenchMvpView,
   TenantFullAccountingPilotAccountantReviewRoomView,
   TenantFullAccountingPilotEnrollmentPeriodFreezeView,
   TenantFullAccountingPilotOutcomePacketView,
   TenantFullAccountingPilotRunbookWorkspaceView,
+  TenantFullAccountingProductScopeGraduationMatrixView,
+  TenantFullAccountingProfessionalOperatingModelView,
   TenantFullAccountingPostingDraftLaneView,
   TenantFullAccountingBankReconciliationWorkbenchMvpView,
   TenantFullAccountingTrialBalancePreviewWorkbenchView,
@@ -379,6 +385,18 @@ export type FullAccountingPilotOutcomePacketResponseDto =
   Serialized<TenantFullAccountingPilotOutcomePacketView>;
 export type FullAccountingControlledPilotCloseoutResponseDto =
   Serialized<TenantFullAccountingControlledPilotCloseoutView>;
+export type FullAccountingGraduationAnchorResponseDto =
+  Serialized<TenantFullAccountingGraduationAnchorView>;
+export type FullAccountingGraduationEvidenceDossierResponseDto =
+  Serialized<TenantFullAccountingGraduationEvidenceDossierView>;
+export type FullAccountingProductScopeGraduationMatrixResponseDto =
+  Serialized<TenantFullAccountingProductScopeGraduationMatrixView>;
+export type FullAccountingProfessionalOperatingModelResponseDto =
+  Serialized<TenantFullAccountingProfessionalOperatingModelView>;
+export type FullAccountingGraduationRiskControlPackResponseDto =
+  Serialized<TenantFullAccountingGraduationRiskControlPackView>;
+export type FullAccountingGraduationCloseoutResponseDto =
+  Serialized<TenantFullAccountingGraduationCloseoutView>;
 
 export function toAccountingAdvancedDiscoveryAnchorResponseDto(
   view: TenantAccountingAdvancedDiscoveryAnchorView,
@@ -1133,6 +1151,42 @@ export function toFullAccountingPilotOutcomePacketResponseDto(
 export function toFullAccountingControlledPilotCloseoutResponseDto(
   view: TenantFullAccountingControlledPilotCloseoutView,
 ): FullAccountingControlledPilotCloseoutResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingGraduationAnchorResponseDto(
+  view: TenantFullAccountingGraduationAnchorView,
+): FullAccountingGraduationAnchorResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingGraduationEvidenceDossierResponseDto(
+  view: TenantFullAccountingGraduationEvidenceDossierView,
+): FullAccountingGraduationEvidenceDossierResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingProductScopeGraduationMatrixResponseDto(
+  view: TenantFullAccountingProductScopeGraduationMatrixView,
+): FullAccountingProductScopeGraduationMatrixResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingProfessionalOperatingModelResponseDto(
+  view: TenantFullAccountingProfessionalOperatingModelView,
+): FullAccountingProfessionalOperatingModelResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingGraduationRiskControlPackResponseDto(
+  view: TenantFullAccountingGraduationRiskControlPackView,
+): FullAccountingGraduationRiskControlPackResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingGraduationCloseoutResponseDto(
+  view: TenantFullAccountingGraduationCloseoutView,
+): FullAccountingGraduationCloseoutResponseDto {
   return serialize(view);
 }
 

@@ -1,5 +1,13 @@
 # api-platform
 
+## 0.107.58
+
+### Patch Changes
+
+- 8169800: Add Full Accounting formal approval workflow 1.0 with approval anchor,
+  authority matrix, evidence pack, decision workspace, command center, closeout
+  API, dashboard wiring, conceptual model updates, and smoke coverage.
+
 ## 0.107.57
 
 ### Patch Changes

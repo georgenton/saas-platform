@@ -5277,6 +5277,85 @@ export interface FullAccountingMvpOperationsCloseoutResponse {
   guardrails: string[];
 }
 
+export interface FullAccountingControlledPilotCloseoutResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  closeoutStatus: string;
+  pilotAnchor: {
+    anchorStatus: string;
+    summary: {
+      laneCount: number;
+      readyLaneCount: number;
+      controlledLaneCount: number;
+      professionalReviewLaneCount: number;
+      blockedLaneCount: number;
+    };
+  };
+  enrollmentFreeze: {
+    enrollmentStatus: string;
+    summary: {
+      evidenceCount: number;
+      readyEvidenceCount: number;
+      snapshotCount: number;
+      reviewPacketCount: number;
+      blockedEvidenceCount: number;
+    };
+  };
+  runbookWorkspace: {
+    runbookStatus: string;
+    summary: {
+      stepCount: number;
+      readyStepCount: number;
+      accountantOwnedStepCount: number;
+      rollbackGateCount: number;
+      blockedStepCount: number;
+    };
+  };
+  accountantReviewRoom: {
+    reviewStatus: string;
+    summary: {
+      itemCount: number;
+      readyItemCount: number;
+      accountantOwnedItemCount: number;
+      unresolvedConcernCount: number;
+      approvalRecommendationCount: number;
+    };
+  };
+  outcomePacket: {
+    outcomeStatus: string;
+    summary: {
+      signalCount: number;
+      readySignalCount: number;
+      highSignalCount: number;
+      accountantAcceptanceCount: number;
+      graduationSignalCount: number;
+      hardeningSignalCount: number;
+    };
+  };
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: string;
+    evidenceRefs: string[];
+  }>;
+  finalDecision: string;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockedChecklistCount: number;
+    pilotLaneCount: number;
+    frozenEvidenceCount: number;
+    runbookStepCount: number;
+    reviewItemCount: number;
+    outcomeSignalCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface AccountingOperationalCommandCenterResponse {
   tenantSlug: string;
   period: string;

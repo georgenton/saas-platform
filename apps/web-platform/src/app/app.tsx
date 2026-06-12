@@ -147,6 +147,7 @@ import {
   fetchAccountingAdvancedFormalRecordCloseoutCloseout,
   fetchAccountingAdvancedGraduationArchiveHandoffCloseout,
   fetchFullAccountingCandidateCloseout,
+  fetchFullAccountingControlledPilotCloseout,
   fetchFullAccountingMvpOperationsCloseout,
   fetchFullAccountingMvpReadinessCloseout,
   fetchAccountingPeriodCloseoutReport,
@@ -517,6 +518,7 @@ import {
   AccountingAdvancedFormalRecordAssemblyCloseoutResponse,
   AccountingAdvancedFormalRecordCloseoutCloseoutResponse,
   AccountingAdvancedGraduationArchiveHandoffCloseoutResponse,
+  FullAccountingControlledPilotCloseoutResponse,
   FullAccountingCandidateCloseoutResponse,
   FullAccountingMvpOperationsCloseoutResponse,
   FullAccountingMvpReadinessCloseoutResponse,
@@ -2690,6 +2692,10 @@ export function App() {
     fullAccountingMvpOperationsCloseout,
     setFullAccountingMvpOperationsCloseout,
   ] = useState<FullAccountingMvpOperationsCloseoutResponse | null>(null);
+  const [
+    fullAccountingControlledPilotCloseout,
+    setFullAccountingControlledPilotCloseout,
+  ] = useState<FullAccountingControlledPilotCloseoutResponse | null>(null);
   const [
     taxComplianceSriFiscalEvidenceWorkspace,
     setTaxComplianceSriFiscalEvidenceWorkspace,
@@ -20857,6 +20863,7 @@ export function App() {
         nextFullAccountingCandidateCloseout,
         nextFullAccountingMvpReadinessCloseout,
         nextFullAccountingMvpOperationsCloseout,
+        nextFullAccountingControlledPilotCloseout,
       ] = accountingEnabled
         ? await Promise.all([
             fetchAccountingIntakeWorkspace(
@@ -21192,6 +21199,12 @@ export function App() {
               taxCompliancePeriod,
               year,
             ),
+            fetchFullAccountingControlledPilotCloseout(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
           ])
         : [
             null,
@@ -21227,6 +21240,7 @@ export function App() {
             null,
             null,
             [],
+            null,
             null,
             null,
             null,
@@ -21559,6 +21573,9 @@ export function App() {
         );
         setFullAccountingMvpOperationsCloseout(
           nextFullAccountingMvpOperationsCloseout,
+        );
+        setFullAccountingControlledPilotCloseout(
+          nextFullAccountingControlledPilotCloseout,
         );
       });
     } catch (error) {
@@ -37924,8 +37941,107 @@ export function App() {
                                     </p>
                                   </div>
                                 ) : null}
+                                {fullAccountingControlledPilotCloseout ? (
+                                  <div className={styles.invoiceItemCard}>
+                                    <div className={styles.invoiceCardHeader}>
+                                      <strong>
+                                        Full Accounting Controlled Pilot 0.4
+                                      </strong>
+                                      <span className={styles.statusPill}>
+                                        {humanizeKey(
+                                          fullAccountingControlledPilotCloseout.closeoutStatus,
+                                        )}
+                                      </span>
+                                    </div>
+                                    <div className={styles.invoiceInlineGrid}>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Pilot lanes
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingControlledPilotCloseout
+                                              .pilotAnchor.summary
+                                              .readyLaneCount
+                                          }
+                                          /
+                                          {
+                                            fullAccountingControlledPilotCloseout
+                                              .pilotAnchor.summary.laneCount
+                                          }
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Freeze
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingControlledPilotCloseout
+                                              .enrollmentFreeze.summary
+                                              .snapshotCount
+                                          }{' '}
+                                          snapshots
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Runbook
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingControlledPilotCloseout
+                                              .runbookWorkspace.summary
+                                              .accountantOwnedStepCount
+                                          }{' '}
+                                          accountant
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Review
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingControlledPilotCloseout
+                                              .accountantReviewRoom.summary
+                                              .approvalRecommendationCount
+                                          }{' '}
+                                          recommendations
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Outcome
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingControlledPilotCloseout
+                                              .outcomePacket.summary
+                                              .graduationSignalCount
+                                          }{' '}
+                                          graduation
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Decision
+                                        </span>
+                                        <strong>
+                                          {humanizeKey(
+                                            fullAccountingControlledPilotCloseout.finalDecision,
+                                          )}
+                                        </strong>
+                                      </div>
+                                    </div>
+                                    <p className={styles.muted}>
+                                      {fullAccountingControlledPilotCloseout.nextStep}
+                                    </p>
+                                  </div>
+                                ) : null}
                                 <p className={styles.muted}>
-                                  {fullAccountingMvpOperationsCloseout?.nextStep ??
+                                  {fullAccountingControlledPilotCloseout?.nextStep ??
+                                    fullAccountingMvpOperationsCloseout?.nextStep ??
                                     fullAccountingMvpReadinessCloseout?.nextStep ??
                                     fullAccountingCandidateCloseout?.nextStep ??
                                     accountingAdvancedGraduationArchiveHandoffCloseout?.nextStep ??

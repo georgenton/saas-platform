@@ -107,7 +107,13 @@ import {
   TenantFullAccountingMvpReadinessCloseoutView,
   TenantFullAccountingMvpOperationsAnchorView,
   TenantFullAccountingMvpOperationsCloseoutView,
+  TenantFullAccountingControlledPilotAnchorView,
+  TenantFullAccountingControlledPilotCloseoutView,
   TenantFullAccountingLedgerWorkbenchMvpView,
+  TenantFullAccountingPilotAccountantReviewRoomView,
+  TenantFullAccountingPilotEnrollmentPeriodFreezeView,
+  TenantFullAccountingPilotOutcomePacketView,
+  TenantFullAccountingPilotRunbookWorkspaceView,
   TenantFullAccountingPostingDraftLaneView,
   TenantFullAccountingBankReconciliationWorkbenchMvpView,
   TenantFullAccountingTrialBalancePreviewWorkbenchView,
@@ -361,6 +367,18 @@ export type FullAccountingTrialBalancePreviewWorkbenchResponseDto =
   Serialized<TenantFullAccountingTrialBalancePreviewWorkbenchView>;
 export type FullAccountingMvpOperationsCloseoutResponseDto =
   Serialized<TenantFullAccountingMvpOperationsCloseoutView>;
+export type FullAccountingControlledPilotAnchorResponseDto =
+  Serialized<TenantFullAccountingControlledPilotAnchorView>;
+export type FullAccountingPilotEnrollmentPeriodFreezeResponseDto =
+  Serialized<TenantFullAccountingPilotEnrollmentPeriodFreezeView>;
+export type FullAccountingPilotRunbookWorkspaceResponseDto =
+  Serialized<TenantFullAccountingPilotRunbookWorkspaceView>;
+export type FullAccountingPilotAccountantReviewRoomResponseDto =
+  Serialized<TenantFullAccountingPilotAccountantReviewRoomView>;
+export type FullAccountingPilotOutcomePacketResponseDto =
+  Serialized<TenantFullAccountingPilotOutcomePacketView>;
+export type FullAccountingControlledPilotCloseoutResponseDto =
+  Serialized<TenantFullAccountingControlledPilotCloseoutView>;
 
 export function toAccountingAdvancedDiscoveryAnchorResponseDto(
   view: TenantAccountingAdvancedDiscoveryAnchorView,
@@ -1079,6 +1097,42 @@ export function toFullAccountingTrialBalancePreviewWorkbenchResponseDto(
 export function toFullAccountingMvpOperationsCloseoutResponseDto(
   view: TenantFullAccountingMvpOperationsCloseoutView,
 ): FullAccountingMvpOperationsCloseoutResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingControlledPilotAnchorResponseDto(
+  view: TenantFullAccountingControlledPilotAnchorView,
+): FullAccountingControlledPilotAnchorResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingPilotEnrollmentPeriodFreezeResponseDto(
+  view: TenantFullAccountingPilotEnrollmentPeriodFreezeView,
+): FullAccountingPilotEnrollmentPeriodFreezeResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingPilotRunbookWorkspaceResponseDto(
+  view: TenantFullAccountingPilotRunbookWorkspaceView,
+): FullAccountingPilotRunbookWorkspaceResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingPilotAccountantReviewRoomResponseDto(
+  view: TenantFullAccountingPilotAccountantReviewRoomView,
+): FullAccountingPilotAccountantReviewRoomResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingPilotOutcomePacketResponseDto(
+  view: TenantFullAccountingPilotOutcomePacketView,
+): FullAccountingPilotOutcomePacketResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingControlledPilotCloseoutResponseDto(
+  view: TenantFullAccountingControlledPilotCloseoutView,
+): FullAccountingControlledPilotCloseoutResponseDto {
   return serialize(view);
 }
 

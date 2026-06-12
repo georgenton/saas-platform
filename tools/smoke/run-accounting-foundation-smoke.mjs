@@ -1242,6 +1242,12 @@ const [
   fullAccountingBankReconciliationWorkbenchMvp,
   fullAccountingTrialBalancePreviewWorkbench,
   fullAccountingMvpOperationsCloseout,
+  fullAccountingControlledPilotAnchor,
+  fullAccountingPilotEnrollmentPeriodFreeze,
+  fullAccountingPilotRunbookWorkspace,
+  fullAccountingPilotAccountantReviewRoom,
+  fullAccountingPilotOutcomePacket,
+  fullAccountingControlledPilotCloseout,
 ] = await Promise.all([
   apiRequest({
     baseUrl,
@@ -2054,6 +2060,42 @@ const [
     path: accountingPath(`/full-accounting-mvp-operations/closeout?${periodQuery()}`),
     token,
   }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(`/full-accounting-controlled-pilot/anchor?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-controlled-pilot/enrollment-freeze?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(`/full-accounting-controlled-pilot/runbook?${periodQuery()}`),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-controlled-pilot/accountant-review-room?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-controlled-pilot/outcome-packet?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(`/full-accounting-controlled-pilot/closeout?${periodQuery()}`),
+    token,
+  }),
 ]);
 
 assertStatus(
@@ -2548,6 +2590,30 @@ assertStatus(
   'full accounting mvp operations closeout',
   fullAccountingMvpOperationsCloseout.closeoutStatus,
 );
+assertStatus(
+  'full accounting controlled pilot anchor',
+  fullAccountingControlledPilotAnchor.anchorStatus,
+);
+assertStatus(
+  'full accounting pilot enrollment period freeze',
+  fullAccountingPilotEnrollmentPeriodFreeze.enrollmentStatus,
+);
+assertStatus(
+  'full accounting pilot runbook workspace',
+  fullAccountingPilotRunbookWorkspace.runbookStatus,
+);
+assertStatus(
+  'full accounting pilot accountant review room',
+  fullAccountingPilotAccountantReviewRoom.reviewStatus,
+);
+assertStatus(
+  'full accounting pilot outcome packet',
+  fullAccountingPilotOutcomePacket.outcomeStatus,
+);
+assertStatus(
+  'full accounting controlled pilot closeout',
+  fullAccountingControlledPilotCloseout.closeoutStatus,
+);
 if (!Array.isArray(advancedDiscoveryCloseout.closeoutChecklist)) {
   throw new Error('advanced-discovery/closeout no devolvio checklist[].');
 }
@@ -2627,6 +2693,11 @@ if (!Array.isArray(fullAccountingMvpReadinessCloseout.closeoutChecklist)) {
 if (!Array.isArray(fullAccountingMvpOperationsCloseout.closeoutChecklist)) {
   throw new Error(
     'full-accounting-mvp-operations/closeout no devolvio checklist[].',
+  );
+}
+if (!Array.isArray(fullAccountingControlledPilotCloseout.closeoutChecklist)) {
+  throw new Error(
+    'full-accounting-controlled-pilot/closeout no devolvio checklist[].',
   );
 }
 printLine(

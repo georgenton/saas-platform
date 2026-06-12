@@ -100,6 +100,11 @@ import {
   GetTenantFullAccountingPostingDraftLaneUseCase,
   GetTenantFullAccountingBankReconciliationWorkbenchMvpUseCase,
   GetTenantFullAccountingTrialBalancePreviewWorkbenchUseCase,
+  GetTenantFullAccountingControlledPilotAnchorUseCase,
+  GetTenantFullAccountingPilotEnrollmentPeriodFreezeUseCase,
+  GetTenantFullAccountingPilotRunbookWorkspaceUseCase,
+  GetTenantFullAccountingPilotAccountantReviewRoomUseCase,
+  GetTenantFullAccountingPilotOutcomePacketUseCase,
   GetTenantAccountingAdvancedFormalProductScopeContractUseCase,
   GetTenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixUseCase,
   GetTenantAccountingAdvancedProfessionalReviewWorkflowDesignUseCase,
@@ -177,6 +182,7 @@ import {
   RequestTenantFullAccountingCandidateCloseoutUseCase,
   RequestTenantFullAccountingMvpReadinessCloseoutUseCase,
   RequestTenantFullAccountingMvpOperationsCloseoutUseCase,
+  RequestTenantFullAccountingControlledPilotCloseoutUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -319,6 +325,12 @@ import {
   FullAccountingBankReconciliationWorkbenchMvpResponseDto,
   FullAccountingTrialBalancePreviewWorkbenchResponseDto,
   FullAccountingMvpOperationsCloseoutResponseDto,
+  FullAccountingControlledPilotAnchorResponseDto,
+  FullAccountingPilotEnrollmentPeriodFreezeResponseDto,
+  FullAccountingPilotRunbookWorkspaceResponseDto,
+  FullAccountingPilotAccountantReviewRoomResponseDto,
+  FullAccountingPilotOutcomePacketResponseDto,
+  FullAccountingControlledPilotCloseoutResponseDto,
   AccountingAdvancedProfessionalResponsibilityAssignmentMatrixResponseDto,
   AccountingAdvancedProfessionalReviewWorkflowDesignResponseDto,
   AccountingCertifiedBankEvidenceBoundaryResponseDto,
@@ -439,6 +451,12 @@ import {
   toFullAccountingBankReconciliationWorkbenchMvpResponseDto,
   toFullAccountingTrialBalancePreviewWorkbenchResponseDto,
   toFullAccountingMvpOperationsCloseoutResponseDto,
+  toFullAccountingControlledPilotAnchorResponseDto,
+  toFullAccountingPilotEnrollmentPeriodFreezeResponseDto,
+  toFullAccountingPilotRunbookWorkspaceResponseDto,
+  toFullAccountingPilotAccountantReviewRoomResponseDto,
+  toFullAccountingPilotOutcomePacketResponseDto,
+  toFullAccountingControlledPilotCloseoutResponseDto,
   toAccountingAdvancedProfessionalResponsibilityAssignmentMatrixResponseDto,
   toAccountingAdvancedProfessionalReviewWorkflowDesignResponseDto,
   toAccountingCertifiedBankEvidenceBoundaryResponseDto,
@@ -831,6 +849,12 @@ export class AccountingController {
     private readonly getTenantFullAccountingBankReconciliationWorkbenchMvpUseCase: GetTenantFullAccountingBankReconciliationWorkbenchMvpUseCase,
     private readonly getTenantFullAccountingTrialBalancePreviewWorkbenchUseCase: GetTenantFullAccountingTrialBalancePreviewWorkbenchUseCase,
     private readonly requestTenantFullAccountingMvpOperationsCloseoutUseCase: RequestTenantFullAccountingMvpOperationsCloseoutUseCase,
+    private readonly getTenantFullAccountingControlledPilotAnchorUseCase: GetTenantFullAccountingControlledPilotAnchorUseCase,
+    private readonly getTenantFullAccountingPilotEnrollmentPeriodFreezeUseCase: GetTenantFullAccountingPilotEnrollmentPeriodFreezeUseCase,
+    private readonly getTenantFullAccountingPilotRunbookWorkspaceUseCase: GetTenantFullAccountingPilotRunbookWorkspaceUseCase,
+    private readonly getTenantFullAccountingPilotAccountantReviewRoomUseCase: GetTenantFullAccountingPilotAccountantReviewRoomUseCase,
+    private readonly getTenantFullAccountingPilotOutcomePacketUseCase: GetTenantFullAccountingPilotOutcomePacketUseCase,
+    private readonly requestTenantFullAccountingControlledPilotCloseoutUseCase: RequestTenantFullAccountingControlledPilotCloseoutUseCase,
   ) {}
 
   @Get(':slug/advanced-discovery/anchor')
@@ -3731,6 +3755,136 @@ export class AccountingController {
           { tenantSlug, period, year: Number.parseInt(year, 10) },
         );
       return toFullAccountingMvpOperationsCloseoutResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-controlled-pilot/anchor')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingControlledPilotAnchor(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingControlledPilotAnchorResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingControlledPilotAnchorUseCase.execute({
+          tenantSlug,
+          period,
+          year: Number.parseInt(year, 10),
+        });
+      return toFullAccountingControlledPilotAnchorResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-controlled-pilot/enrollment-freeze')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingPilotEnrollmentPeriodFreeze(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingPilotEnrollmentPeriodFreezeResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingPilotEnrollmentPeriodFreezeUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+      return toFullAccountingPilotEnrollmentPeriodFreezeResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-controlled-pilot/runbook')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingPilotRunbookWorkspace(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingPilotRunbookWorkspaceResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingPilotRunbookWorkspaceUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+      return toFullAccountingPilotRunbookWorkspaceResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-controlled-pilot/accountant-review-room')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingPilotAccountantReviewRoom(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingPilotAccountantReviewRoomResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingPilotAccountantReviewRoomUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+      return toFullAccountingPilotAccountantReviewRoomResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-controlled-pilot/outcome-packet')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingPilotOutcomePacket(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingPilotOutcomePacketResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingPilotOutcomePacketUseCase.execute({
+          tenantSlug,
+          period,
+          year: Number.parseInt(year, 10),
+        });
+      return toFullAccountingPilotOutcomePacketResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-controlled-pilot/closeout')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingControlledPilotCloseout(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingControlledPilotCloseoutResponseDto> {
+    try {
+      const view =
+        await this.requestTenantFullAccountingControlledPilotCloseoutUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+      return toFullAccountingControlledPilotCloseoutResponseDto(view);
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);

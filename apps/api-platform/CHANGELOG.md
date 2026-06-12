@@ -1,5 +1,13 @@
 # api-platform
 
+## 0.107.53
+
+### Patch Changes
+
+- 10c23f5: Add Full Accounting graduation 0.5 with graduation anchor, evidence dossier,
+  scope matrix, professional operating model, risk control pack, closeout API,
+  dashboard wiring, conceptual model updates, and smoke coverage.
+
 ## 0.107.52
 
 ### Patch Changes

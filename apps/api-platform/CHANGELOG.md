@@ -1,5 +1,13 @@
 # api-platform
 
+## 0.107.52
+
+### Patch Changes
+
+- 64c82a6: Add Full Accounting controlled pilot 0.4 with pilot anchor, enrollment freeze,
+  runbook, accountant review room, outcome packet, closeout API, dashboard wiring,
+  conceptual model updates, and smoke coverage.
+
 ## 0.107.51
 
 ### Patch Changes

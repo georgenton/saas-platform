@@ -1,5 +1,14 @@
 # api-platform
 
+## 0.107.56
+
+### Patch Changes
+
+- 304b2f7: Add Full Accounting formal artifact drafting 0.8 with drafting anchor, ledger
+  draft pack, posting approval draft pack, bank evidence draft pack, statement
+  draft pack, closeout API, dashboard wiring, conceptual model updates, and smoke
+  coverage.
+
 ## 0.107.55
 
 ### Patch Changes

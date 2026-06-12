@@ -1,5 +1,14 @@
 # api-platform
 
+## 0.107.57
+
+### Patch Changes
+
+- b24635f: Add Full Accounting professional review execution 0.9 with review anchor,
+  accountant draft review room, change request pack, professional recommendation
+  pack, command center, closeout API, dashboard wiring, conceptual model updates,
+  and smoke coverage.
+
 ## 0.107.56
 
 ### Patch Changes

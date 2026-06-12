@@ -117,6 +117,8 @@ import {
   TenantFullAccountingFormalArtifactDraftingAnchorView,
   TenantFullAccountingFormalArtifactDraftingCloseoutView,
   TenantFullAccountingFormalLedgerDraftPackView,
+  TenantFullAccountingProfessionalReviewExecutionAnchorView,
+  TenantFullAccountingProfessionalReviewExecutionCloseoutView,
   TenantFullAccountingFormalReadinessAnchorView,
   TenantFullAccountingFormalReadinessCloseoutView,
   TenantFullAccountingOfficialArtifactBoundaryRegistryView,
@@ -133,8 +135,12 @@ import {
   TenantFullAccountingProfessionalOperatingModelView,
   TenantFullAccountingProfessionalPortalReadinessShellView,
   TenantFullAccountingPolicyTemplateRegistryView,
+  TenantFullAccountingAccountantDraftReviewRoomView,
+  TenantFullAccountingProfessionalApprovalRecommendationPackView,
   TenantFullAccountingPostingApprovalDraftPackView,
   TenantFullAccountingBankReconciliationEvidenceDraftPackView,
+  TenantFullAccountingReviewChangeRequestPackView,
+  TenantFullAccountingReviewExecutionCommandCenterView,
   TenantFullAccountingStatementBankFormalBoundaryPackView,
   TenantFullAccountingTrialBalanceFinancialStatementDraftPackView,
   TenantFullAccountingWorkflowControlBlueprintView,
@@ -451,6 +457,18 @@ export type FullAccountingTrialBalanceFinancialStatementDraftPackResponseDto =
   Serialized<TenantFullAccountingTrialBalanceFinancialStatementDraftPackView>;
 export type FullAccountingFormalArtifactDraftingCloseoutResponseDto =
   Serialized<TenantFullAccountingFormalArtifactDraftingCloseoutView>;
+export type FullAccountingProfessionalReviewExecutionAnchorResponseDto =
+  Serialized<TenantFullAccountingProfessionalReviewExecutionAnchorView>;
+export type FullAccountingAccountantDraftReviewRoomResponseDto =
+  Serialized<TenantFullAccountingAccountantDraftReviewRoomView>;
+export type FullAccountingReviewChangeRequestPackResponseDto =
+  Serialized<TenantFullAccountingReviewChangeRequestPackView>;
+export type FullAccountingProfessionalApprovalRecommendationPackResponseDto =
+  Serialized<TenantFullAccountingProfessionalApprovalRecommendationPackView>;
+export type FullAccountingReviewExecutionCommandCenterResponseDto =
+  Serialized<TenantFullAccountingReviewExecutionCommandCenterView>;
+export type FullAccountingProfessionalReviewExecutionCloseoutResponseDto =
+  Serialized<TenantFullAccountingProfessionalReviewExecutionCloseoutView>;
 
 export function toAccountingAdvancedDiscoveryAnchorResponseDto(
   view: TenantAccountingAdvancedDiscoveryAnchorView,
@@ -1349,6 +1367,42 @@ export function toFullAccountingTrialBalanceFinancialStatementDraftPackResponseD
 export function toFullAccountingFormalArtifactDraftingCloseoutResponseDto(
   view: TenantFullAccountingFormalArtifactDraftingCloseoutView,
 ): FullAccountingFormalArtifactDraftingCloseoutResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingProfessionalReviewExecutionAnchorResponseDto(
+  view: TenantFullAccountingProfessionalReviewExecutionAnchorView,
+): FullAccountingProfessionalReviewExecutionAnchorResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingAccountantDraftReviewRoomResponseDto(
+  view: TenantFullAccountingAccountantDraftReviewRoomView,
+): FullAccountingAccountantDraftReviewRoomResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingReviewChangeRequestPackResponseDto(
+  view: TenantFullAccountingReviewChangeRequestPackView,
+): FullAccountingReviewChangeRequestPackResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingProfessionalApprovalRecommendationPackResponseDto(
+  view: TenantFullAccountingProfessionalApprovalRecommendationPackView,
+): FullAccountingProfessionalApprovalRecommendationPackResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingReviewExecutionCommandCenterResponseDto(
+  view: TenantFullAccountingReviewExecutionCommandCenterView,
+): FullAccountingReviewExecutionCommandCenterResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingProfessionalReviewExecutionCloseoutResponseDto(
+  view: TenantFullAccountingProfessionalReviewExecutionCloseoutView,
+): FullAccountingProfessionalReviewExecutionCloseoutResponseDto {
   return serialize(view);
 }
 

@@ -151,6 +151,7 @@ import {
   fetchFullAccountingGraduationCloseout,
   fetchFullAccountingFormalReadinessCloseout,
   fetchFullAccountingFormalArtifactDraftingCloseout,
+  fetchFullAccountingProfessionalReviewExecutionCloseout,
   fetchFullAccountingProductDesignCloseout,
   fetchFullAccountingMvpOperationsCloseout,
   fetchFullAccountingMvpReadinessCloseout,
@@ -526,6 +527,7 @@ import {
   FullAccountingGraduationCloseoutResponse,
   FullAccountingFormalReadinessCloseoutResponse,
   FullAccountingFormalArtifactDraftingCloseoutResponse,
+  FullAccountingProfessionalReviewExecutionCloseoutResponse,
   FullAccountingProductDesignCloseoutResponse,
   FullAccountingCandidateCloseoutResponse,
   FullAccountingMvpOperationsCloseoutResponse,
@@ -2722,6 +2724,13 @@ export function App() {
   ] = useState<FullAccountingFormalArtifactDraftingCloseoutResponse | null>(
     null,
   );
+  const [
+    fullAccountingProfessionalReviewExecutionCloseout,
+    setFullAccountingProfessionalReviewExecutionCloseout,
+  ] =
+    useState<FullAccountingProfessionalReviewExecutionCloseoutResponse | null>(
+      null,
+    );
   const [
     taxComplianceSriFiscalEvidenceWorkspace,
     setTaxComplianceSriFiscalEvidenceWorkspace,
@@ -20894,6 +20903,7 @@ export function App() {
         nextFullAccountingProductDesignCloseout,
         nextFullAccountingFormalReadinessCloseout,
         nextFullAccountingFormalArtifactDraftingCloseout,
+        nextFullAccountingProfessionalReviewExecutionCloseout,
       ] = accountingEnabled
         ? await Promise.all([
             fetchAccountingIntakeWorkspace(
@@ -21259,6 +21269,12 @@ export function App() {
               taxCompliancePeriod,
               year,
             ),
+            fetchFullAccountingProfessionalReviewExecutionCloseout(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
           ])
         : [
             null,
@@ -21294,6 +21310,7 @@ export function App() {
             null,
             null,
             [],
+            null,
             null,
             null,
             null,
@@ -21646,6 +21663,9 @@ export function App() {
         );
         setFullAccountingFormalArtifactDraftingCloseout(
           nextFullAccountingFormalArtifactDraftingCloseout,
+        );
+        setFullAccountingProfessionalReviewExecutionCloseout(
+          nextFullAccountingProfessionalReviewExecutionCloseout,
         );
       });
     } catch (error) {
@@ -38488,8 +38508,110 @@ export function App() {
                                     </p>
                                   </div>
                                 ) : null}
+                                {fullAccountingProfessionalReviewExecutionCloseout ? (
+                                  <div className={styles.invoiceItemCard}>
+                                    <div className={styles.invoiceCardHeader}>
+                                      <strong>
+                                        Full Accounting Professional Review
+                                        Execution 0.9
+                                      </strong>
+                                      <span className={styles.statusPill}>
+                                        {humanizeKey(
+                                          fullAccountingProfessionalReviewExecutionCloseout.closeoutStatus,
+                                        )}
+                                      </span>
+                                    </div>
+                                    <div className={styles.invoiceInlineGrid}>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Gates
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingProfessionalReviewExecutionCloseout
+                                              .reviewAnchor.summary
+                                              .readyGateCount
+                                          }
+                                          /
+                                          {
+                                            fullAccountingProfessionalReviewExecutionCloseout
+                                              .reviewAnchor.summary.gateCount
+                                          }
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Reviews
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingProfessionalReviewExecutionCloseout
+                                              .reviewRoom.summary
+                                              .reviewRowCount
+                                          }{' '}
+                                          rows
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Changes
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingProfessionalReviewExecutionCloseout
+                                              .changeRequestPack.summary
+                                              .changeRequestCount
+                                          }{' '}
+                                          requests
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Recommend
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingProfessionalReviewExecutionCloseout
+                                              .approvalRecommendationPack
+                                              .summary.recommendApprovalCount
+                                          }{' '}
+                                          approval
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Command
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingProfessionalReviewExecutionCloseout
+                                              .commandCenter.summary
+                                              .readyLaneCount
+                                          }{' '}
+                                          ready
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Decision
+                                        </span>
+                                        <strong>
+                                          {humanizeKey(
+                                            fullAccountingProfessionalReviewExecutionCloseout.finalDecision,
+                                          )}
+                                        </strong>
+                                      </div>
+                                    </div>
+                                    <p className={styles.muted}>
+                                      {
+                                        fullAccountingProfessionalReviewExecutionCloseout.nextStep
+                                      }
+                                    </p>
+                                  </div>
+                                ) : null}
                                 <p className={styles.muted}>
-                                  {fullAccountingFormalArtifactDraftingCloseout?.nextStep ??
+                                  {fullAccountingProfessionalReviewExecutionCloseout?.nextStep ??
+                                    fullAccountingFormalArtifactDraftingCloseout?.nextStep ??
                                     fullAccountingFormalReadinessCloseout?.nextStep ??
                                     fullAccountingProductDesignCloseout?.nextStep ??
                                     fullAccountingGraduationCloseout?.nextStep ??

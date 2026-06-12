@@ -147,6 +147,7 @@ import {
   fetchAccountingAdvancedFormalRecordCloseoutCloseout,
   fetchAccountingAdvancedGraduationArchiveHandoffCloseout,
   fetchFullAccountingCandidateCloseout,
+  fetchFullAccountingMvpReadinessCloseout,
   fetchAccountingPeriodCloseoutReport,
   fetchAccountingPeriodCloseoutReadiness,
   fetchAccountingPeriodCashCloseoutReadiness,
@@ -516,6 +517,7 @@ import {
   AccountingAdvancedFormalRecordCloseoutCloseoutResponse,
   AccountingAdvancedGraduationArchiveHandoffCloseoutResponse,
   FullAccountingCandidateCloseoutResponse,
+  FullAccountingMvpReadinessCloseoutResponse,
   AccountingLegalBooksReadinessPacketResponse,
   AccountingCloseoutCertificationReadinessResponse,
   AccountingCorrectionsQueueResponse,
@@ -2678,6 +2680,10 @@ export function App() {
     fullAccountingCandidateCloseout,
     setFullAccountingCandidateCloseout,
   ] = useState<FullAccountingCandidateCloseoutResponse | null>(null);
+  const [
+    fullAccountingMvpReadinessCloseout,
+    setFullAccountingMvpReadinessCloseout,
+  ] = useState<FullAccountingMvpReadinessCloseoutResponse | null>(null);
   const [
     taxComplianceSriFiscalEvidenceWorkspace,
     setTaxComplianceSriFiscalEvidenceWorkspace,
@@ -20843,6 +20849,7 @@ export function App() {
         nextAccountingAdvancedFormalRecordCloseoutCloseout,
         nextAccountingAdvancedGraduationArchiveHandoffCloseout,
         nextFullAccountingCandidateCloseout,
+        nextFullAccountingMvpReadinessCloseout,
       ] = accountingEnabled
         ? await Promise.all([
             fetchAccountingIntakeWorkspace(
@@ -21166,6 +21173,12 @@ export function App() {
               taxCompliancePeriod,
               year,
             ),
+            fetchFullAccountingMvpReadinessCloseout(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
           ])
         : [
             null,
@@ -21201,6 +21214,7 @@ export function App() {
             null,
             null,
             [],
+            null,
             null,
             null,
             null,
@@ -21525,6 +21539,9 @@ export function App() {
         );
         setFullAccountingCandidateCloseout(
           nextFullAccountingCandidateCloseout,
+        );
+        setFullAccountingMvpReadinessCloseout(
+          nextFullAccountingMvpReadinessCloseout,
         );
       });
     } catch (error) {
@@ -37694,8 +37711,107 @@ export function App() {
                                     </p>
                                   </div>
                                 ) : null}
+                                {fullAccountingMvpReadinessCloseout ? (
+                                  <div className={styles.invoiceItemCard}>
+                                    <div className={styles.invoiceCardHeader}>
+                                      <strong>
+                                        Full Accounting MVP Readiness 0.2
+                                      </strong>
+                                      <span className={styles.statusPill}>
+                                        {humanizeKey(
+                                          fullAccountingMvpReadinessCloseout.closeoutStatus,
+                                        )}
+                                      </span>
+                                    </div>
+                                    <div className={styles.invoiceInlineGrid}>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Gates
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingMvpReadinessCloseout
+                                              .readinessAnchor.summary
+                                              .readyGateCount
+                                          }
+                                          /
+                                          {
+                                            fullAccountingMvpReadinessCloseout
+                                              .readinessAnchor.summary.gateCount
+                                          }
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Ledger invariants
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingMvpReadinessCloseout
+                                              .ledgerPersistenceDesign.summary
+                                              .approvalInvariantCount
+                                          }{' '}
+                                          approvals
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Posting policy
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingMvpReadinessCloseout
+                                              .postingPolicyBoundary.summary
+                                              .accountantOwnedItemCount
+                                          }{' '}
+                                          accountant
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Bank readiness
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingMvpReadinessCloseout
+                                              .bankFeedReadiness.summary
+                                              .providerDependencyCount
+                                          }{' '}
+                                          provider
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Statements
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingMvpReadinessCloseout
+                                              .trialBalanceStatementReadiness
+                                              .summary.ledgerDependencyCount
+                                          }{' '}
+                                          ledger
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Decision
+                                        </span>
+                                        <strong>
+                                          {humanizeKey(
+                                            fullAccountingMvpReadinessCloseout.finalDecision,
+                                          )}
+                                        </strong>
+                                      </div>
+                                    </div>
+                                    <p className={styles.muted}>
+                                      {fullAccountingMvpReadinessCloseout.nextStep}
+                                    </p>
+                                  </div>
+                                ) : null}
                                 <p className={styles.muted}>
-                                  {fullAccountingCandidateCloseout?.nextStep ??
+                                  {fullAccountingMvpReadinessCloseout?.nextStep ??
+                                    fullAccountingCandidateCloseout?.nextStep ??
                                     accountingAdvancedGraduationArchiveHandoffCloseout?.nextStep ??
                                     accountingAdvancedFormalRecordCloseoutCloseout?.nextStep ??
                                     accountingAdvancedFormalRecordAssemblyCloseout?.nextStep ??

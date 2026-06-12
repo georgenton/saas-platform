@@ -96,6 +96,11 @@ import {
   GetTenantFullAccountingBankReconciliationBoundaryUseCase,
   GetTenantFullAccountingFinancialStatementsBlueprintUseCase,
   GetTenantFullAccountingLegalBooksStatutoryBoundaryUseCase,
+  GetTenantFullAccountingMvpReadinessAnchorUseCase,
+  GetTenantFullAccountingLedgerPersistenceDesignWorkspaceUseCase,
+  GetTenantFullAccountingPostingPolicyApprovalBoundaryUseCase,
+  GetTenantFullAccountingBankFeedReconciliationMvpReadinessUseCase,
+  GetTenantFullAccountingTrialBalanceStatementReadinessUseCase,
   GetTenantAccountingAdvancedFormalProductScopeContractUseCase,
   GetTenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixUseCase,
   GetTenantAccountingAdvancedProfessionalReviewWorkflowDesignUseCase,
@@ -171,6 +176,7 @@ import {
   RequestTenantAccountingAdvancedFormalRecordCloseoutCloseoutUseCase,
   RequestTenantAccountingAdvancedGraduationArchiveHandoffCloseoutUseCase,
   RequestTenantFullAccountingCandidateCloseoutUseCase,
+  RequestTenantFullAccountingMvpReadinessCloseoutUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -1443,6 +1449,64 @@ import { AccountingController } from './accounting.controller';
       ) =>
         new RequestTenantFullAccountingCandidateCloseoutUseCase(
           getTenantFullAccountingLegalBooksStatutoryBoundaryUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingMvpReadinessAnchorUseCase,
+      inject: [RequestTenantFullAccountingCandidateCloseoutUseCase],
+      useFactory: (requestTenantFullAccountingCandidateCloseoutUseCase) =>
+        new GetTenantFullAccountingMvpReadinessAnchorUseCase(
+          requestTenantFullAccountingCandidateCloseoutUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingLedgerPersistenceDesignWorkspaceUseCase,
+      inject: [GetTenantFullAccountingMvpReadinessAnchorUseCase],
+      useFactory: (getTenantFullAccountingMvpReadinessAnchorUseCase) =>
+        new GetTenantFullAccountingLedgerPersistenceDesignWorkspaceUseCase(
+          getTenantFullAccountingMvpReadinessAnchorUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingPostingPolicyApprovalBoundaryUseCase,
+      inject: [GetTenantFullAccountingLedgerPersistenceDesignWorkspaceUseCase],
+      useFactory: (
+        getTenantFullAccountingLedgerPersistenceDesignWorkspaceUseCase,
+      ) =>
+        new GetTenantFullAccountingPostingPolicyApprovalBoundaryUseCase(
+          getTenantFullAccountingLedgerPersistenceDesignWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingBankFeedReconciliationMvpReadinessUseCase,
+      inject: [GetTenantFullAccountingPostingPolicyApprovalBoundaryUseCase],
+      useFactory: (
+        getTenantFullAccountingPostingPolicyApprovalBoundaryUseCase,
+      ) =>
+        new GetTenantFullAccountingBankFeedReconciliationMvpReadinessUseCase(
+          getTenantFullAccountingPostingPolicyApprovalBoundaryUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingTrialBalanceStatementReadinessUseCase,
+      inject: [
+        GetTenantFullAccountingBankFeedReconciliationMvpReadinessUseCase,
+      ],
+      useFactory: (
+        getTenantFullAccountingBankFeedReconciliationMvpReadinessUseCase,
+      ) =>
+        new GetTenantFullAccountingTrialBalanceStatementReadinessUseCase(
+          getTenantFullAccountingBankFeedReconciliationMvpReadinessUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantFullAccountingMvpReadinessCloseoutUseCase,
+      inject: [GetTenantFullAccountingTrialBalanceStatementReadinessUseCase],
+      useFactory: (
+        getTenantFullAccountingTrialBalanceStatementReadinessUseCase,
+      ) =>
+        new RequestTenantFullAccountingMvpReadinessCloseoutUseCase(
+          getTenantFullAccountingTrialBalanceStatementReadinessUseCase,
         ),
     },
     {

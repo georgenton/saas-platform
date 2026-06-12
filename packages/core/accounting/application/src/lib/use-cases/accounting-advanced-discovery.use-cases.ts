@@ -17,6 +17,7 @@ import {
   AccountingAdvancedFormalRecordCloseoutDecision,
   AccountingAdvancedGraduationArchiveHandoffDecision,
   FullAccountingCandidateDecision,
+  FullAccountingMvpReadinessDecision,
   AccountingAdvancedFormalModuleKey,
   AccountingAdvancedProfessionalOwner,
   AccountingAdvancedPilotEnrollmentStatus,
@@ -123,7 +124,13 @@ import {
   TenantFullAccountingCandidateCloseoutView,
   TenantFullAccountingCoreLedgerScopeBlueprintView,
   TenantFullAccountingFinancialStatementsBlueprintView,
+  TenantFullAccountingBankFeedReconciliationMvpReadinessView,
+  TenantFullAccountingLedgerPersistenceDesignWorkspaceView,
   TenantFullAccountingLegalBooksStatutoryBoundaryView,
+  TenantFullAccountingMvpReadinessAnchorView,
+  TenantFullAccountingMvpReadinessCloseoutView,
+  TenantFullAccountingPostingPolicyApprovalBoundaryView,
+  TenantFullAccountingTrialBalanceStatementReadinessView,
   TenantAccountingAdvancedReturnedEvidenceValidationWorkspaceView,
   TenantAccountingAdvancedReturnedArtifactRegistryView,
   TenantAccountingAdvancedRecordConsistencyReviewWorkspaceView,
@@ -8796,6 +8803,345 @@ export class RequestTenantFullAccountingCandidateCloseoutUseCase {
   }
 }
 
+export class GetTenantFullAccountingMvpReadinessAnchorUseCase {
+  constructor(
+    private readonly requestTenantFullAccountingCandidateCloseoutUseCase: RequestTenantFullAccountingCandidateCloseoutUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantFullAccountingMvpReadinessAnchorView> {
+    const candidateCloseout =
+      await this.requestTenantFullAccountingCandidateCloseoutUseCase.execute(
+        input,
+      );
+    const readinessGates: TenantFullAccountingMvpReadinessAnchorView['readinessGates'] =
+      [
+        fullAccountingMvpReadinessGate('candidate_closeout', 'Candidate closeout accepted', candidateCloseout.closeoutStatus, 'candidate_closeout', candidateCloseout.finalDecision === 'open_full_accounting_mvp' ? 'ready_for_mvp_design' : 'return_to_candidate', ['full_accounting_candidate_closeout']),
+        fullAccountingMvpReadinessGate('ledger_persistence', 'Ledger persistence needs scoped', candidateCloseout.ledgerScopeBlueprint.blueprintStatus, 'ledger_persistence', 'ready_for_mvp_design', ['full_accounting_core_ledger_scope_blueprint']),
+        fullAccountingMvpReadinessGate('posting_policy', 'Posting policy needs scoped', candidateCloseout.ledgerScopeBlueprint.blueprintStatus, 'posting_policy', 'needs_readiness', ['full_accounting_core_ledger_scope_blueprint']),
+        fullAccountingMvpReadinessGate('bank_readiness', 'Bank readiness needs scoped', candidateCloseout.bankReconciliationBoundary.boundaryStatus, 'bank_readiness', 'ready_for_mvp_design', ['full_accounting_bank_reconciliation_boundary']),
+        fullAccountingMvpReadinessGate('statement_readiness', 'Statement readiness needs scoped', candidateCloseout.financialStatementsBlueprint.blueprintStatus, 'statement_readiness', 'ready_for_mvp_design', ['full_accounting_financial_statements_blueprint']),
+      ];
+    const blockers =
+      candidateCloseout.finalDecision === 'open_full_accounting_mvp'
+        ? [...candidateCloseout.blockers]
+        : unique([
+            ...candidateCloseout.blockers,
+            `Full Accounting Candidate decision is ${candidateCloseout.finalDecision}.`,
+          ]);
+    const anchorStatus = resolveStatus(
+      readinessGates.map((gate) => gate.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      anchorStatus,
+      candidateCloseout,
+      readinessGates,
+      summary: {
+        gateCount: readinessGates.length,
+        readyGateCount: readinessGates.filter((gate) => gate.status === 'ready')
+          .length,
+        needsReadinessGateCount: readinessGates.filter(
+          (gate) => gate.readinessState === 'needs_readiness',
+        ).length,
+        blockedGateCount: readinessGates.filter(
+          (gate) => gate.status === 'blocked',
+        ).length,
+        candidateChecklistCount: candidateCloseout.summary.checklistCount,
+      },
+      blockers,
+      nextStep: 'Disenar persistencia minima de ledger para MVP.',
+      guardrails: [
+        'MVP readiness prepara diseno; no persiste ledger real.',
+        'Ningun posting oficial ocurre en esta capa.',
+      ],
+    };
+  }
+}
+
+export class GetTenantFullAccountingLedgerPersistenceDesignWorkspaceUseCase {
+  constructor(
+    private readonly getTenantFullAccountingMvpReadinessAnchorUseCase: GetTenantFullAccountingMvpReadinessAnchorUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantFullAccountingLedgerPersistenceDesignWorkspaceView> {
+    const readinessAnchor =
+      await this.getTenantFullAccountingMvpReadinessAnchorUseCase.execute(input);
+    const persistenceItems: TenantFullAccountingLedgerPersistenceDesignWorkspaceView['persistenceItems'] =
+      [
+        fullAccountingLedgerPersistenceItem('journal_header', 'Journal header persistence', readinessAnchor.anchorStatus, 'journal_header', 'approval_required', ['full_accounting_candidate_anchor']),
+        fullAccountingLedgerPersistenceItem('journal_line', 'Journal line persistence', readinessAnchor.anchorStatus, 'journal_line', 'balanced_debits_credits', ['full_accounting_core_ledger_scope_blueprint']),
+        fullAccountingLedgerPersistenceItem('posting_batch', 'Posting batch persistence', readinessAnchor.anchorStatus, 'posting_batch', 'approval_required', ['full_accounting_core_ledger_scope_blueprint']),
+        fullAccountingLedgerPersistenceItem('balance_snapshot', 'Balance snapshot persistence', readinessAnchor.anchorStatus, 'balance_snapshot', 'recalculable_snapshot', ['accounting_trial_balance_workspace']),
+        fullAccountingLedgerPersistenceItem('period_lock', 'Period lock persistence', readinessAnchor.anchorStatus, 'period_lock', 'period_locked_after_close', ['accounting_period_lock_readiness']),
+        fullAccountingLedgerPersistenceItem('reversal_link', 'Reversal link persistence', readinessAnchor.anchorStatus, 'reversal_link', 'reversal_trace_required', ['accounting_corrections_queue']),
+      ];
+    const blockers = [...readinessAnchor.blockers];
+    const designStatus = resolveStatus(
+      persistenceItems.map((item) => item.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      designStatus,
+      readinessAnchor,
+      persistenceItems,
+      summary: {
+        itemCount: persistenceItems.length,
+        readyItemCount: persistenceItems.filter((item) => item.status === 'ready').length,
+        approvalInvariantCount: persistenceItems.filter((item) => item.invariant === 'approval_required').length,
+        balanceInvariantCount: persistenceItems.filter((item) => item.invariant === 'balanced_debits_credits').length,
+      },
+      blockers,
+      nextStep: 'Definir politica de posting y aprobaciones.',
+      guardrails: [
+        'Persistence design no crea tablas ni escribe journal entries.',
+        'Todo batch posteable requiere aprobacion antes de MVP operations.',
+      ],
+    };
+  }
+}
+
+export class GetTenantFullAccountingPostingPolicyApprovalBoundaryUseCase {
+  constructor(
+    private readonly getTenantFullAccountingLedgerPersistenceDesignWorkspaceUseCase: GetTenantFullAccountingLedgerPersistenceDesignWorkspaceUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantFullAccountingPostingPolicyApprovalBoundaryView> {
+    const ledgerPersistenceDesign =
+      await this.getTenantFullAccountingLedgerPersistenceDesignWorkspaceUseCase.execute(
+        input,
+      );
+    const policyItems: TenantFullAccountingPostingPolicyApprovalBoundaryView['policyItems'] =
+      [
+        fullAccountingPostingPolicyItem('draft_policy', 'Draft journal policy', ledgerPersistenceDesign.designStatus, 'draft_policy', 'operator', ['full_accounting_ledger_persistence_design'], 'Drafts do not affect official books.'),
+        fullAccountingPostingPolicyItem('approval_policy', 'Posting approval policy', ledgerPersistenceDesign.designStatus, 'approval_policy', 'external_accountant', ['full_accounting_ledger_persistence_design'], 'Posting requires explicit approval boundary.'),
+        fullAccountingPostingPolicyItem('posting_policy', 'Posting execution policy', ledgerPersistenceDesign.designStatus, 'posting_policy', 'platform', ['full_accounting_ledger_persistence_design'], 'Platform can orchestrate only after approval.'),
+        fullAccountingPostingPolicyItem('reversal_policy', 'Reversal policy', ledgerPersistenceDesign.designStatus, 'reversal_policy', 'operator', ['full_accounting_ledger_persistence_design'], 'Reversals must preserve traceability.'),
+        fullAccountingPostingPolicyItem('accountant_escalation', 'Accountant escalation policy', 'ready', 'accountant_escalation', 'external_accountant', ['advanced_professional_closeout_boundary'], 'Professional judgement remains external.'),
+      ];
+    const blockers = [...ledgerPersistenceDesign.blockers];
+    const boundaryStatus = resolveStatus(
+      policyItems.map((item) => item.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      boundaryStatus,
+      ledgerPersistenceDesign,
+      policyItems,
+      summary: {
+        itemCount: policyItems.length,
+        readyItemCount: policyItems.filter((item) => item.status === 'ready').length,
+        accountantOwnedItemCount: policyItems.filter((item) => item.owner === 'external_accountant').length,
+        platformGuardrailItemCount: policyItems.filter((item) => item.owner === 'platform').length,
+      },
+      blockers,
+      nextStep: 'Preparar bank feed y reconciliation readiness MVP.',
+      guardrails: [
+        'Posting policy boundary no postea ni revierte asientos.',
+        'Aprobacion profesional se mantiene explicita.',
+      ],
+    };
+  }
+}
+
+export class GetTenantFullAccountingBankFeedReconciliationMvpReadinessUseCase {
+  constructor(
+    private readonly getTenantFullAccountingPostingPolicyApprovalBoundaryUseCase: GetTenantFullAccountingPostingPolicyApprovalBoundaryUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantFullAccountingBankFeedReconciliationMvpReadinessView> {
+    const postingPolicyBoundary =
+      await this.getTenantFullAccountingPostingPolicyApprovalBoundaryUseCase.execute(
+        input,
+      );
+    const bankReadinessItems: TenantFullAccountingBankFeedReconciliationMvpReadinessView['bankReadinessItems'] =
+      [
+        fullAccountingBankMvpReadinessItem('bank_feed_source', 'Bank feed source readiness', postingPolicyBoundary.boundaryStatus, 'bank_feed_source', 'needs_provider', ['accounting_bank_statement_registry']),
+        fullAccountingBankMvpReadinessItem('import_profile', 'Import profile readiness', postingPolicyBoundary.boundaryStatus, 'import_profile', 'mvp_ready', ['accounting_bank_statement_import_profile_workspace']),
+        fullAccountingBankMvpReadinessItem('matching_rules', 'Matching rules readiness', postingPolicyBoundary.boundaryStatus, 'matching_rules', 'mvp_ready', ['accounting_bank_reconciliation_workspace']),
+        fullAccountingBankMvpReadinessItem('exception_queue', 'Exception queue readiness', postingPolicyBoundary.boundaryStatus, 'exception_queue', 'needs_operator_review', ['accounting_corrections_queue']),
+        fullAccountingBankMvpReadinessItem('cutoff_controls', 'Cutoff controls readiness', postingPolicyBoundary.boundaryStatus, 'cutoff_controls', 'needs_operator_review', ['accounting_period_cash_closeout_readiness']),
+        fullAccountingBankMvpReadinessItem('evidence_packet', 'Bank evidence packet readiness', 'ready', 'evidence_packet', 'professional_boundary', ['accounting_certified_bank_evidence_boundary']),
+      ];
+    const blockers = [...postingPolicyBoundary.blockers];
+    const readinessStatus = resolveStatus(
+      bankReadinessItems.map((item) => item.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      readinessStatus,
+      postingPolicyBoundary,
+      bankReadinessItems,
+      summary: {
+        itemCount: bankReadinessItems.length,
+        readyItemCount: bankReadinessItems.filter((item) => item.status === 'ready').length,
+        providerDependencyCount: bankReadinessItems.filter((item) => item.implementationMode === 'needs_provider').length,
+        operatorReviewCount: bankReadinessItems.filter((item) => item.implementationMode === 'needs_operator_review').length,
+      },
+      blockers,
+      nextStep: 'Preparar trial balance y statement readiness.',
+      guardrails: [
+        'Bank MVP readiness no certifica saldos bancarios.',
+        'Feeds bancarios pueden requerir proveedor externo posterior.',
+      ],
+    };
+  }
+}
+
+export class GetTenantFullAccountingTrialBalanceStatementReadinessUseCase {
+  constructor(
+    private readonly getTenantFullAccountingBankFeedReconciliationMvpReadinessUseCase: GetTenantFullAccountingBankFeedReconciliationMvpReadinessUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantFullAccountingTrialBalanceStatementReadinessView> {
+    const bankFeedReadiness =
+      await this.getTenantFullAccountingBankFeedReconciliationMvpReadinessUseCase.execute(
+        input,
+      );
+    const statementReadinessItems: TenantFullAccountingTrialBalanceStatementReadinessView['statementReadinessItems'] =
+      [
+        fullAccountingStatementReadinessItem('trial_balance', 'Trial balance readiness', bankFeedReadiness.readinessStatus, 'trial_balance', 'ledger_snapshot', ['accounting_trial_balance_workspace']),
+        fullAccountingStatementReadinessItem('balance_sheet', 'Balance sheet readiness', bankFeedReadiness.readinessStatus, 'balance_sheet', 'ledger_snapshot', ['accounting_financial_statement_preview']),
+        fullAccountingStatementReadinessItem('income_statement', 'Income statement readiness', bankFeedReadiness.readinessStatus, 'income_statement', 'ledger_snapshot', ['accounting_financial_statement_preview']),
+        fullAccountingStatementReadinessItem('comparatives', 'Comparatives readiness', bankFeedReadiness.readinessStatus, 'comparatives', 'ledger_snapshot', ['advanced_multi_period_financial_statement_workspace']),
+        fullAccountingStatementReadinessItem('adjustment_trace', 'Adjustment trace readiness', bankFeedReadiness.readinessStatus, 'adjustment_trace', 'adjustment_policy', ['advanced_adjustment_draft_pack']),
+        fullAccountingStatementReadinessItem('professional_review', 'Professional review readiness', 'ready', 'professional_review', 'professional_review', ['accounting_financial_statement_final_review_packet']),
+      ];
+    const blockers = [...bankFeedReadiness.blockers];
+    const readinessStatus = resolveStatus(
+      statementReadinessItems.map((item) => item.status),
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      readinessStatus,
+      bankFeedReadiness,
+      statementReadinessItems,
+      summary: {
+        itemCount: statementReadinessItems.length,
+        readyItemCount: statementReadinessItems.filter((item) => item.status === 'ready').length,
+        ledgerDependencyCount: statementReadinessItems.filter((item) => item.dependency === 'ledger_snapshot').length,
+        professionalReviewCount: statementReadinessItems.filter((item) => item.dependency === 'professional_review').length,
+      },
+      blockers,
+      nextStep: 'Cerrar Full Accounting MVP Readiness 0.2.',
+      guardrails: [
+        'Statement readiness no emite estados financieros oficiales.',
+        'Trial balance MVP requiere ledger snapshot aprobado posteriormente.',
+      ],
+    };
+  }
+}
+
+export class RequestTenantFullAccountingMvpReadinessCloseoutUseCase {
+  constructor(
+    private readonly getTenantFullAccountingTrialBalanceStatementReadinessUseCase: GetTenantFullAccountingTrialBalanceStatementReadinessUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(
+    input: AccountingAdvancedDiscoveryInput,
+  ): Promise<TenantFullAccountingMvpReadinessCloseoutView> {
+    const trialBalanceStatementReadiness =
+      await this.getTenantFullAccountingTrialBalanceStatementReadinessUseCase.execute(
+        input,
+      );
+    const { bankFeedReadiness } = trialBalanceStatementReadiness;
+    const { postingPolicyBoundary } = bankFeedReadiness;
+    const { ledgerPersistenceDesign } = postingPolicyBoundary;
+    const { readinessAnchor } = ledgerPersistenceDesign;
+    const closeoutChecklist: TenantFullAccountingMvpReadinessCloseoutView['closeoutChecklist'] =
+      [
+        fullAccountingMvpReadinessCloseoutCheck('readiness_anchor', 'Full Accounting MVP readiness anchor', readinessAnchor.anchorStatus, ['full_accounting_mvp_readiness_anchor']),
+        fullAccountingMvpReadinessCloseoutCheck('ledger_persistence_design', 'Ledger persistence design workspace', ledgerPersistenceDesign.designStatus, ['full_accounting_ledger_persistence_design']),
+        fullAccountingMvpReadinessCloseoutCheck('posting_policy_boundary', 'Posting policy approval boundary', postingPolicyBoundary.boundaryStatus, ['full_accounting_posting_policy_boundary']),
+        fullAccountingMvpReadinessCloseoutCheck('bank_feed_readiness', 'Bank feed reconciliation MVP readiness', bankFeedReadiness.readinessStatus, ['full_accounting_bank_feed_reconciliation_mvp_readiness']),
+        fullAccountingMvpReadinessCloseoutCheck('statement_readiness', 'Trial balance statement readiness', trialBalanceStatementReadiness.readinessStatus, ['full_accounting_trial_balance_statement_readiness']),
+      ];
+    const blockers = unique([
+      ...readinessAnchor.blockers,
+      ...ledgerPersistenceDesign.blockers,
+      ...postingPolicyBoundary.blockers,
+      ...bankFeedReadiness.blockers,
+      ...trialBalanceStatementReadiness.blockers,
+    ]);
+    const closeoutStatus = resolveStatus(
+      closeoutChecklist.map((item) => item.status),
+      blockers,
+    );
+    const finalDecision = fullAccountingMvpReadinessDecisionFromStatus(
+      closeoutStatus,
+      readinessAnchor,
+      ledgerPersistenceDesign,
+      postingPolicyBoundary,
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      closeoutStatus,
+      readinessAnchor,
+      ledgerPersistenceDesign,
+      postingPolicyBoundary,
+      bankFeedReadiness,
+      trialBalanceStatementReadiness,
+      closeoutChecklist,
+      finalDecision,
+      summary: {
+        checklistCount: closeoutChecklist.length,
+        readyChecklistCount: closeoutChecklist.filter((item) => item.status === 'ready').length,
+        blockedChecklistCount: closeoutChecklist.filter((item) => item.status === 'blocked').length,
+        ledgerPersistenceItemCount: ledgerPersistenceDesign.summary.itemCount,
+        postingPolicyItemCount: postingPolicyBoundary.summary.itemCount,
+        bankReadinessItemCount: bankFeedReadiness.summary.itemCount,
+        statementReadinessItemCount: trialBalanceStatementReadiness.summary.itemCount,
+      },
+      blockers,
+      nextStep:
+        finalDecision === 'open_full_accounting_mvp_operations'
+          ? 'Abrir Full Accounting MVP operations 0.3.'
+          : finalDecision === 'continue_mvp_readiness'
+            ? 'Completar readiness antes de operaciones MVP.'
+            : finalDecision === 'return_to_candidate_discovery'
+              ? 'Volver a Full Accounting Candidate 0.1.'
+              : 'Volver a Accounting Advanced hardening.',
+      guardrails: [
+        'MVP readiness closeout no crea ledger persistente ni postings.',
+        'Operaciones MVP deben abrirse en un slice posterior separado.',
+      ],
+    };
+  }
+}
+
 function check(
   key: string,
   label: string,
@@ -10509,6 +10855,93 @@ function fullAccountingCandidateDecisionFromStatus(
     return 'archive_handoff_only';
   }
   return 'do_not_open_full_accounting';
+}
+
+function fullAccountingMvpReadinessGate(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  gateType: TenantFullAccountingMvpReadinessAnchorView['readinessGates'][number]['gateType'],
+  readinessState: TenantFullAccountingMvpReadinessAnchorView['readinessGates'][number]['readinessState'],
+  evidenceRefs: string[],
+): TenantFullAccountingMvpReadinessAnchorView['readinessGates'][number] {
+  return { key, label, status, gateType, readinessState, evidenceRefs };
+}
+
+function fullAccountingLedgerPersistenceItem(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  persistenceType: TenantFullAccountingLedgerPersistenceDesignWorkspaceView['persistenceItems'][number]['persistenceType'],
+  invariant: TenantFullAccountingLedgerPersistenceDesignWorkspaceView['persistenceItems'][number]['invariant'],
+  evidenceRefs: string[],
+): TenantFullAccountingLedgerPersistenceDesignWorkspaceView['persistenceItems'][number] {
+  return { key, label, status, persistenceType, invariant, evidenceRefs };
+}
+
+function fullAccountingPostingPolicyItem(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  policyType: TenantFullAccountingPostingPolicyApprovalBoundaryView['policyItems'][number]['policyType'],
+  owner: AccountingAdvancedProfessionalOwner,
+  evidenceRefs: string[],
+  guardrail: string,
+): TenantFullAccountingPostingPolicyApprovalBoundaryView['policyItems'][number] {
+  return { key, label, status, policyType, owner, evidenceRefs, guardrail };
+}
+
+function fullAccountingBankMvpReadinessItem(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  readinessType: TenantFullAccountingBankFeedReconciliationMvpReadinessView['bankReadinessItems'][number]['readinessType'],
+  implementationMode: TenantFullAccountingBankFeedReconciliationMvpReadinessView['bankReadinessItems'][number]['implementationMode'],
+  evidenceRefs: string[],
+): TenantFullAccountingBankFeedReconciliationMvpReadinessView['bankReadinessItems'][number] {
+  return { key, label, status, readinessType, implementationMode, evidenceRefs };
+}
+
+function fullAccountingStatementReadinessItem(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  readinessType: TenantFullAccountingTrialBalanceStatementReadinessView['statementReadinessItems'][number]['readinessType'],
+  dependency: TenantFullAccountingTrialBalanceStatementReadinessView['statementReadinessItems'][number]['dependency'],
+  evidenceRefs: string[],
+): TenantFullAccountingTrialBalanceStatementReadinessView['statementReadinessItems'][number] {
+  return { key, label, status, readinessType, dependency, evidenceRefs };
+}
+
+function fullAccountingMvpReadinessCloseoutCheck(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  evidenceRefs: string[],
+): TenantFullAccountingMvpReadinessCloseoutView['closeoutChecklist'][number] {
+  return { key, label, status, evidenceRefs };
+}
+
+function fullAccountingMvpReadinessDecisionFromStatus(
+  status: AccountingReadinessStatus,
+  readinessAnchor: TenantFullAccountingMvpReadinessAnchorView,
+  ledgerPersistenceDesign: TenantFullAccountingLedgerPersistenceDesignWorkspaceView,
+  postingPolicyBoundary: TenantFullAccountingPostingPolicyApprovalBoundaryView,
+  blockers: string[],
+): FullAccountingMvpReadinessDecision {
+  if (blockers.length > 0 || status === 'blocked') {
+    return 'return_to_candidate_discovery';
+  }
+  if (readinessAnchor.summary.needsReadinessGateCount > 0) {
+    return 'continue_mvp_readiness';
+  }
+  if (
+    ledgerPersistenceDesign.summary.approvalInvariantCount > 0 &&
+    postingPolicyBoundary.summary.accountantOwnedItemCount > 0
+  ) {
+    return 'open_full_accounting_mvp_operations';
+  }
+  return 'do_not_open_mvp';
 }
 
 function formalProductDesignDecisionFromStatus(

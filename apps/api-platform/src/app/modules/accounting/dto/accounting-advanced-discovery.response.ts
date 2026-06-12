@@ -100,7 +100,13 @@ import {
   TenantFullAccountingCandidateCloseoutView,
   TenantFullAccountingCoreLedgerScopeBlueprintView,
   TenantFullAccountingFinancialStatementsBlueprintView,
+  TenantFullAccountingBankFeedReconciliationMvpReadinessView,
+  TenantFullAccountingLedgerPersistenceDesignWorkspaceView,
   TenantFullAccountingLegalBooksStatutoryBoundaryView,
+  TenantFullAccountingMvpReadinessAnchorView,
+  TenantFullAccountingMvpReadinessCloseoutView,
+  TenantFullAccountingPostingPolicyApprovalBoundaryView,
+  TenantFullAccountingTrialBalanceStatementReadinessView,
   TenantAccountingAdvancedReturnedEvidenceValidationWorkspaceView,
   TenantAccountingAdvancedReturnedArtifactRegistryView,
   TenantAccountingAdvancedRecordConsistencyReviewWorkspaceView,
@@ -325,6 +331,18 @@ export type FullAccountingLegalBooksStatutoryBoundaryResponseDto =
   Serialized<TenantFullAccountingLegalBooksStatutoryBoundaryView>;
 export type FullAccountingCandidateCloseoutResponseDto =
   Serialized<TenantFullAccountingCandidateCloseoutView>;
+export type FullAccountingMvpReadinessAnchorResponseDto =
+  Serialized<TenantFullAccountingMvpReadinessAnchorView>;
+export type FullAccountingLedgerPersistenceDesignWorkspaceResponseDto =
+  Serialized<TenantFullAccountingLedgerPersistenceDesignWorkspaceView>;
+export type FullAccountingPostingPolicyApprovalBoundaryResponseDto =
+  Serialized<TenantFullAccountingPostingPolicyApprovalBoundaryView>;
+export type FullAccountingBankFeedReconciliationMvpReadinessResponseDto =
+  Serialized<TenantFullAccountingBankFeedReconciliationMvpReadinessView>;
+export type FullAccountingTrialBalanceStatementReadinessResponseDto =
+  Serialized<TenantFullAccountingTrialBalanceStatementReadinessView>;
+export type FullAccountingMvpReadinessCloseoutResponseDto =
+  Serialized<TenantFullAccountingMvpReadinessCloseoutView>;
 
 export function toAccountingAdvancedDiscoveryAnchorResponseDto(
   view: TenantAccountingAdvancedDiscoveryAnchorView,
@@ -971,6 +989,42 @@ export function toFullAccountingLegalBooksStatutoryBoundaryResponseDto(
 export function toFullAccountingCandidateCloseoutResponseDto(
   view: TenantFullAccountingCandidateCloseoutView,
 ): FullAccountingCandidateCloseoutResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingMvpReadinessAnchorResponseDto(
+  view: TenantFullAccountingMvpReadinessAnchorView,
+): FullAccountingMvpReadinessAnchorResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingLedgerPersistenceDesignWorkspaceResponseDto(
+  view: TenantFullAccountingLedgerPersistenceDesignWorkspaceView,
+): FullAccountingLedgerPersistenceDesignWorkspaceResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingPostingPolicyApprovalBoundaryResponseDto(
+  view: TenantFullAccountingPostingPolicyApprovalBoundaryView,
+): FullAccountingPostingPolicyApprovalBoundaryResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingBankFeedReconciliationMvpReadinessResponseDto(
+  view: TenantFullAccountingBankFeedReconciliationMvpReadinessView,
+): FullAccountingBankFeedReconciliationMvpReadinessResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingTrialBalanceStatementReadinessResponseDto(
+  view: TenantFullAccountingTrialBalanceStatementReadinessView,
+): FullAccountingTrialBalanceStatementReadinessResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingMvpReadinessCloseoutResponseDto(
+  view: TenantFullAccountingMvpReadinessCloseoutView,
+): FullAccountingMvpReadinessCloseoutResponseDto {
   return serialize(view);
 }
 

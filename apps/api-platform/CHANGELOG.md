@@ -1,5 +1,14 @@
 # api-platform
 
+## 0.107.62
+
+### Patch Changes
+
+- 7d39df4: Add Full Accounting external result intake and internal acceptance 1.4 with
+  intake anchor, returned artifact registry, internal acceptance criteria,
+  acceptance decision workspace, command center, closeout API, dashboard wiring,
+  conceptual model updates, and smoke coverage.
+
 ## 0.107.61
 
 ### Patch Changes

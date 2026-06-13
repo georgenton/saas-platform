@@ -135,6 +135,12 @@ import {
   TenantFullAccountingExternalExecutorAssignmentMatrixView,
   TenantFullAccountingExternalResultIntakeAnchorView,
   TenantFullAccountingExternalResultIntakeCloseoutView,
+  TenantFullAccountingAcceptedArtifactBinderView,
+  TenantFullAccountingFormalRecordAssemblyAnchorView,
+  TenantFullAccountingFormalRecordAssemblyCloseoutView,
+  TenantFullAccountingFormalRecordAssemblyCommandCenterView,
+  TenantFullAccountingFormalRecordIndexWorkspaceView,
+  TenantFullAccountingRecordConsistencyReviewWorkspaceView,
   TenantFullAccountingFormalSignatoryRegistryView,
   TenantFullAccountingFormalReadinessAnchorView,
   TenantFullAccountingFormalReadinessCloseoutView,
@@ -559,6 +565,18 @@ export type FullAccountingInternalAcceptanceCommandCenterResponseDto =
   Serialized<TenantFullAccountingInternalAcceptanceCommandCenterView>;
 export type FullAccountingExternalResultIntakeCloseoutResponseDto =
   Serialized<TenantFullAccountingExternalResultIntakeCloseoutView>;
+export type FullAccountingFormalRecordAssemblyAnchorResponseDto =
+  Serialized<TenantFullAccountingFormalRecordAssemblyAnchorView>;
+export type FullAccountingAcceptedArtifactBinderResponseDto =
+  Serialized<TenantFullAccountingAcceptedArtifactBinderView>;
+export type FullAccountingFormalRecordIndexWorkspaceResponseDto =
+  Serialized<TenantFullAccountingFormalRecordIndexWorkspaceView>;
+export type FullAccountingRecordConsistencyReviewWorkspaceResponseDto =
+  Serialized<TenantFullAccountingRecordConsistencyReviewWorkspaceView>;
+export type FullAccountingFormalRecordAssemblyCommandCenterResponseDto =
+  Serialized<TenantFullAccountingFormalRecordAssemblyCommandCenterView>;
+export type FullAccountingFormalRecordAssemblyCloseoutResponseDto =
+  Serialized<TenantFullAccountingFormalRecordAssemblyCloseoutView>;
 
 export function toAccountingAdvancedDiscoveryAnchorResponseDto(
   view: TenantAccountingAdvancedDiscoveryAnchorView,
@@ -1673,6 +1691,42 @@ export function toFullAccountingInternalAcceptanceCommandCenterResponseDto(
 export function toFullAccountingExternalResultIntakeCloseoutResponseDto(
   view: TenantFullAccountingExternalResultIntakeCloseoutView,
 ): FullAccountingExternalResultIntakeCloseoutResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingFormalRecordAssemblyAnchorResponseDto(
+  view: TenantFullAccountingFormalRecordAssemblyAnchorView,
+): FullAccountingFormalRecordAssemblyAnchorResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingAcceptedArtifactBinderResponseDto(
+  view: TenantFullAccountingAcceptedArtifactBinderView,
+): FullAccountingAcceptedArtifactBinderResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingFormalRecordIndexWorkspaceResponseDto(
+  view: TenantFullAccountingFormalRecordIndexWorkspaceView,
+): FullAccountingFormalRecordIndexWorkspaceResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingRecordConsistencyReviewWorkspaceResponseDto(
+  view: TenantFullAccountingRecordConsistencyReviewWorkspaceView,
+): FullAccountingRecordConsistencyReviewWorkspaceResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingFormalRecordAssemblyCommandCenterResponseDto(
+  view: TenantFullAccountingFormalRecordAssemblyCommandCenterView,
+): FullAccountingFormalRecordAssemblyCommandCenterResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingFormalRecordAssemblyCloseoutResponseDto(
+  view: TenantFullAccountingFormalRecordAssemblyCloseoutView,
+): FullAccountingFormalRecordAssemblyCloseoutResponseDto {
   return serialize(view);
 }
 

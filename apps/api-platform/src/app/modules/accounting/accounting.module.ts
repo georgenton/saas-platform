@@ -160,6 +160,11 @@ import {
   GetTenantFullAccountingInternalAcceptanceCriteriaWorkspaceUseCase,
   GetTenantFullAccountingAcceptanceDecisionWorkspaceUseCase,
   GetTenantFullAccountingInternalAcceptanceCommandCenterUseCase,
+  GetTenantFullAccountingFormalRecordAssemblyAnchorUseCase,
+  GetTenantFullAccountingAcceptedArtifactBinderUseCase,
+  GetTenantFullAccountingFormalRecordIndexWorkspaceUseCase,
+  GetTenantFullAccountingRecordConsistencyReviewWorkspaceUseCase,
+  GetTenantFullAccountingFormalRecordAssemblyCommandCenterUseCase,
   GetTenantAccountingAdvancedFormalProductScopeContractUseCase,
   GetTenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixUseCase,
   GetTenantAccountingAdvancedProfessionalReviewWorkflowDesignUseCase,
@@ -249,6 +254,7 @@ import {
   RequestTenantFullAccountingExternalExecutionHandoffCloseoutUseCase,
   RequestTenantFullAccountingExternalExecutionTrackingCloseoutUseCase,
   RequestTenantFullAccountingExternalResultIntakeCloseoutUseCase,
+  RequestTenantFullAccountingFormalRecordAssemblyCloseoutUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -2258,6 +2264,37 @@ import { AccountingController } from './accounting.controller';
         new RequestTenantFullAccountingExternalResultIntakeCloseoutUseCase(
           getTenantFullAccountingInternalAcceptanceCommandCenterUseCase,
         ),
+    },
+
+    {
+      provide: GetTenantFullAccountingFormalRecordAssemblyAnchorUseCase,
+      inject: [RequestTenantFullAccountingExternalResultIntakeCloseoutUseCase],
+      useFactory: (requestTenantFullAccountingExternalResultIntakeCloseoutUseCase) => new GetTenantFullAccountingFormalRecordAssemblyAnchorUseCase(requestTenantFullAccountingExternalResultIntakeCloseoutUseCase),
+    },
+    {
+      provide: GetTenantFullAccountingAcceptedArtifactBinderUseCase,
+      inject: [GetTenantFullAccountingFormalRecordAssemblyAnchorUseCase],
+      useFactory: (getTenantFullAccountingFormalRecordAssemblyAnchorUseCase) => new GetTenantFullAccountingAcceptedArtifactBinderUseCase(getTenantFullAccountingFormalRecordAssemblyAnchorUseCase),
+    },
+    {
+      provide: GetTenantFullAccountingFormalRecordIndexWorkspaceUseCase,
+      inject: [GetTenantFullAccountingAcceptedArtifactBinderUseCase],
+      useFactory: (getTenantFullAccountingAcceptedArtifactBinderUseCase) => new GetTenantFullAccountingFormalRecordIndexWorkspaceUseCase(getTenantFullAccountingAcceptedArtifactBinderUseCase),
+    },
+    {
+      provide: GetTenantFullAccountingRecordConsistencyReviewWorkspaceUseCase,
+      inject: [GetTenantFullAccountingFormalRecordIndexWorkspaceUseCase],
+      useFactory: (getTenantFullAccountingFormalRecordIndexWorkspaceUseCase) => new GetTenantFullAccountingRecordConsistencyReviewWorkspaceUseCase(getTenantFullAccountingFormalRecordIndexWorkspaceUseCase),
+    },
+    {
+      provide: GetTenantFullAccountingFormalRecordAssemblyCommandCenterUseCase,
+      inject: [GetTenantFullAccountingRecordConsistencyReviewWorkspaceUseCase],
+      useFactory: (getTenantFullAccountingRecordConsistencyReviewWorkspaceUseCase) => new GetTenantFullAccountingFormalRecordAssemblyCommandCenterUseCase(getTenantFullAccountingRecordConsistencyReviewWorkspaceUseCase),
+    },
+    {
+      provide: RequestTenantFullAccountingFormalRecordAssemblyCloseoutUseCase,
+      inject: [GetTenantFullAccountingFormalRecordAssemblyCommandCenterUseCase],
+      useFactory: (getTenantFullAccountingFormalRecordAssemblyCommandCenterUseCase) => new RequestTenantFullAccountingFormalRecordAssemblyCloseoutUseCase(getTenantFullAccountingFormalRecordAssemblyCommandCenterUseCase),
     },
     {
       provide: GetTenantAccountingIntakeWorkspaceUseCase,

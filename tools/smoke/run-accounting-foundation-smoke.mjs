@@ -1290,6 +1290,12 @@ const [
   fullAccountingCertificationRequirementWorkspace,
   fullAccountingLegalizationBoundaryPacket,
   fullAccountingSignatureCertificationBoundaryCloseout,
+  fullAccountingExternalExecutionHandoffAnchor,
+  fullAccountingExternalExecutorAssignmentMatrix,
+  fullAccountingExecutionHandoffEvidenceBundle,
+  fullAccountingExternalExecutionInstructionPack,
+  fullAccountingExecutionReturnEvidenceIntake,
+  fullAccountingExternalExecutionHandoffCloseout,
 ] = await Promise.all([
   apiRequest({
     baseUrl,
@@ -2420,6 +2426,48 @@ const [
     ),
     token,
   }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-external-execution-handoff/anchor?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-external-execution-handoff/executor-assignments?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-external-execution-handoff/evidence-bundle?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-external-execution-handoff/instruction-pack?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-external-execution-handoff/return-intake?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-external-execution-handoff/closeout?${periodQuery()}`,
+    ),
+    token,
+  }),
 ]);
 
 assertStatus(
@@ -3106,6 +3154,30 @@ assertStatus(
   'full accounting signature certification boundary closeout',
   fullAccountingSignatureCertificationBoundaryCloseout.closeoutStatus,
 );
+assertStatus(
+  'full accounting external execution handoff anchor',
+  fullAccountingExternalExecutionHandoffAnchor.anchorStatus,
+);
+assertStatus(
+  'full accounting external executor assignment matrix',
+  fullAccountingExternalExecutorAssignmentMatrix.matrixStatus,
+);
+assertStatus(
+  'full accounting execution handoff evidence bundle',
+  fullAccountingExecutionHandoffEvidenceBundle.bundleStatus,
+);
+assertStatus(
+  'full accounting external execution instruction pack',
+  fullAccountingExternalExecutionInstructionPack.packStatus,
+);
+assertStatus(
+  'full accounting execution return evidence intake',
+  fullAccountingExecutionReturnEvidenceIntake.intakeStatus,
+);
+assertStatus(
+  'full accounting external execution handoff closeout',
+  fullAccountingExternalExecutionHandoffCloseout.closeoutStatus,
+);
 if (!Array.isArray(advancedDiscoveryCloseout.closeoutChecklist)) {
   throw new Error('advanced-discovery/closeout no devolvio checklist[].');
 }
@@ -3237,6 +3309,15 @@ if (
 ) {
   throw new Error(
     'full-accounting-signature-certification/closeout no devolvio checklist[].',
+  );
+}
+if (
+  !Array.isArray(
+    fullAccountingExternalExecutionHandoffCloseout.closeoutChecklist,
+  )
+) {
+  throw new Error(
+    'full-accounting-external-execution-handoff/closeout no devolvio checklist[].',
   );
 }
 printLine(

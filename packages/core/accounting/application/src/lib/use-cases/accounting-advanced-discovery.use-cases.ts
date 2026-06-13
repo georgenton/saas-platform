@@ -24,6 +24,7 @@ import {
   FullAccountingProfessionalReviewExecutionDecision,
   FullAccountingFormalApprovalWorkflowDecision,
   FullAccountingSignatureCertificationBoundaryDecision,
+  FullAccountingExternalExecutionHandoffDecision,
   FullAccountingProductDesignDecision,
   FullAccountingMvpReadinessDecision,
   FullAccountingMvpOperationsDecision,
@@ -155,6 +156,12 @@ import {
   TenantFullAccountingFormalApprovalWorkflowAnchorView,
   TenantFullAccountingFormalApprovalWorkflowCloseoutView,
   TenantFullAccountingCertificationRequirementWorkspaceView,
+  TenantFullAccountingExecutionHandoffEvidenceBundleView,
+  TenantFullAccountingExecutionReturnEvidenceIntakeView,
+  TenantFullAccountingExternalExecutionHandoffAnchorView,
+  TenantFullAccountingExternalExecutionHandoffCloseoutView,
+  TenantFullAccountingExternalExecutionInstructionPackView,
+  TenantFullAccountingExternalExecutorAssignmentMatrixView,
   TenantFullAccountingFormalSignatoryRegistryView,
   TenantFullAccountingFormalReadinessAnchorView,
   TenantFullAccountingFormalReadinessCloseoutView,
@@ -11917,6 +11924,307 @@ export class RequestTenantFullAccountingSignatureCertificationBoundaryCloseoutUs
   }
 }
 
+export class GetTenantFullAccountingExternalExecutionHandoffAnchorUseCase {
+  constructor(
+    private readonly requestTenantFullAccountingSignatureCertificationBoundaryCloseoutUseCase: RequestTenantFullAccountingSignatureCertificationBoundaryCloseoutUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingExternalExecutionHandoffAnchorView> {
+    const signatureCertificationCloseout =
+      await this.requestTenantFullAccountingSignatureCertificationBoundaryCloseoutUseCase.execute(input);
+    const handoffGates: TenantFullAccountingExternalExecutionHandoffAnchorView['handoffGates'] = [
+      fullAccountingExternalHandoffGate('signature_handoff', 'Full Accounting signature handoff gate', signatureCertificationCloseout.closeoutStatus, ['full_accounting_signature_certification_boundary_closeout'], 'signature', 'Signature execution belongs to external signatory.'),
+      fullAccountingExternalHandoffGate('certification_handoff', 'Full Accounting certification handoff gate', signatureCertificationCloseout.certificationWorkspace.workspaceStatus, ['full_accounting_certification_requirement_workspace'], 'certification', 'Certification execution belongs to auditor/certifier.'),
+      fullAccountingExternalHandoffGate('legalization_handoff', 'Full Accounting legalization handoff gate', signatureCertificationCloseout.legalizationPacket.packetStatus, ['full_accounting_legalization_boundary_packet'], 'legalization', 'Legalization execution belongs to external authority or professional venue.'),
+    ];
+    const blockers =
+      signatureCertificationCloseout.finalDecision === 'open_external_execution_handoff'
+        ? [...signatureCertificationCloseout.blockers]
+        : unique([
+            ...signatureCertificationCloseout.blockers,
+            `Full Accounting signature boundary decision is ${signatureCertificationCloseout.finalDecision}.`,
+          ]);
+    const anchorStatus = resolveStatus(handoffGates.map((gate) => gate.status), blockers);
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      anchorStatus,
+      signatureCertificationCloseout,
+      handoffGates,
+      summary: {
+        gateCount: handoffGates.length,
+        readyGateCount: handoffGates.filter((gate) => gate.status === 'ready').length,
+        needsReviewGateCount: handoffGates.filter((gate) => gate.status === 'needs_review').length,
+        blockedGateCount: handoffGates.filter((gate) => gate.status === 'blocked').length,
+        signatoryCount: signatureCertificationCloseout.summary.signatoryCount,
+      },
+      blockers,
+      nextStep:
+        anchorStatus === 'blocked'
+          ? 'Volver a Full Accounting signature/certification boundary 1.1.'
+          : 'Asignar ejecutores externos por acto formal Full Accounting.',
+      guardrails: [
+        'Full Accounting external execution handoff 1.2 prepara entrega; no ejecuta actos externos.',
+        'Firma, certificacion y legalizacion siguen fuera de la plataforma.',
+      ],
+    };
+  }
+}
+
+export class GetTenantFullAccountingExternalExecutorAssignmentMatrixUseCase {
+  constructor(
+    private readonly getTenantFullAccountingExternalExecutionHandoffAnchorUseCase: GetTenantFullAccountingExternalExecutionHandoffAnchorUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingExternalExecutorAssignmentMatrixView> {
+    const handoffAnchor =
+      await this.getTenantFullAccountingExternalExecutionHandoffAnchorUseCase.execute(input);
+    const assignments: TenantFullAccountingExternalExecutorAssignmentMatrixView['assignments'] = [
+      fullAccountingExternalExecutorAssignment('accountant_signature_execution', 'Accountant signature execution', 'needs_review', 'signature', 'external_accountant', 'Review and sign accountant-owned Full Accounting packs externally.'),
+      fullAccountingExternalExecutorAssignment('legal_representative_signature', 'Legal representative signature', 'needs_review', 'signature', 'legal_representative', 'Sign financial statement artifacts externally.'),
+      fullAccountingExternalExecutorAssignment('auditor_certification', 'Auditor certification execution', 'needs_review', 'certification', 'auditor', 'Certify financial or reconciliation evidence externally.'),
+      fullAccountingExternalExecutorAssignment('bank_certifier_execution', 'Bank certifier execution', 'needs_review', 'certification', 'bank_certifier', 'Return external bank certification proof for Full Accounting evidence.'),
+      fullAccountingExternalExecutorAssignment('legalization_authority_execution', 'Legalization authority execution', 'needs_review', 'legalization', 'legalization_authority', 'Legalize books/statements or return observations externally.'),
+    ];
+    const blockers = [...handoffAnchor.blockers];
+    const matrixStatus = resolveStatus(assignments.map((assignment) => assignment.status), blockers);
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      matrixStatus,
+      handoffAnchor,
+      assignments,
+      summary: {
+        assignmentCount: assignments.length,
+        readyAssignmentCount: assignments.filter((assignment) => assignment.status === 'ready').length,
+        needsReviewAssignmentCount: assignments.filter((assignment) => assignment.status === 'needs_review').length,
+        blockedAssignmentCount: assignments.filter((assignment) => assignment.status === 'blocked').length,
+        externalExecutorCount: new Set(assignments.map((assignment) => assignment.executorRole)).size,
+      },
+      blockers,
+      nextStep: 'Preparar bundles de evidencia Full Accounting para cada ejecutor externo.',
+      guardrails: [
+        'External executor assignment matrix reparte responsabilidad; no envia ni ejecuta.',
+        'Cada ejecutor externo conserva responsabilidad sobre el acto formal.',
+      ],
+    };
+  }
+}
+
+export class GetTenantFullAccountingExecutionHandoffEvidenceBundleUseCase {
+  constructor(
+    private readonly getTenantFullAccountingExternalExecutorAssignmentMatrixUseCase: GetTenantFullAccountingExternalExecutorAssignmentMatrixUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingExecutionHandoffEvidenceBundleView> {
+    const executorMatrix =
+      await this.getTenantFullAccountingExternalExecutorAssignmentMatrixUseCase.execute(input);
+    const bundles: TenantFullAccountingExecutionHandoffEvidenceBundleView['bundles'] =
+      executorMatrix.assignments.map((assignment) =>
+        fullAccountingExecutionBundle(
+          `bundle_${assignment.key}`,
+          `${assignment.label} bundle`,
+          assignment.status,
+          assignment.key,
+          ['full_accounting_approved_formal_artifact', assignment.externalAct],
+          ['full_accounting_signature_certification_boundary_closeout', assignment.key],
+          assignment.status === 'ready' ? [] : [`${assignment.key}_pending_evidence`],
+        ),
+      );
+    const blockers = [...executorMatrix.blockers];
+    const bundleStatus = resolveStatus(bundles.map((bundle) => bundle.status), blockers);
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      bundleStatus,
+      executorMatrix,
+      bundles,
+      summary: {
+        bundleCount: bundles.length,
+        readyBundleCount: bundles.filter((bundle) => bundle.status === 'ready').length,
+        needsReviewBundleCount: bundles.filter((bundle) => bundle.status === 'needs_review').length,
+        blockedBundleCount: bundles.filter((bundle) => bundle.status === 'blocked').length,
+        blockerRefCount: bundles.flatMap((bundle) => bundle.blockerRefs).length,
+      },
+      blockers,
+      nextStep: 'Generar instrucciones de ejecucion externa Full Accounting por bundle.',
+      guardrails: [
+        'Execution handoff evidence bundle empaqueta entrega; no transmite oficialmente.',
+        'Los blockers viajan visibles para evitar ejecucion externa incompleta.',
+      ],
+    };
+  }
+}
+
+export class GetTenantFullAccountingExternalExecutionInstructionPackUseCase {
+  constructor(
+    private readonly getTenantFullAccountingExecutionHandoffEvidenceBundleUseCase: GetTenantFullAccountingExecutionHandoffEvidenceBundleUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingExternalExecutionInstructionPackView> {
+    const evidenceBundle =
+      await this.getTenantFullAccountingExecutionHandoffEvidenceBundleUseCase.execute(input);
+    const instructions: TenantFullAccountingExternalExecutionInstructionPackView['instructions'] =
+      evidenceBundle.bundles.map((bundle) =>
+        fullAccountingExternalInstruction(
+          `instruction_${bundle.assignmentKey}`,
+          `${bundle.label} instructions`,
+          bundle.status,
+          bundle.assignmentKey,
+          'Ejecutar solo el acto externo asignado, devolver evidencia y no modificar artefactos Full Accounting aprobados sin observacion.',
+          ['execution_status', 'executor_note', 'returned_artifact_reference'],
+        ),
+      );
+    const blockers = [...evidenceBundle.blockers];
+    const packStatus = resolveStatus(instructions.map((instruction) => instruction.status), blockers);
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      packStatus,
+      evidenceBundle,
+      instructions,
+      summary: {
+        instructionCount: instructions.length,
+        readyInstructionCount: instructions.filter((instruction) => instruction.status === 'ready').length,
+        needsReviewInstructionCount: instructions.filter((instruction) => instruction.status === 'needs_review').length,
+        blockedInstructionCount: instructions.filter((instruction) => instruction.status === 'blocked').length,
+        expectedReturnEvidenceCount: instructions.flatMap((instruction) => instruction.expectedReturnEvidence).length,
+      },
+      blockers,
+      nextStep: 'Preparar intake de retorno para resultados externos Full Accounting.',
+      guardrails: [
+        'External execution instruction pack orienta al tercero; no dispara ejecucion externa.',
+        'La evidencia de retorno esperada queda definida antes del tracking.',
+      ],
+    };
+  }
+}
+
+export class GetTenantFullAccountingExecutionReturnEvidenceIntakeUseCase {
+  constructor(
+    private readonly getTenantFullAccountingExternalExecutionInstructionPackUseCase: GetTenantFullAccountingExternalExecutionInstructionPackUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingExecutionReturnEvidenceIntakeView> {
+    const instructionPack =
+      await this.getTenantFullAccountingExternalExecutionInstructionPackUseCase.execute(input);
+    const returnChannels: TenantFullAccountingExecutionReturnEvidenceIntakeView['returnChannels'] = [
+      fullAccountingReturnEvidenceChannel('signed_return', 'Signed Full Accounting artifact return', 'needs_review', 'signed', ['signed_artifact_reference', 'signatory_identity']),
+      fullAccountingReturnEvidenceChannel('certified_return', 'Certified Full Accounting artifact return', 'needs_review', 'certified', ['certification_reference', 'certifier_identity']),
+      fullAccountingReturnEvidenceChannel('legalized_return', 'Legalized Full Accounting record return', 'needs_review', 'legalized', ['legalization_reference', 'legalization_authority']),
+      fullAccountingReturnEvidenceChannel('observed_return', 'Observed execution return', 'ready', 'observed', ['observation_note', 'required_fix']),
+      fullAccountingReturnEvidenceChannel('rejected_return', 'Rejected execution return', 'ready', 'rejected', ['rejection_reason', 'executor_note']),
+    ];
+    const blockers = [...instructionPack.blockers];
+    const intakeStatus = resolveStatus(returnChannels.map((channel) => channel.status), blockers);
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      intakeStatus,
+      instructionPack,
+      returnChannels,
+      summary: {
+        channelCount: returnChannels.length,
+        readyChannelCount: returnChannels.filter((channel) => channel.status === 'ready').length,
+        needsReviewChannelCount: returnChannels.filter((channel) => channel.status === 'needs_review').length,
+        blockedChannelCount: returnChannels.filter((channel) => channel.status === 'blocked').length,
+        requiredEvidenceCount: returnChannels.flatMap((channel) => channel.requiredEvidence).length,
+      },
+      blockers,
+      nextStep: 'Cerrar handoff Full Accounting y decidir si tracking externo puede iniciar.',
+      guardrails: [
+        'Execution return evidence intake define entradas esperadas; no acepta documentos oficiales como source of truth todavia.',
+        'External execution tracking posterior debe validar retornos antes de cualquier estado oficial.',
+      ],
+    };
+  }
+}
+
+export class RequestTenantFullAccountingExternalExecutionHandoffCloseoutUseCase {
+  constructor(
+    private readonly getTenantFullAccountingExecutionReturnEvidenceIntakeUseCase: GetTenantFullAccountingExecutionReturnEvidenceIntakeUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingExternalExecutionHandoffCloseoutView> {
+    const returnEvidenceIntake =
+      await this.getTenantFullAccountingExecutionReturnEvidenceIntakeUseCase.execute(input);
+    const { instructionPack } = returnEvidenceIntake;
+    const { evidenceBundle } = instructionPack;
+    const { executorMatrix } = evidenceBundle;
+    const { handoffAnchor } = executorMatrix;
+    const closeoutChecklist: TenantFullAccountingExternalExecutionHandoffCloseoutView['closeoutChecklist'] = [
+      fullAccountingExternalHandoffCloseoutCheck('handoff_anchor', 'Full Accounting external execution handoff anchor', handoffAnchor.anchorStatus, ['full_accounting_external_execution_handoff_anchor']),
+      fullAccountingExternalHandoffCloseoutCheck('executor_matrix', 'Full Accounting external executor assignment matrix', executorMatrix.matrixStatus, ['full_accounting_external_executor_assignment_matrix']),
+      fullAccountingExternalHandoffCloseoutCheck('evidence_bundle', 'Full Accounting execution handoff evidence bundle', evidenceBundle.bundleStatus, ['full_accounting_execution_handoff_evidence_bundle']),
+      fullAccountingExternalHandoffCloseoutCheck('instruction_pack', 'Full Accounting external execution instruction pack', instructionPack.packStatus, ['full_accounting_external_execution_instruction_pack']),
+      fullAccountingExternalHandoffCloseoutCheck('return_intake', 'Full Accounting execution return evidence intake', returnEvidenceIntake.intakeStatus, ['full_accounting_execution_return_evidence_intake']),
+    ];
+    const blockers = unique([
+      ...handoffAnchor.blockers,
+      ...executorMatrix.blockers,
+      ...evidenceBundle.blockers,
+      ...instructionPack.blockers,
+      ...returnEvidenceIntake.blockers,
+    ]);
+    const closeoutStatus = resolveStatus(closeoutChecklist.map((item) => item.status), blockers);
+    const finalDecision = fullAccountingExternalExecutionHandoffDecisionFromStatus(
+      closeoutStatus,
+      executorMatrix,
+      evidenceBundle,
+      returnEvidenceIntake,
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      closeoutStatus,
+      handoffAnchor,
+      executorMatrix,
+      evidenceBundle,
+      instructionPack,
+      returnEvidenceIntake,
+      closeoutChecklist,
+      finalDecision,
+      summary: {
+        checklistCount: closeoutChecklist.length,
+        readyChecklistCount: closeoutChecklist.filter((item) => item.status === 'ready').length,
+        blockedChecklistCount: closeoutChecklist.filter((item) => item.status === 'blocked').length,
+        assignmentCount: executorMatrix.summary.assignmentCount,
+        bundleCount: evidenceBundle.summary.bundleCount,
+        instructionCount: instructionPack.summary.instructionCount,
+        returnChannelCount: returnEvidenceIntake.summary.channelCount,
+      },
+      blockers,
+      nextStep:
+        finalDecision === 'open_external_execution_tracking'
+          ? 'Iniciar Full Accounting external execution tracking 1.3 con handoff trazable.'
+          : finalDecision === 'continue_external_execution_handoff'
+            ? 'Completar asignaciones, bundles e intake antes del tracking externo.'
+            : finalDecision === 'return_to_signature_certification_boundary'
+              ? 'Volver a Full Accounting signature/certification boundary 1.1.'
+              : finalDecision === 'return_to_formal_approval'
+                ? 'Volver a Full Accounting formal approval workflow 1.0.'
+                : 'No entregar actos formales externos para este periodo.',
+      guardrails: [
+        'Full Accounting external execution handoff closeout no ejecuta actos externos ni oficializa resultados.',
+        'External execution tracking debe validar retornos antes de cualquier estado oficial.',
+      ],
+    };
+  }
+}
+
 function check(
   key: string,
   label: string,
@@ -14687,6 +14995,108 @@ function fullAccountingSignatureCertificationBoundaryDecisionFromStatus(
     return 'open_external_execution_handoff';
   }
   return 'do_not_prepare_external_execution';
+}
+
+function fullAccountingExternalHandoffGate(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  evidenceRefs: string[],
+  externalAct: TenantFullAccountingExternalExecutionHandoffAnchorView['handoffGates'][number]['externalAct'],
+  handoffBoundary: string,
+): TenantFullAccountingExternalExecutionHandoffAnchorView['handoffGates'][number] {
+  return { key, label, status, evidenceRefs, externalAct, handoffBoundary };
+}
+
+function fullAccountingExternalExecutorAssignment(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  externalAct: TenantFullAccountingExternalExecutorAssignmentMatrixView['assignments'][number]['externalAct'],
+  executorRole: TenantFullAccountingExternalExecutorAssignmentMatrixView['assignments'][number]['executorRole'],
+  responsibility: string,
+): TenantFullAccountingExternalExecutorAssignmentMatrixView['assignments'][number] {
+  return { key, label, status, externalAct, executorRole, responsibility };
+}
+
+function fullAccountingExecutionBundle(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  assignmentKey: string,
+  artifactRefs: string[],
+  evidenceRefs: string[],
+  blockerRefs: string[],
+): TenantFullAccountingExecutionHandoffEvidenceBundleView['bundles'][number] {
+  return {
+    key,
+    label,
+    status,
+    assignmentKey,
+    artifactRefs,
+    evidenceRefs,
+    blockerRefs,
+  };
+}
+
+function fullAccountingExternalInstruction(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  assignmentKey: string,
+  instruction: string,
+  expectedReturnEvidence: string[],
+): TenantFullAccountingExternalExecutionInstructionPackView['instructions'][number] {
+  return {
+    key,
+    label,
+    status,
+    assignmentKey,
+    instruction,
+    expectedReturnEvidence,
+  };
+}
+
+function fullAccountingReturnEvidenceChannel(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  expectedStatus: TenantFullAccountingExecutionReturnEvidenceIntakeView['returnChannels'][number]['expectedStatus'],
+  requiredEvidence: string[],
+): TenantFullAccountingExecutionReturnEvidenceIntakeView['returnChannels'][number] {
+  return { key, label, status, expectedStatus, requiredEvidence };
+}
+
+function fullAccountingExternalHandoffCloseoutCheck(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  evidenceRefs: string[],
+): TenantFullAccountingExternalExecutionHandoffCloseoutView['closeoutChecklist'][number] {
+  return { key, label, status, evidenceRefs };
+}
+
+function fullAccountingExternalExecutionHandoffDecisionFromStatus(
+  closeoutStatus: AccountingReadinessStatus,
+  executorMatrix: TenantFullAccountingExternalExecutorAssignmentMatrixView,
+  evidenceBundle: TenantFullAccountingExecutionHandoffEvidenceBundleView,
+  returnEvidenceIntake: TenantFullAccountingExecutionReturnEvidenceIntakeView,
+  blockers: string[],
+): FullAccountingExternalExecutionHandoffDecision {
+  if (blockers.length > 0 || closeoutStatus === 'blocked') {
+    return 'return_to_signature_certification_boundary';
+  }
+  if (
+    executorMatrix.summary.needsReviewAssignmentCount > 0 ||
+    evidenceBundle.summary.needsReviewBundleCount > 0 ||
+    returnEvidenceIntake.summary.needsReviewChannelCount > 0
+  ) {
+    return 'continue_external_execution_handoff';
+  }
+  if (executorMatrix.summary.assignmentCount > 0) {
+    return 'open_external_execution_tracking';
+  }
+  return 'do_not_handoff_external_execution';
 }
 
 function formalProductDesignDecisionFromStatus(

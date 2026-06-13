@@ -5906,6 +5906,83 @@ export interface FullAccountingSignatureCertificationBoundaryCloseoutResponse {
   guardrails: string[];
 }
 
+export interface FullAccountingExternalExecutionHandoffCloseoutResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  closeoutStatus: string;
+  handoffAnchor: {
+    anchorStatus: string;
+    summary: {
+      gateCount: number;
+      readyGateCount: number;
+      needsReviewGateCount: number;
+      blockedGateCount: number;
+      signatoryCount: number;
+    };
+  };
+  executorMatrix: {
+    matrixStatus: string;
+    summary: {
+      assignmentCount: number;
+      readyAssignmentCount: number;
+      needsReviewAssignmentCount: number;
+      blockedAssignmentCount: number;
+      externalExecutorCount: number;
+    };
+  };
+  evidenceBundle: {
+    bundleStatus: string;
+    summary: {
+      bundleCount: number;
+      readyBundleCount: number;
+      needsReviewBundleCount: number;
+      blockedBundleCount: number;
+      blockerRefCount: number;
+    };
+  };
+  instructionPack: {
+    packStatus: string;
+    summary: {
+      instructionCount: number;
+      readyInstructionCount: number;
+      needsReviewInstructionCount: number;
+      blockedInstructionCount: number;
+      expectedReturnEvidenceCount: number;
+    };
+  };
+  returnEvidenceIntake: {
+    intakeStatus: string;
+    summary: {
+      channelCount: number;
+      readyChannelCount: number;
+      needsReviewChannelCount: number;
+      blockedChannelCount: number;
+      requiredEvidenceCount: number;
+    };
+  };
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: string;
+    evidenceRefs: string[];
+  }>;
+  finalDecision: string;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockedChecklistCount: number;
+    assignmentCount: number;
+    bundleCount: number;
+    instructionCount: number;
+    returnChannelCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface AccountingOperationalCommandCenterResponse {
   tenantSlug: string;
   period: string;

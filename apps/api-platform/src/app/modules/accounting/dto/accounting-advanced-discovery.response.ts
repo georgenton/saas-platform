@@ -122,6 +122,12 @@ import {
   TenantFullAccountingFormalApprovalWorkflowAnchorView,
   TenantFullAccountingFormalApprovalWorkflowCloseoutView,
   TenantFullAccountingCertificationRequirementWorkspaceView,
+  TenantFullAccountingExecutionHandoffEvidenceBundleView,
+  TenantFullAccountingExecutionReturnEvidenceIntakeView,
+  TenantFullAccountingExternalExecutionHandoffAnchorView,
+  TenantFullAccountingExternalExecutionHandoffCloseoutView,
+  TenantFullAccountingExternalExecutionInstructionPackView,
+  TenantFullAccountingExternalExecutorAssignmentMatrixView,
   TenantFullAccountingFormalSignatoryRegistryView,
   TenantFullAccountingFormalReadinessAnchorView,
   TenantFullAccountingFormalReadinessCloseoutView,
@@ -505,6 +511,18 @@ export type FullAccountingLegalizationBoundaryPacketResponseDto =
   Serialized<TenantFullAccountingLegalizationBoundaryPacketView>;
 export type FullAccountingSignatureCertificationBoundaryCloseoutResponseDto =
   Serialized<TenantFullAccountingSignatureCertificationBoundaryCloseoutView>;
+export type FullAccountingExternalExecutionHandoffAnchorResponseDto =
+  Serialized<TenantFullAccountingExternalExecutionHandoffAnchorView>;
+export type FullAccountingExternalExecutorAssignmentMatrixResponseDto =
+  Serialized<TenantFullAccountingExternalExecutorAssignmentMatrixView>;
+export type FullAccountingExecutionHandoffEvidenceBundleResponseDto =
+  Serialized<TenantFullAccountingExecutionHandoffEvidenceBundleView>;
+export type FullAccountingExternalExecutionInstructionPackResponseDto =
+  Serialized<TenantFullAccountingExternalExecutionInstructionPackView>;
+export type FullAccountingExecutionReturnEvidenceIntakeResponseDto =
+  Serialized<TenantFullAccountingExecutionReturnEvidenceIntakeView>;
+export type FullAccountingExternalExecutionHandoffCloseoutResponseDto =
+  Serialized<TenantFullAccountingExternalExecutionHandoffCloseoutView>;
 
 export function toAccountingAdvancedDiscoveryAnchorResponseDto(
   view: TenantAccountingAdvancedDiscoveryAnchorView,
@@ -1511,6 +1529,42 @@ export function toFullAccountingLegalizationBoundaryPacketResponseDto(
 export function toFullAccountingSignatureCertificationBoundaryCloseoutResponseDto(
   view: TenantFullAccountingSignatureCertificationBoundaryCloseoutView,
 ): FullAccountingSignatureCertificationBoundaryCloseoutResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingExternalExecutionHandoffAnchorResponseDto(
+  view: TenantFullAccountingExternalExecutionHandoffAnchorView,
+): FullAccountingExternalExecutionHandoffAnchorResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingExternalExecutorAssignmentMatrixResponseDto(
+  view: TenantFullAccountingExternalExecutorAssignmentMatrixView,
+): FullAccountingExternalExecutorAssignmentMatrixResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingExecutionHandoffEvidenceBundleResponseDto(
+  view: TenantFullAccountingExecutionHandoffEvidenceBundleView,
+): FullAccountingExecutionHandoffEvidenceBundleResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingExternalExecutionInstructionPackResponseDto(
+  view: TenantFullAccountingExternalExecutionInstructionPackView,
+): FullAccountingExternalExecutionInstructionPackResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingExecutionReturnEvidenceIntakeResponseDto(
+  view: TenantFullAccountingExecutionReturnEvidenceIntakeView,
+): FullAccountingExecutionReturnEvidenceIntakeResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingExternalExecutionHandoffCloseoutResponseDto(
+  view: TenantFullAccountingExternalExecutionHandoffCloseoutView,
+): FullAccountingExternalExecutionHandoffCloseoutResponseDto {
   return serialize(view);
 }
 

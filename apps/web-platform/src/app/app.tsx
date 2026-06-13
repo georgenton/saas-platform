@@ -154,6 +154,7 @@ import {
   fetchFullAccountingProfessionalReviewExecutionCloseout,
   fetchFullAccountingFormalApprovalWorkflowCloseout,
   fetchFullAccountingSignatureCertificationBoundaryCloseout,
+  fetchFullAccountingExternalExecutionHandoffCloseout,
   fetchFullAccountingProductDesignCloseout,
   fetchFullAccountingMvpOperationsCloseout,
   fetchFullAccountingMvpReadinessCloseout,
@@ -532,6 +533,7 @@ import {
   FullAccountingProfessionalReviewExecutionCloseoutResponse,
   FullAccountingFormalApprovalWorkflowCloseoutResponse,
   FullAccountingSignatureCertificationBoundaryCloseoutResponse,
+  FullAccountingExternalExecutionHandoffCloseoutResponse,
   FullAccountingProductDesignCloseoutResponse,
   FullAccountingCandidateCloseoutResponse,
   FullAccountingMvpOperationsCloseoutResponse,
@@ -2748,6 +2750,12 @@ export function App() {
     useState<FullAccountingSignatureCertificationBoundaryCloseoutResponse | null>(
       null,
     );
+  const [
+    fullAccountingExternalExecutionHandoffCloseout,
+    setFullAccountingExternalExecutionHandoffCloseout,
+  ] = useState<FullAccountingExternalExecutionHandoffCloseoutResponse | null>(
+    null,
+  );
   const [
     taxComplianceSriFiscalEvidenceWorkspace,
     setTaxComplianceSriFiscalEvidenceWorkspace,
@@ -20923,6 +20931,7 @@ export function App() {
         nextFullAccountingProfessionalReviewExecutionCloseout,
         nextFullAccountingFormalApprovalWorkflowCloseout,
         nextFullAccountingSignatureCertificationBoundaryCloseout,
+        nextFullAccountingExternalExecutionHandoffCloseout,
       ] = accountingEnabled
         ? await Promise.all([
             fetchAccountingIntakeWorkspace(
@@ -21306,6 +21315,12 @@ export function App() {
               taxCompliancePeriod,
               year,
             ),
+            fetchFullAccountingExternalExecutionHandoffCloseout(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
           ])
         : [
             null,
@@ -21341,6 +21356,7 @@ export function App() {
             null,
             null,
             [],
+            null,
             null,
             null,
             null,
@@ -21705,6 +21721,9 @@ export function App() {
         );
         setFullAccountingSignatureCertificationBoundaryCloseout(
           nextFullAccountingSignatureCertificationBoundaryCloseout,
+        );
+        setFullAccountingExternalExecutionHandoffCloseout(
+          nextFullAccountingExternalExecutionHandoffCloseout,
         );
       });
     } catch (error) {
@@ -38849,8 +38868,107 @@ export function App() {
                                     </p>
                                   </div>
                                 ) : null}
+                                {fullAccountingExternalExecutionHandoffCloseout ? (
+                                  <div className={styles.invoiceItemCard}>
+                                    <div className={styles.invoiceCardHeader}>
+                                      <strong>
+                                        Full Accounting External Execution
+                                        Handoff 1.2
+                                      </strong>
+                                      <span className={styles.statusPill}>
+                                        {humanizeKey(
+                                          fullAccountingExternalExecutionHandoffCloseout.closeoutStatus,
+                                        )}
+                                      </span>
+                                    </div>
+                                    <div className={styles.invoiceInlineGrid}>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Gates
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingExternalExecutionHandoffCloseout
+                                              .handoffAnchor.summary
+                                              .readyGateCount
+                                          }
+                                          /
+                                          {
+                                            fullAccountingExternalExecutionHandoffCloseout
+                                              .handoffAnchor.summary.gateCount
+                                          }
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Executors
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingExternalExecutionHandoffCloseout
+                                              .executorMatrix.summary
+                                              .externalExecutorCount
+                                          }
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Bundles
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingExternalExecutionHandoffCloseout
+                                              .evidenceBundle.summary
+                                              .bundleCount
+                                          }
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Instructions
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingExternalExecutionHandoffCloseout
+                                              .instructionPack.summary
+                                              .instructionCount
+                                          }
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Returns
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingExternalExecutionHandoffCloseout
+                                              .returnEvidenceIntake.summary
+                                              .channelCount
+                                          }{' '}
+                                          channels
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Decision
+                                        </span>
+                                        <strong>
+                                          {humanizeKey(
+                                            fullAccountingExternalExecutionHandoffCloseout.finalDecision,
+                                          )}
+                                        </strong>
+                                      </div>
+                                    </div>
+                                    <p className={styles.muted}>
+                                      {
+                                        fullAccountingExternalExecutionHandoffCloseout.nextStep
+                                      }
+                                    </p>
+                                  </div>
+                                ) : null}
                                 <p className={styles.muted}>
-                                  {fullAccountingSignatureCertificationBoundaryCloseout?.nextStep ??
+                                  {fullAccountingExternalExecutionHandoffCloseout?.nextStep ??
+                                    fullAccountingSignatureCertificationBoundaryCloseout?.nextStep ??
                                     fullAccountingFormalApprovalWorkflowCloseout?.nextStep ??
                                     fullAccountingProfessionalReviewExecutionCloseout?.nextStep ??
                                     fullAccountingFormalArtifactDraftingCloseout?.nextStep ??

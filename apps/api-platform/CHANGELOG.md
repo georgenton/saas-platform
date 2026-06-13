@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.107.65
+
+### Patch Changes
+
+- 5c1b257: Add Full Accounting archive handoff and operational exit 1.7 with handoff gates, handoff package, exit signal matrix, custody decision workspace, command center, closeout, API endpoints, web summary and smoke coverage.
+
 ## 0.107.64
 
 ### Patch Changes

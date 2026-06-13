@@ -371,6 +371,12 @@ export type FullAccountingFormalApprovalWorkflowDecision =
   | 'return_to_professional_review'
   | 'return_to_artifact_drafting'
   | 'do_not_approve_formal_artifacts';
+export type FullAccountingSignatureCertificationBoundaryDecision =
+  | 'open_external_execution_handoff'
+  | 'continue_signature_certification_boundary'
+  | 'return_to_formal_approval'
+  | 'return_to_professional_review'
+  | 'do_not_prepare_external_execution';
 export type AccountingAdvancedFormalModuleKey =
   | 'formal_books'
   | 'certified_bank_reconciliation'
@@ -5452,6 +5458,181 @@ export interface TenantFullAccountingFormalApprovalWorkflowCloseoutView {
     evidenceItemCount: number;
     decisionCount: number;
     approvedForSignatureFlowCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingSignatureCertificationBoundaryAnchorView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  anchorStatus: AccountingReadinessStatus;
+  formalApprovalCloseout: TenantFullAccountingFormalApprovalWorkflowCloseoutView;
+  boundaryGates: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    evidenceRefs: string[];
+    requiredAct: 'signature' | 'certification' | 'legalization';
+    boundary: string;
+  }>;
+  summary: {
+    gateCount: number;
+    readyGateCount: number;
+    needsReviewGateCount: number;
+    blockedGateCount: number;
+    approvedForSignatureFlowCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingFormalSignatoryRegistryView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  registryStatus: AccountingReadinessStatus;
+  boundaryAnchor: TenantFullAccountingSignatureCertificationBoundaryAnchorView;
+  signatories: Array<{
+    key: string;
+    label: string;
+    artifactType:
+      | 'ledger_draft'
+      | 'posting_approval'
+      | 'bank_evidence'
+      | 'trial_balance'
+      | 'financial_statement'
+      | 'professional_boundary';
+    status: AccountingReadinessStatus;
+    requiredOwner: AccountingAdvancedProfessionalOwner;
+    requiredAct: 'signature' | 'certification' | 'legalization';
+    requiredEvidence: string[];
+  }>;
+  summary: {
+    signatoryCount: number;
+    signatureCount: number;
+    certificationCount: number;
+    legalizationCount: number;
+    needsReviewSignatoryCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingSignatureEvidenceReadinessPackView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  packStatus: AccountingReadinessStatus;
+  signatoryRegistry: TenantFullAccountingFormalSignatoryRegistryView;
+  evidenceItems: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    signatoryKey: string;
+    requiredAct: 'signature' | 'certification' | 'legalization';
+    missingEvidence: string[];
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    evidenceItemCount: number;
+    readyEvidenceItemCount: number;
+    missingEvidenceCount: number;
+    blockedEvidenceItemCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingCertificationRequirementWorkspaceView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  workspaceStatus: AccountingReadinessStatus;
+  signatureEvidencePack: TenantFullAccountingSignatureEvidenceReadinessPackView;
+  requirements: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    artifactType: 'bank_evidence' | 'financial_statement' | 'trial_balance' | 'professional_boundary';
+    certifier: AccountingAdvancedProfessionalOwner;
+    certificationBoundary: string;
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    requirementCount: number;
+    readyRequirementCount: number;
+    needsReviewRequirementCount: number;
+    blockedRequirementCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingLegalizationBoundaryPacketView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  packetStatus: AccountingReadinessStatus;
+  certificationWorkspace: TenantFullAccountingCertificationRequirementWorkspaceView;
+  legalizationItems: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    artifactType: 'ledger_draft' | 'posting_approval' | 'financial_statement' | 'professional_boundary';
+    requiredOwner: AccountingAdvancedProfessionalOwner;
+    legalizationBoundary: string;
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    legalizationItemCount: number;
+    readyLegalizationItemCount: number;
+    needsReviewLegalizationItemCount: number;
+    blockedLegalizationItemCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingSignatureCertificationBoundaryCloseoutView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  closeoutStatus: AccountingReadinessStatus;
+  boundaryAnchor: TenantFullAccountingSignatureCertificationBoundaryAnchorView;
+  signatoryRegistry: TenantFullAccountingFormalSignatoryRegistryView;
+  signatureEvidencePack: TenantFullAccountingSignatureEvidenceReadinessPackView;
+  certificationWorkspace: TenantFullAccountingCertificationRequirementWorkspaceView;
+  legalizationPacket: TenantFullAccountingLegalizationBoundaryPacketView;
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    evidenceRefs: string[];
+  }>;
+  finalDecision: FullAccountingSignatureCertificationBoundaryDecision;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockedChecklistCount: number;
+    boundaryGateCount: number;
+    signatoryCount: number;
+    signatureEvidenceItemCount: number;
+    certificationRequirementCount: number;
+    legalizationItemCount: number;
   };
   blockers: string[];
   nextStep: string;

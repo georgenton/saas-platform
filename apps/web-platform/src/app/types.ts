@@ -5831,6 +5831,81 @@ export interface FullAccountingFormalApprovalWorkflowCloseoutResponse {
   guardrails: string[];
 }
 
+export interface FullAccountingSignatureCertificationBoundaryCloseoutResponse {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: string;
+  closeoutStatus: string;
+  boundaryAnchor: {
+    anchorStatus: string;
+    summary: {
+      gateCount: number;
+      readyGateCount: number;
+      needsReviewGateCount: number;
+      blockedGateCount: number;
+      approvedForSignatureFlowCount: number;
+    };
+  };
+  signatoryRegistry: {
+    registryStatus: string;
+    summary: {
+      signatoryCount: number;
+      signatureCount: number;
+      certificationCount: number;
+      legalizationCount: number;
+      needsReviewSignatoryCount: number;
+    };
+  };
+  signatureEvidencePack: {
+    packStatus: string;
+    summary: {
+      evidenceItemCount: number;
+      readyEvidenceItemCount: number;
+      missingEvidenceCount: number;
+      blockedEvidenceItemCount: number;
+    };
+  };
+  certificationWorkspace: {
+    workspaceStatus: string;
+    summary: {
+      requirementCount: number;
+      readyRequirementCount: number;
+      needsReviewRequirementCount: number;
+      blockedRequirementCount: number;
+    };
+  };
+  legalizationPacket: {
+    packetStatus: string;
+    summary: {
+      legalizationItemCount: number;
+      readyLegalizationItemCount: number;
+      needsReviewLegalizationItemCount: number;
+      blockedLegalizationItemCount: number;
+    };
+  };
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: string;
+    evidenceRefs: string[];
+  }>;
+  finalDecision: string;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockedChecklistCount: number;
+    boundaryGateCount: number;
+    signatoryCount: number;
+    signatureEvidenceItemCount: number;
+    certificationRequirementCount: number;
+    legalizationItemCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
 export interface AccountingOperationalCommandCenterResponse {
   tenantSlug: string;
   period: string;

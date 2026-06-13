@@ -1284,6 +1284,12 @@ const [
   fullAccountingApprovalDecisionWorkspace,
   fullAccountingFormalApprovalCommandCenter,
   fullAccountingFormalApprovalWorkflowCloseout,
+  fullAccountingSignatureCertificationBoundaryAnchor,
+  fullAccountingFormalSignatoryRegistry,
+  fullAccountingSignatureEvidenceReadinessPack,
+  fullAccountingCertificationRequirementWorkspace,
+  fullAccountingLegalizationBoundaryPacket,
+  fullAccountingSignatureCertificationBoundaryCloseout,
 ] = await Promise.all([
   apiRequest({
     baseUrl,
@@ -2372,6 +2378,48 @@ const [
     ),
     token,
   }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-signature-certification/anchor?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-signature-certification/signatory-registry?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-signature-certification/signature-evidence-pack?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-signature-certification/certification-requirements?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-signature-certification/legalization-boundary?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-signature-certification/closeout?${periodQuery()}`,
+    ),
+    token,
+  }),
 ]);
 
 assertStatus(
@@ -3034,6 +3082,30 @@ assertStatus(
   'full accounting formal approval workflow closeout',
   fullAccountingFormalApprovalWorkflowCloseout.closeoutStatus,
 );
+assertStatus(
+  'full accounting signature certification boundary anchor',
+  fullAccountingSignatureCertificationBoundaryAnchor.anchorStatus,
+);
+assertStatus(
+  'full accounting formal signatory registry',
+  fullAccountingFormalSignatoryRegistry.registryStatus,
+);
+assertStatus(
+  'full accounting signature evidence readiness pack',
+  fullAccountingSignatureEvidenceReadinessPack.packStatus,
+);
+assertStatus(
+  'full accounting certification requirement workspace',
+  fullAccountingCertificationRequirementWorkspace.workspaceStatus,
+);
+assertStatus(
+  'full accounting legalization boundary packet',
+  fullAccountingLegalizationBoundaryPacket.packetStatus,
+);
+assertStatus(
+  'full accounting signature certification boundary closeout',
+  fullAccountingSignatureCertificationBoundaryCloseout.closeoutStatus,
+);
 if (!Array.isArray(advancedDiscoveryCloseout.closeoutChecklist)) {
   throw new Error('advanced-discovery/closeout no devolvio checklist[].');
 }
@@ -3156,6 +3228,15 @@ if (
 if (!Array.isArray(fullAccountingFormalApprovalWorkflowCloseout.closeoutChecklist)) {
   throw new Error(
     'full-accounting-formal-approval/closeout no devolvio checklist[].',
+  );
+}
+if (
+  !Array.isArray(
+    fullAccountingSignatureCertificationBoundaryCloseout.closeoutChecklist,
+  )
+) {
+  throw new Error(
+    'full-accounting-signature-certification/closeout no devolvio checklist[].',
   );
 }
 printLine(

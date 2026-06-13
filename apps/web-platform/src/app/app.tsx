@@ -153,6 +153,7 @@ import {
   fetchFullAccountingFormalArtifactDraftingCloseout,
   fetchFullAccountingProfessionalReviewExecutionCloseout,
   fetchFullAccountingFormalApprovalWorkflowCloseout,
+  fetchFullAccountingSignatureCertificationBoundaryCloseout,
   fetchFullAccountingProductDesignCloseout,
   fetchFullAccountingMvpOperationsCloseout,
   fetchFullAccountingMvpReadinessCloseout,
@@ -530,6 +531,7 @@ import {
   FullAccountingFormalArtifactDraftingCloseoutResponse,
   FullAccountingProfessionalReviewExecutionCloseoutResponse,
   FullAccountingFormalApprovalWorkflowCloseoutResponse,
+  FullAccountingSignatureCertificationBoundaryCloseoutResponse,
   FullAccountingProductDesignCloseoutResponse,
   FullAccountingCandidateCloseoutResponse,
   FullAccountingMvpOperationsCloseoutResponse,
@@ -2739,6 +2741,13 @@ export function App() {
   ] = useState<FullAccountingFormalApprovalWorkflowCloseoutResponse | null>(
     null,
   );
+  const [
+    fullAccountingSignatureCertificationBoundaryCloseout,
+    setFullAccountingSignatureCertificationBoundaryCloseout,
+  ] =
+    useState<FullAccountingSignatureCertificationBoundaryCloseoutResponse | null>(
+      null,
+    );
   const [
     taxComplianceSriFiscalEvidenceWorkspace,
     setTaxComplianceSriFiscalEvidenceWorkspace,
@@ -20913,6 +20922,7 @@ export function App() {
         nextFullAccountingFormalArtifactDraftingCloseout,
         nextFullAccountingProfessionalReviewExecutionCloseout,
         nextFullAccountingFormalApprovalWorkflowCloseout,
+        nextFullAccountingSignatureCertificationBoundaryCloseout,
       ] = accountingEnabled
         ? await Promise.all([
             fetchAccountingIntakeWorkspace(
@@ -21290,6 +21300,12 @@ export function App() {
               taxCompliancePeriod,
               year,
             ),
+            fetchFullAccountingSignatureCertificationBoundaryCloseout(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
           ])
         : [
             null,
@@ -21325,6 +21341,7 @@ export function App() {
             null,
             null,
             [],
+            null,
             null,
             null,
             null,
@@ -21685,6 +21702,9 @@ export function App() {
         );
         setFullAccountingFormalApprovalWorkflowCloseout(
           nextFullAccountingFormalApprovalWorkflowCloseout,
+        );
+        setFullAccountingSignatureCertificationBoundaryCloseout(
+          nextFullAccountingSignatureCertificationBoundaryCloseout,
         );
       });
     } catch (error) {
@@ -38729,8 +38749,109 @@ export function App() {
                                     </p>
                                   </div>
                                 ) : null}
+                                {fullAccountingSignatureCertificationBoundaryCloseout ? (
+                                  <div className={styles.invoiceItemCard}>
+                                    <div className={styles.invoiceCardHeader}>
+                                      <strong>
+                                        Full Accounting Signature &amp;
+                                        Certification Boundary 1.1
+                                      </strong>
+                                      <span className={styles.statusPill}>
+                                        {humanizeKey(
+                                          fullAccountingSignatureCertificationBoundaryCloseout.closeoutStatus,
+                                        )}
+                                      </span>
+                                    </div>
+                                    <div className={styles.invoiceInlineGrid}>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Gates
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingSignatureCertificationBoundaryCloseout
+                                              .boundaryAnchor.summary
+                                              .readyGateCount
+                                          }
+                                          /
+                                          {
+                                            fullAccountingSignatureCertificationBoundaryCloseout
+                                              .boundaryAnchor.summary.gateCount
+                                          }
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Signatories
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingSignatureCertificationBoundaryCloseout
+                                              .signatoryRegistry.summary
+                                              .signatoryCount
+                                          }
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Evidence
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingSignatureCertificationBoundaryCloseout
+                                              .signatureEvidencePack.summary
+                                              .missingEvidenceCount
+                                          }{' '}
+                                          missing
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Certification
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingSignatureCertificationBoundaryCloseout
+                                              .certificationWorkspace.summary
+                                              .needsReviewRequirementCount
+                                          }{' '}
+                                          review
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Legalization
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingSignatureCertificationBoundaryCloseout
+                                              .legalizationPacket.summary
+                                              .legalizationItemCount
+                                          }{' '}
+                                          items
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Decision
+                                        </span>
+                                        <strong>
+                                          {humanizeKey(
+                                            fullAccountingSignatureCertificationBoundaryCloseout.finalDecision,
+                                          )}
+                                        </strong>
+                                      </div>
+                                    </div>
+                                    <p className={styles.muted}>
+                                      {
+                                        fullAccountingSignatureCertificationBoundaryCloseout.nextStep
+                                      }
+                                    </p>
+                                  </div>
+                                ) : null}
                                 <p className={styles.muted}>
-                                  {fullAccountingFormalApprovalWorkflowCloseout?.nextStep ??
+                                  {fullAccountingSignatureCertificationBoundaryCloseout?.nextStep ??
+                                    fullAccountingFormalApprovalWorkflowCloseout?.nextStep ??
                                     fullAccountingProfessionalReviewExecutionCloseout?.nextStep ??
                                     fullAccountingFormalArtifactDraftingCloseout?.nextStep ??
                                     fullAccountingFormalReadinessCloseout?.nextStep ??

@@ -2599,6 +2599,39 @@ Guardrail: formal approval workflow 1.0 records controlled approval decisions
 inside the workflow only. It does not post, sign, certify, legalize, submit,
 file or issue official artifacts.
 
+### Full Accounting signature and certification boundary 1.1
+
+After formal approval workflow 1.0, full Accounting can prepare the boundary
+between approved internal artifacts and external human/professional acts. This
+is the customs desk before the courier: it checks what can leave the workflow,
+who must sign or certify it, what evidence is missing, and which items need
+legalization, while the platform still does not execute any official act.
+
+1. `Full Accounting Signature Certification Boundary Anchor`
+   - confirms the formal approval closeout and maps gates for signature,
+     certification and legalization
+2. `Formal Signatory Registry`
+   - identifies required signatories/certifiers for ledger drafts, posting
+     approvals, bank evidence, trial balance, financial statements and
+     professional boundaries
+3. `Signature Evidence Readiness Pack`
+   - gathers readiness and missing evidence per signatory without turning
+     evidence into a signature
+4. `Certification Requirement Workspace`
+   - separates bank, trial balance, financial statement and professional
+     certification requirements from platform automation
+5. `Legalization Boundary Packet`
+   - marks ledger, posting, financial statement and professional-boundary
+     legalization needs before any external execution handoff
+6. `Full Accounting Signature Certification Boundary Closeout`
+   - decides whether to open external execution handoff, continue the boundary
+     work, return to formal approval/professional review or stop preparing
+     external execution
+
+Guardrail: signature and certification boundary 1.1 does not sign, certify,
+legalize, submit, post, file, issue official artifacts or replace the external
+professional/legal actor.
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal
@@ -2763,6 +2796,9 @@ product. Its current scope is intentionally operational and review-oriented:
     records controlled approval decisions, authority boundaries and evidence
     packs before any signature, certification, legalization, posting or filing
     can happen.
+46. Full Accounting signature and certification boundary 1.1 as the customs
+    desk. It maps signatories, certification requirements, missing evidence and
+    legalization boundaries before any external execution handoff opens.
 
 Boundary: this foundation still does not perform bank reconciliation, lock
 against certified bank feeds, lock official legal books, issue official

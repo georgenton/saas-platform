@@ -134,6 +134,11 @@ import {
   GetTenantFullAccountingFormalApprovalEvidencePackUseCase,
   GetTenantFullAccountingApprovalDecisionWorkspaceUseCase,
   GetTenantFullAccountingFormalApprovalCommandCenterUseCase,
+  GetTenantFullAccountingCertificationRequirementWorkspaceUseCase,
+  GetTenantFullAccountingFormalSignatoryRegistryUseCase,
+  GetTenantFullAccountingLegalizationBoundaryPacketUseCase,
+  GetTenantFullAccountingSignatureCertificationBoundaryAnchorUseCase,
+  GetTenantFullAccountingSignatureEvidenceReadinessPackUseCase,
   GetTenantAccountingAdvancedFormalProductScopeContractUseCase,
   GetTenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixUseCase,
   GetTenantAccountingAdvancedProfessionalReviewWorkflowDesignUseCase,
@@ -219,6 +224,7 @@ import {
   RequestTenantFullAccountingProfessionalApprovalRecommendationPackUseCase,
   RequestTenantFullAccountingProfessionalReviewExecutionCloseoutUseCase,
   RequestTenantFullAccountingFormalApprovalWorkflowCloseoutUseCase,
+  RequestTenantFullAccountingSignatureCertificationBoundaryCloseoutUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -403,6 +409,12 @@ import {
   FullAccountingApprovalDecisionWorkspaceResponseDto,
   FullAccountingFormalApprovalCommandCenterResponseDto,
   FullAccountingFormalApprovalWorkflowCloseoutResponseDto,
+  FullAccountingCertificationRequirementWorkspaceResponseDto,
+  FullAccountingFormalSignatoryRegistryResponseDto,
+  FullAccountingLegalizationBoundaryPacketResponseDto,
+  FullAccountingSignatureCertificationBoundaryAnchorResponseDto,
+  FullAccountingSignatureCertificationBoundaryCloseoutResponseDto,
+  FullAccountingSignatureEvidenceReadinessPackResponseDto,
   AccountingAdvancedProfessionalResponsibilityAssignmentMatrixResponseDto,
   AccountingAdvancedProfessionalReviewWorkflowDesignResponseDto,
   AccountingCertifiedBankEvidenceBoundaryResponseDto,
@@ -565,6 +577,12 @@ import {
   toFullAccountingApprovalDecisionWorkspaceResponseDto,
   toFullAccountingFormalApprovalCommandCenterResponseDto,
   toFullAccountingFormalApprovalWorkflowCloseoutResponseDto,
+  toFullAccountingCertificationRequirementWorkspaceResponseDto,
+  toFullAccountingFormalSignatoryRegistryResponseDto,
+  toFullAccountingLegalizationBoundaryPacketResponseDto,
+  toFullAccountingSignatureCertificationBoundaryAnchorResponseDto,
+  toFullAccountingSignatureCertificationBoundaryCloseoutResponseDto,
+  toFullAccountingSignatureEvidenceReadinessPackResponseDto,
   toAccountingAdvancedProfessionalResponsibilityAssignmentMatrixResponseDto,
   toAccountingAdvancedProfessionalReviewWorkflowDesignResponseDto,
   toAccountingCertifiedBankEvidenceBoundaryResponseDto,
@@ -999,6 +1017,12 @@ export class AccountingController {
     private readonly getTenantFullAccountingApprovalDecisionWorkspaceUseCase: GetTenantFullAccountingApprovalDecisionWorkspaceUseCase,
     private readonly getTenantFullAccountingFormalApprovalCommandCenterUseCase: GetTenantFullAccountingFormalApprovalCommandCenterUseCase,
     private readonly requestTenantFullAccountingFormalApprovalWorkflowCloseoutUseCase: RequestTenantFullAccountingFormalApprovalWorkflowCloseoutUseCase,
+    private readonly getTenantFullAccountingSignatureCertificationBoundaryAnchorUseCase: GetTenantFullAccountingSignatureCertificationBoundaryAnchorUseCase,
+    private readonly getTenantFullAccountingFormalSignatoryRegistryUseCase: GetTenantFullAccountingFormalSignatoryRegistryUseCase,
+    private readonly getTenantFullAccountingSignatureEvidenceReadinessPackUseCase: GetTenantFullAccountingSignatureEvidenceReadinessPackUseCase,
+    private readonly getTenantFullAccountingCertificationRequirementWorkspaceUseCase: GetTenantFullAccountingCertificationRequirementWorkspaceUseCase,
+    private readonly getTenantFullAccountingLegalizationBoundaryPacketUseCase: GetTenantFullAccountingLegalizationBoundaryPacketUseCase,
+    private readonly requestTenantFullAccountingSignatureCertificationBoundaryCloseoutUseCase: RequestTenantFullAccountingSignatureCertificationBoundaryCloseoutUseCase,
   ) {}
 
   @Get(':slug/advanced-discovery/anchor')
@@ -4807,6 +4831,132 @@ export class AccountingController {
           { tenantSlug, period, year: Number.parseInt(year, 10) },
         );
       return toFullAccountingFormalApprovalWorkflowCloseoutResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-signature-certification/anchor')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingSignatureCertificationBoundaryAnchor(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingSignatureCertificationBoundaryAnchorResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingSignatureCertificationBoundaryAnchorUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+      return toFullAccountingSignatureCertificationBoundaryAnchorResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-signature-certification/signatory-registry')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingFormalSignatoryRegistry(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingFormalSignatoryRegistryResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingFormalSignatoryRegistryUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+      return toFullAccountingFormalSignatoryRegistryResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-signature-certification/signature-evidence-pack')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingSignatureEvidenceReadinessPack(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingSignatureEvidenceReadinessPackResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingSignatureEvidenceReadinessPackUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+      return toFullAccountingSignatureEvidenceReadinessPackResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-signature-certification/certification-requirements')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingCertificationRequirementWorkspace(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingCertificationRequirementWorkspaceResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingCertificationRequirementWorkspaceUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+      return toFullAccountingCertificationRequirementWorkspaceResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-signature-certification/legalization-boundary')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingLegalizationBoundaryPacket(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingLegalizationBoundaryPacketResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingLegalizationBoundaryPacketUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+      return toFullAccountingLegalizationBoundaryPacketResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-signature-certification/closeout')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingSignatureCertificationBoundaryCloseout(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingSignatureCertificationBoundaryCloseoutResponseDto> {
+    try {
+      const view =
+        await this.requestTenantFullAccountingSignatureCertificationBoundaryCloseoutUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+      return toFullAccountingSignatureCertificationBoundaryCloseoutResponseDto(view);
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);

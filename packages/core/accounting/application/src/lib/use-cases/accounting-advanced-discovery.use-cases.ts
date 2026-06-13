@@ -28,6 +28,7 @@ import {
   FullAccountingExternalExecutionTrackingDecision,
   FullAccountingExternalResultIntakeDecision,
   FullAccountingFormalRecordAssemblyDecision,
+  FullAccountingFormalRecordCloseoutDecision,
   FullAccountingProductDesignDecision,
   FullAccountingMvpReadinessDecision,
   FullAccountingMvpOperationsDecision,
@@ -173,10 +174,16 @@ import {
   TenantFullAccountingExternalResultIntakeAnchorView,
   TenantFullAccountingExternalResultIntakeCloseoutView,
   TenantFullAccountingAcceptedArtifactBinderView,
+  TenantFullAccountingArchiveReadinessWorkspaceView,
+  TenantFullAccountingFormalCloseoutEvidencePacketView,
   TenantFullAccountingFormalRecordAssemblyAnchorView,
   TenantFullAccountingFormalRecordAssemblyCloseoutView,
+  TenantFullAccountingFormalRecordCloseoutAnchorView,
+  TenantFullAccountingFormalRecordCloseoutCloseoutView,
+  TenantFullAccountingFormalRecordCloseoutCommandCenterView,
   TenantFullAccountingFormalRecordAssemblyCommandCenterView,
   TenantFullAccountingFormalRecordIndexWorkspaceView,
+  TenantFullAccountingProfessionalCloseoutAttestationBoundaryView,
   TenantFullAccountingRecordConsistencyReviewWorkspaceView,
   TenantFullAccountingFormalSignatoryRegistryView,
   TenantFullAccountingFormalReadinessAnchorView,
@@ -13207,6 +13214,164 @@ export class RequestTenantFullAccountingFormalRecordAssemblyCloseoutUseCase {
   }
 }
 
+export class GetTenantFullAccountingFormalRecordCloseoutAnchorUseCase {
+  constructor(
+    private readonly requestTenantFullAccountingFormalRecordAssemblyCloseoutUseCase: RequestTenantFullAccountingFormalRecordAssemblyCloseoutUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingFormalRecordCloseoutAnchorView> {
+    const assemblyCloseout = await this.requestTenantFullAccountingFormalRecordAssemblyCloseoutUseCase.execute(input);
+    const closeoutGates: TenantFullAccountingFormalRecordCloseoutAnchorView['closeoutGates'] = [
+      fullAccountingFormalRecordCloseoutGate('assembly_package', 'Full Accounting formal record assembly package', assemblyCloseout.closeoutStatus, 'assembly_package', assemblyCloseout.finalDecision === 'open_formal_record_closeout' ? 'ready_for_archive_readiness' : 'returned_to_assembly', ['full_accounting_formal_record_assembly_closeout']),
+      fullAccountingFormalRecordCloseoutGate('record_index', 'Full Accounting formal record index accepted for closeout', assemblyCloseout.recordIndex.indexStatus, 'record_index', assemblyCloseout.recordIndex.indexStatus === 'ready' ? 'ready_for_archive_readiness' : 'needs_review', ['full_accounting_formal_record_index_workspace']),
+      fullAccountingFormalRecordCloseoutGate('consistency_review', 'Full Accounting record consistency accepted for closeout', assemblyCloseout.consistencyReview.reviewStatus, 'consistency_review', assemblyCloseout.consistencyReview.reviewStatus === 'ready' ? 'ready_for_archive_readiness' : 'needs_review', ['full_accounting_record_consistency_review_workspace']),
+      fullAccountingFormalRecordCloseoutGate('command_decision', 'Full Accounting formal assembly command decision', assemblyCloseout.commandCenter.commandStatus, 'command_decision', assemblyCloseout.finalDecision === 'open_formal_record_closeout' ? 'ready_for_archive_readiness' : 'returned_to_assembly', ['full_accounting_formal_record_assembly_command_center']),
+    ];
+    const blockers = assemblyCloseout.finalDecision === 'open_formal_record_closeout' ? [...assemblyCloseout.blockers] : unique([...assemblyCloseout.blockers, `Full Accounting formal record assembly decision is ${assemblyCloseout.finalDecision}.`]);
+    const anchorStatus = resolveStatus(closeoutGates.map((gate) => gate.status), blockers);
+    return {
+      ...input, generatedAt: this.nowProvider(), anchorStatus, assemblyCloseout, closeoutGates,
+      summary: { gateCount: closeoutGates.length, readyGateCount: closeoutGates.filter((gate) => gate.status === 'ready').length, needsReviewGateCount: closeoutGates.filter((gate) => gate.status === 'needs_review').length, blockedGateCount: closeoutGates.filter((gate) => gate.status === 'blocked').length, assemblyChecklistCount: assemblyCloseout.summary.checklistCount },
+      blockers,
+      nextStep: anchorStatus === 'blocked' ? 'Volver a Full Accounting formal record assembly 1.5 antes del closeout.' : 'Preparar archive readiness del expediente formal Full Accounting.',
+      guardrails: ['Full Accounting formal record closeout 1.6 valida cierre interno; no archiva oficialmente.', 'Solo expedientes ensamblados y consistentes pueden avanzar a readiness de archivo.'],
+    };
+  }
+}
+
+export class GetTenantFullAccountingArchiveReadinessWorkspaceUseCase {
+  constructor(
+    private readonly getTenantFullAccountingFormalRecordCloseoutAnchorUseCase: GetTenantFullAccountingFormalRecordCloseoutAnchorUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingArchiveReadinessWorkspaceView> {
+    const closeoutAnchor = await this.getTenantFullAccountingFormalRecordCloseoutAnchorUseCase.execute(input);
+    const archiveFolders: TenantFullAccountingArchiveReadinessWorkspaceView['archiveFolders'] = [
+      fullAccountingArchiveReadinessFolder('formal_record_package', 'Full Accounting formal record package folder', closeoutAnchor.anchorStatus, 'formal_record_package', closeoutAnchor.anchorStatus === 'ready' ? 'retain_for_period_closeout' : 'do_not_archive_yet', ['full_accounting_formal_record_closeout_anchor'], closeoutAnchor.blockers),
+      fullAccountingArchiveReadinessFolder('evidence_chain', 'Full Accounting evidence chain folder', closeoutAnchor.assemblyCloseout.recordIndex.indexStatus, 'evidence_chain', 'retain_for_period_closeout', closeoutAnchor.closeoutGates.flatMap((gate) => gate.evidenceRefs), []),
+      fullAccountingArchiveReadinessFolder('decision_log', 'Full Accounting decision log folder', closeoutAnchor.assemblyCloseout.commandCenter.commandStatus, 'decision_log', 'retain_for_professional_review', ['full_accounting_formal_record_assembly_command_center'], []),
+      fullAccountingArchiveReadinessFolder('professional_review', 'Full Accounting professional review boundary folder', closeoutAnchor.anchorStatus, 'professional_review', 'retain_for_professional_review', ['full_accounting_professional_closeout_boundary'], []),
+    ];
+    const blockers = [...closeoutAnchor.blockers];
+    const archiveStatus = resolveStatus(archiveFolders.map((folder) => folder.status), blockers);
+    return {
+      ...input, generatedAt: this.nowProvider(), archiveStatus, closeoutAnchor, archiveFolders,
+      summary: { folderCount: archiveFolders.length, readyFolderCount: archiveFolders.filter((folder) => folder.status === 'ready').length, needsReviewFolderCount: archiveFolders.filter((folder) => folder.status === 'needs_review').length, blockedFolderCount: archiveFolders.filter((folder) => folder.status === 'blocked').length, retainedEvidenceRefCount: archiveFolders.flatMap((folder) => folder.evidenceRefs).length },
+      blockers, nextStep: 'Preparar evidence packets del closeout formal Full Accounting.',
+      guardrails: ['Archive readiness prepara carpetas; no mueve documentos a custodia oficial.', 'Cualquier blocker mantiene el expediente fuera de archivo.'],
+    };
+  }
+}
+
+export class GetTenantFullAccountingFormalCloseoutEvidencePacketUseCase {
+  constructor(
+    private readonly getTenantFullAccountingArchiveReadinessWorkspaceUseCase: GetTenantFullAccountingArchiveReadinessWorkspaceUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingFormalCloseoutEvidencePacketView> {
+    const archiveReadiness = await this.getTenantFullAccountingArchiveReadinessWorkspaceUseCase.execute(input);
+    const evidencePackets: TenantFullAccountingFormalCloseoutEvidencePacketView['evidencePackets'] = archiveReadiness.archiveFolders.map((folder) => fullAccountingFormalCloseoutEvidencePacket(`packet_${folder.key}`, `${folder.label} evidence packet`, folder.status, folder.key, fullAccountingEvidencePacketTypeFromArchiveFolder(folder.folderType), folder.evidenceRefs, folder.status === 'ready' ? [] : folder.blockerRefs));
+    const blockers = [...archiveReadiness.blockers];
+    const packetStatus = resolveStatus(evidencePackets.map((packet) => packet.status), blockers);
+    return {
+      ...input, generatedAt: this.nowProvider(), packetStatus, archiveReadiness, evidencePackets,
+      summary: { packetCount: evidencePackets.length, readyPacketCount: evidencePackets.filter((packet) => packet.status === 'ready').length, needsReviewPacketCount: evidencePackets.filter((packet) => packet.status === 'needs_review').length, blockedPacketCount: evidencePackets.filter((packet) => packet.status === 'blocked').length, missingRefCount: evidencePackets.flatMap((packet) => packet.missingRefs).length },
+      blockers, nextStep: 'Validar frontera de atestacion profesional Full Accounting.',
+      guardrails: ['Evidence packet resume referencias; no crea documentos oficiales nuevos.', 'La evidencia profesional se conserva como boundary, no como certificacion de plataforma.'],
+    };
+  }
+}
+
+export class GetTenantFullAccountingProfessionalCloseoutAttestationBoundaryUseCase {
+  constructor(
+    private readonly getTenantFullAccountingFormalCloseoutEvidencePacketUseCase: GetTenantFullAccountingFormalCloseoutEvidencePacketUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingProfessionalCloseoutAttestationBoundaryView> {
+    const evidencePacket = await this.getTenantFullAccountingFormalCloseoutEvidencePacketUseCase.execute(input);
+    const attestationItems: TenantFullAccountingProfessionalCloseoutAttestationBoundaryView['attestationItems'] = [
+      fullAccountingProfessionalCloseoutAttestationItem('platform_preparation', 'Platform prepared Full Accounting formal closeout packet', evidencePacket.packetStatus, 'platform', 'platform_preparation', ['full_accounting_formal_closeout_evidence_packet'], 'La plataforma prepara y traza; no certifica balances.'),
+      fullAccountingProfessionalCloseoutAttestationItem('operator_review', 'Operator reviewed Full Accounting archive readiness', evidencePacket.archiveReadiness.archiveStatus, 'operator', 'operator_review', ['full_accounting_archive_readiness_workspace'], 'El operador revisa completitud operativa antes de handoff.'),
+      fullAccountingProfessionalCloseoutAttestationItem('external_accountant_review', 'External accountant review boundary', evidencePacket.packetStatus, 'external_accountant', 'external_accountant_review', ['full_accounting_professional_closeout_boundary'], 'El contador externo mantiene criterio profesional independiente.'),
+      fullAccountingProfessionalCloseoutAttestationItem('not_certified_by_platform', 'Platform non-certification guardrail', 'ready', 'platform', 'not_certified_by_platform', ['full_accounting_guardrails'], 'El sistema no emite certificacion profesional ni legal.'),
+    ];
+    const blockers = [...evidencePacket.blockers];
+    const boundaryStatus = resolveStatus(attestationItems.map((item) => item.status), blockers);
+    return {
+      ...input, generatedAt: this.nowProvider(), boundaryStatus, evidencePacket, attestationItems,
+      summary: { itemCount: attestationItems.length, readyItemCount: attestationItems.filter((item) => item.status === 'ready').length, professionalOwnedItemCount: attestationItems.filter((item) => item.owner === 'external_accountant' || item.owner === 'legal_representative').length, platformBoundaryItemCount: attestationItems.filter((item) => item.attestationType === 'not_certified_by_platform').length },
+      blockers, nextStep: 'Consolidar command center del closeout formal Full Accounting.',
+      guardrails: ['Professional attestation boundary explicita quien revisa y quien no certifica.', 'La plataforma no reemplaza contador, auditor ni representante legal.'],
+    };
+  }
+}
+
+export class GetTenantFullAccountingFormalRecordCloseoutCommandCenterUseCase {
+  constructor(
+    private readonly getTenantFullAccountingProfessionalCloseoutAttestationBoundaryUseCase: GetTenantFullAccountingProfessionalCloseoutAttestationBoundaryUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingFormalRecordCloseoutCommandCenterView> {
+    const attestationBoundary = await this.getTenantFullAccountingProfessionalCloseoutAttestationBoundaryUseCase.execute(input);
+    const { evidencePacket } = attestationBoundary;
+    const { archiveReadiness } = evidencePacket;
+    const { closeoutAnchor } = archiveReadiness;
+    const commandLanes: TenantFullAccountingFormalRecordCloseoutCommandCenterView['commandLanes'] = [
+      fullAccountingFormalRecordCloseoutCommandLane('closeout_anchor', 'Full Accounting formal record closeout anchor', closeoutAnchor.anchorStatus, 'gates', closeoutAnchor.summary.gateCount),
+      fullAccountingFormalRecordCloseoutCommandLane('archive_readiness', 'Full Accounting archive readiness workspace', archiveReadiness.archiveStatus, 'folders', archiveReadiness.summary.folderCount),
+      fullAccountingFormalRecordCloseoutCommandLane('evidence_packets', 'Full Accounting formal closeout evidence packets', evidencePacket.packetStatus, 'packets', evidencePacket.summary.packetCount),
+      fullAccountingFormalRecordCloseoutCommandLane('professional_boundary', 'Full Accounting professional attestation boundary', attestationBoundary.boundaryStatus, 'items', attestationBoundary.summary.itemCount),
+    ];
+    const blockers = unique([...closeoutAnchor.blockers, ...archiveReadiness.blockers, ...evidencePacket.blockers, ...attestationBoundary.blockers]);
+    const commandStatus = resolveStatus(commandLanes.map((lane) => lane.status), blockers);
+    const suggestedDecision = fullAccountingFormalRecordCloseoutDecisionFromStatus(commandStatus, attestationBoundary, blockers);
+    return {
+      ...input, generatedAt: this.nowProvider(), commandStatus, attestationBoundary, commandLanes, suggestedDecision,
+      summary: { laneCount: commandLanes.length, readyLaneCount: commandLanes.filter((lane) => lane.status === 'ready').length, needsReviewLaneCount: commandLanes.filter((lane) => lane.status === 'needs_review').length, blockedLaneCount: commandLanes.filter((lane) => lane.status === 'blocked').length, archiveReadyCount: archiveReadiness.summary.readyFolderCount, professionalBoundaryCount: attestationBoundary.summary.professionalOwnedItemCount },
+      blockers,
+      nextStep: suggestedDecision === 'open_archive_handoff' ? 'Preparar Full Accounting archive handoff posterior.' : suggestedDecision === 'continue_professional_attestation' ? 'Completar revision profesional antes de archive handoff.' : suggestedDecision === 'continue_archive_readiness_review' ? 'Resolver readiness de archivo antes del closeout.' : 'Volver a Full Accounting formal record assembly 1.5.',
+      guardrails: ['Command center decide readiness; no archiva ni certifica formalmente.', 'Archive handoff posterior debe conservar frontera profesional.'],
+    };
+  }
+}
+
+export class RequestTenantFullAccountingFormalRecordCloseoutCloseoutUseCase {
+  constructor(
+    private readonly getTenantFullAccountingFormalRecordCloseoutCommandCenterUseCase: GetTenantFullAccountingFormalRecordCloseoutCommandCenterUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingFormalRecordCloseoutCloseoutView> {
+    const commandCenter = await this.getTenantFullAccountingFormalRecordCloseoutCommandCenterUseCase.execute(input);
+    const { attestationBoundary } = commandCenter;
+    const { evidencePacket } = attestationBoundary;
+    const { archiveReadiness } = evidencePacket;
+    const { closeoutAnchor } = archiveReadiness;
+    const closeoutChecklist: TenantFullAccountingFormalRecordCloseoutCloseoutView['closeoutChecklist'] = [
+      fullAccountingFormalRecordCloseoutCheck('closeout_anchor', 'Full Accounting formal record closeout anchor', closeoutAnchor.anchorStatus, ['full_accounting_formal_record_closeout_anchor']),
+      fullAccountingFormalRecordCloseoutCheck('archive_readiness', 'Full Accounting archive readiness workspace', archiveReadiness.archiveStatus, ['full_accounting_archive_readiness_workspace']),
+      fullAccountingFormalRecordCloseoutCheck('evidence_packet', 'Full Accounting formal closeout evidence packet', evidencePacket.packetStatus, ['full_accounting_formal_closeout_evidence_packet']),
+      fullAccountingFormalRecordCloseoutCheck('professional_boundary', 'Full Accounting professional closeout attestation boundary', attestationBoundary.boundaryStatus, ['full_accounting_professional_closeout_boundary']),
+      fullAccountingFormalRecordCloseoutCheck('command_center', 'Full Accounting formal record closeout command center', commandCenter.commandStatus, ['full_accounting_formal_record_closeout_command_center']),
+    ];
+    const blockers = unique([...closeoutAnchor.blockers, ...archiveReadiness.blockers, ...evidencePacket.blockers, ...attestationBoundary.blockers, ...commandCenter.blockers]);
+    const closeoutStatus = resolveStatus(closeoutChecklist.map((item) => item.status), blockers);
+    const finalDecision = fullAccountingFormalRecordCloseoutDecisionFromStatus(closeoutStatus, attestationBoundary, blockers);
+    return {
+      ...input, generatedAt: this.nowProvider(), closeoutStatus, closeoutAnchor, archiveReadiness, evidencePacket, attestationBoundary, commandCenter, closeoutChecklist, finalDecision,
+      summary: { checklistCount: closeoutChecklist.length, readyChecklistCount: closeoutChecklist.filter((item) => item.status === 'ready').length, blockedChecklistCount: closeoutChecklist.filter((item) => item.status === 'blocked').length, archiveFolderCount: archiveReadiness.summary.folderCount, evidencePacketCount: evidencePacket.summary.packetCount, attestationItemCount: attestationBoundary.summary.itemCount },
+      blockers,
+      nextStep: finalDecision === 'open_archive_handoff' ? 'Evaluar Full Accounting archive handoff posterior.' : finalDecision === 'continue_professional_attestation' ? 'Completar atestacion profesional externa antes del handoff.' : finalDecision === 'continue_archive_readiness_review' ? 'Resolver readiness de archivo antes de cerrar.' : finalDecision === 'return_to_formal_record_assembly' ? 'Volver a 1.5 para corregir expediente formal.' : 'No cerrar expediente formal para este periodo.',
+      guardrails: ['Full Accounting formal record closeout 1.6 cierra internamente; no archiva oficialmente.', 'La plataforma no emite libros, estados financieros ni certificaciones profesionales.'],
+    };
+  }
+}
+
 function check(
   key: string,
   label: string,
@@ -16367,6 +16532,50 @@ function fullAccountingExternalResultIntakeDecisionFromStatus(
     return 'open_formal_record_assembly';
   }
   return 'do_not_accept_external_results';
+}
+
+function fullAccountingFormalRecordCloseoutGate(
+  key: string, label: string, status: AccountingReadinessStatus, gateType: TenantFullAccountingFormalRecordCloseoutAnchorView['closeoutGates'][number]['gateType'], closeoutState: TenantFullAccountingFormalRecordCloseoutAnchorView['closeoutGates'][number]['closeoutState'], evidenceRefs: string[],
+): TenantFullAccountingFormalRecordCloseoutAnchorView['closeoutGates'][number] { return { key, label, status, gateType, closeoutState, evidenceRefs }; }
+
+function fullAccountingArchiveReadinessFolder(
+  key: string, label: string, status: AccountingReadinessStatus, folderType: TenantFullAccountingArchiveReadinessWorkspaceView['archiveFolders'][number]['folderType'], retentionSignal: TenantFullAccountingArchiveReadinessWorkspaceView['archiveFolders'][number]['retentionSignal'], evidenceRefs: string[], blockerRefs: string[],
+): TenantFullAccountingArchiveReadinessWorkspaceView['archiveFolders'][number] { return { key, label, status, folderType, retentionSignal, evidenceRefs, blockerRefs }; }
+
+function fullAccountingFormalCloseoutEvidencePacket(
+  key: string, label: string, status: AccountingReadinessStatus, archiveFolderKey: string, packetType: TenantFullAccountingFormalCloseoutEvidencePacketView['evidencePackets'][number]['packetType'], evidenceRefs: string[], missingRefs: string[],
+): TenantFullAccountingFormalCloseoutEvidencePacketView['evidencePackets'][number] { return { key, label, status, archiveFolderKey, packetType, evidenceRefs, missingRefs }; }
+
+function fullAccountingProfessionalCloseoutAttestationItem(
+  key: string, label: string, status: AccountingReadinessStatus, owner: AccountingAdvancedProfessionalOwner, attestationType: TenantFullAccountingProfessionalCloseoutAttestationBoundaryView['attestationItems'][number]['attestationType'], evidenceRefs: string[], guardrail: string,
+): TenantFullAccountingProfessionalCloseoutAttestationBoundaryView['attestationItems'][number] { return { key, label, status, owner, attestationType, evidenceRefs, guardrail }; }
+
+function fullAccountingFormalRecordCloseoutCommandLane(
+  key: string, label: string, status: AccountingReadinessStatus, metric: string, count: number,
+): TenantFullAccountingFormalRecordCloseoutCommandCenterView['commandLanes'][number] { return { key, label, status, metric, count }; }
+
+function fullAccountingFormalRecordCloseoutCheck(
+  key: string, label: string, status: AccountingReadinessStatus, evidenceRefs: string[],
+): TenantFullAccountingFormalRecordCloseoutCloseoutView['closeoutChecklist'][number] { return { key, label, status, evidenceRefs }; }
+
+function fullAccountingEvidencePacketTypeFromArchiveFolder(
+  folderType: TenantFullAccountingArchiveReadinessWorkspaceView['archiveFolders'][number]['folderType'],
+): TenantFullAccountingFormalCloseoutEvidencePacketView['evidencePackets'][number]['packetType'] {
+  if (folderType === 'evidence_chain') return 'index_snapshot';
+  if (folderType === 'decision_log') return 'operator_decision';
+  if (folderType === 'professional_review') return 'professional_boundary';
+  if (folderType === 'exceptions') return 'consistency_snapshot';
+  return 'source_artifacts';
+}
+
+function fullAccountingFormalRecordCloseoutDecisionFromStatus(
+  status: AccountingReadinessStatus, attestationBoundary: TenantFullAccountingProfessionalCloseoutAttestationBoundaryView, blockers: string[],
+): FullAccountingFormalRecordCloseoutDecision {
+  if (blockers.length > 0 || status === 'blocked') return 'return_to_formal_record_assembly';
+  if (attestationBoundary.evidencePacket.archiveReadiness.summary.needsReviewFolderCount > 0) return 'continue_archive_readiness_review';
+  if (attestationBoundary.summary.professionalOwnedItemCount > 0 && attestationBoundary.summary.readyItemCount < attestationBoundary.summary.itemCount) return 'continue_professional_attestation';
+  if (status === 'ready') return 'open_archive_handoff';
+  return 'do_not_close_formal_record';
 }
 
 function fullAccountingFormalRecordGate(

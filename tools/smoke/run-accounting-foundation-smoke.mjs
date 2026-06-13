@@ -1314,6 +1314,12 @@ const [
   fullAccountingRecordConsistencyReviewWorkspace,
   fullAccountingFormalRecordAssemblyCommandCenter,
   fullAccountingFormalRecordAssemblyCloseout,
+  fullAccountingFormalRecordCloseoutAnchor,
+  fullAccountingArchiveReadinessWorkspace,
+  fullAccountingFormalCloseoutEvidencePacket,
+  fullAccountingProfessionalCloseoutAttestationBoundary,
+  fullAccountingFormalRecordCloseoutCommandCenter,
+  fullAccountingFormalRecordCloseoutCloseout,
 ] = await Promise.all([
   apiRequest({
     baseUrl,
@@ -2576,6 +2582,12 @@ const [
   apiRequest({ baseUrl, path: accountingPath(`/full-accounting-formal-record-assembly/consistency-review?${periodQuery()}`), token }),
   apiRequest({ baseUrl, path: accountingPath(`/full-accounting-formal-record-assembly/command-center?${periodQuery()}`), token }),
   apiRequest({ baseUrl, path: accountingPath(`/full-accounting-formal-record-assembly/closeout?${periodQuery()}`), token }),
+  apiRequest({ baseUrl, path: accountingPath(`/full-accounting-formal-record-closeout/anchor?${periodQuery()}`), token }),
+  apiRequest({ baseUrl, path: accountingPath(`/full-accounting-formal-record-closeout/archive-readiness?${periodQuery()}`), token }),
+  apiRequest({ baseUrl, path: accountingPath(`/full-accounting-formal-record-closeout/evidence-packet?${periodQuery()}`), token }),
+  apiRequest({ baseUrl, path: accountingPath(`/full-accounting-formal-record-closeout/attestation-boundary?${periodQuery()}`), token }),
+  apiRequest({ baseUrl, path: accountingPath(`/full-accounting-formal-record-closeout/command-center?${periodQuery()}`), token }),
+  apiRequest({ baseUrl, path: accountingPath(`/full-accounting-formal-record-closeout/closeout?${periodQuery()}`), token }),
 ]);
 
 assertStatus(
@@ -3340,6 +3352,12 @@ assertStatus('full accounting formal record index workspace', fullAccountingForm
 assertStatus('full accounting record consistency review workspace', fullAccountingRecordConsistencyReviewWorkspace.reviewStatus);
 assertStatus('full accounting formal record assembly command center', fullAccountingFormalRecordAssemblyCommandCenter.commandStatus);
 assertStatus('full accounting formal record assembly closeout', fullAccountingFormalRecordAssemblyCloseout.closeoutStatus);
+assertStatus('full accounting formal record closeout anchor', fullAccountingFormalRecordCloseoutAnchor.anchorStatus);
+assertStatus('full accounting archive readiness workspace', fullAccountingArchiveReadinessWorkspace.archiveStatus);
+assertStatus('full accounting formal closeout evidence packet', fullAccountingFormalCloseoutEvidencePacket.packetStatus);
+assertStatus('full accounting professional closeout attestation boundary', fullAccountingProfessionalCloseoutAttestationBoundary.boundaryStatus);
+assertStatus('full accounting formal record closeout command center', fullAccountingFormalRecordCloseoutCommandCenter.commandStatus);
+assertStatus('full accounting formal record closeout closeout', fullAccountingFormalRecordCloseoutCloseout.closeoutStatus);
 if (!Array.isArray(advancedDiscoveryCloseout.closeoutChecklist)) {
   throw new Error('advanced-discovery/closeout no devolvio checklist[].');
 }
@@ -3502,6 +3520,9 @@ if (
 }
 if (!Array.isArray(fullAccountingFormalRecordAssemblyCloseout.closeoutChecklist)) {
   throw new Error('full-accounting-formal-record-assembly/closeout no devolvio checklist[].');
+}
+if (!Array.isArray(fullAccountingFormalRecordCloseoutCloseout.closeoutChecklist)) {
+  throw new Error('full-accounting-formal-record-closeout/closeout no devolvio checklist[].');
 }
 printLine(
   'foundation pack v2',

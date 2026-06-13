@@ -121,8 +121,11 @@ import {
   TenantFullAccountingProfessionalReviewExecutionCloseoutView,
   TenantFullAccountingFormalApprovalWorkflowAnchorView,
   TenantFullAccountingFormalApprovalWorkflowCloseoutView,
+  TenantFullAccountingCertificationRequirementWorkspaceView,
+  TenantFullAccountingFormalSignatoryRegistryView,
   TenantFullAccountingFormalReadinessAnchorView,
   TenantFullAccountingFormalReadinessCloseoutView,
+  TenantFullAccountingLegalizationBoundaryPacketView,
   TenantFullAccountingOfficialArtifactBoundaryRegistryView,
   TenantFullAccountingLedgerWorkbenchMvpView,
   TenantFullAccountingPilotAccountantReviewRoomView,
@@ -143,6 +146,9 @@ import {
   TenantFullAccountingApprovalDecisionWorkspaceView,
   TenantFullAccountingFormalApprovalCommandCenterView,
   TenantFullAccountingFormalApprovalEvidencePackView,
+  TenantFullAccountingSignatureCertificationBoundaryAnchorView,
+  TenantFullAccountingSignatureCertificationBoundaryCloseoutView,
+  TenantFullAccountingSignatureEvidenceReadinessPackView,
   TenantFullAccountingPostingApprovalDraftPackView,
   TenantFullAccountingBankReconciliationEvidenceDraftPackView,
   TenantFullAccountingReviewChangeRequestPackView,
@@ -487,6 +493,18 @@ export type FullAccountingFormalApprovalCommandCenterResponseDto =
   Serialized<TenantFullAccountingFormalApprovalCommandCenterView>;
 export type FullAccountingFormalApprovalWorkflowCloseoutResponseDto =
   Serialized<TenantFullAccountingFormalApprovalWorkflowCloseoutView>;
+export type FullAccountingSignatureCertificationBoundaryAnchorResponseDto =
+  Serialized<TenantFullAccountingSignatureCertificationBoundaryAnchorView>;
+export type FullAccountingFormalSignatoryRegistryResponseDto =
+  Serialized<TenantFullAccountingFormalSignatoryRegistryView>;
+export type FullAccountingSignatureEvidenceReadinessPackResponseDto =
+  Serialized<TenantFullAccountingSignatureEvidenceReadinessPackView>;
+export type FullAccountingCertificationRequirementWorkspaceResponseDto =
+  Serialized<TenantFullAccountingCertificationRequirementWorkspaceView>;
+export type FullAccountingLegalizationBoundaryPacketResponseDto =
+  Serialized<TenantFullAccountingLegalizationBoundaryPacketView>;
+export type FullAccountingSignatureCertificationBoundaryCloseoutResponseDto =
+  Serialized<TenantFullAccountingSignatureCertificationBoundaryCloseoutView>;
 
 export function toAccountingAdvancedDiscoveryAnchorResponseDto(
   view: TenantAccountingAdvancedDiscoveryAnchorView,
@@ -1457,6 +1475,42 @@ export function toFullAccountingFormalApprovalCommandCenterResponseDto(
 export function toFullAccountingFormalApprovalWorkflowCloseoutResponseDto(
   view: TenantFullAccountingFormalApprovalWorkflowCloseoutView,
 ): FullAccountingFormalApprovalWorkflowCloseoutResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingSignatureCertificationBoundaryAnchorResponseDto(
+  view: TenantFullAccountingSignatureCertificationBoundaryAnchorView,
+): FullAccountingSignatureCertificationBoundaryAnchorResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingFormalSignatoryRegistryResponseDto(
+  view: TenantFullAccountingFormalSignatoryRegistryView,
+): FullAccountingFormalSignatoryRegistryResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingSignatureEvidenceReadinessPackResponseDto(
+  view: TenantFullAccountingSignatureEvidenceReadinessPackView,
+): FullAccountingSignatureEvidenceReadinessPackResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingCertificationRequirementWorkspaceResponseDto(
+  view: TenantFullAccountingCertificationRequirementWorkspaceView,
+): FullAccountingCertificationRequirementWorkspaceResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingLegalizationBoundaryPacketResponseDto(
+  view: TenantFullAccountingLegalizationBoundaryPacketView,
+): FullAccountingLegalizationBoundaryPacketResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingSignatureCertificationBoundaryCloseoutResponseDto(
+  view: TenantFullAccountingSignatureCertificationBoundaryCloseoutView,
+): FullAccountingSignatureCertificationBoundaryCloseoutResponseDto {
   return serialize(view);
 }
 

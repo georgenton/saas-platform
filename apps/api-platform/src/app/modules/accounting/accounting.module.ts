@@ -140,6 +140,11 @@ import {
   GetTenantFullAccountingFormalApprovalEvidencePackUseCase,
   GetTenantFullAccountingApprovalDecisionWorkspaceUseCase,
   GetTenantFullAccountingFormalApprovalCommandCenterUseCase,
+  GetTenantFullAccountingCertificationRequirementWorkspaceUseCase,
+  GetTenantFullAccountingFormalSignatoryRegistryUseCase,
+  GetTenantFullAccountingLegalizationBoundaryPacketUseCase,
+  GetTenantFullAccountingSignatureCertificationBoundaryAnchorUseCase,
+  GetTenantFullAccountingSignatureEvidenceReadinessPackUseCase,
   GetTenantAccountingAdvancedFormalProductScopeContractUseCase,
   GetTenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixUseCase,
   GetTenantAccountingAdvancedProfessionalReviewWorkflowDesignUseCase,
@@ -225,6 +230,7 @@ import {
   RequestTenantFullAccountingProfessionalApprovalRecommendationPackUseCase,
   RequestTenantFullAccountingProfessionalReviewExecutionCloseoutUseCase,
   RequestTenantFullAccountingFormalApprovalWorkflowCloseoutUseCase,
+  RequestTenantFullAccountingSignatureCertificationBoundaryCloseoutUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -1995,6 +2001,62 @@ import { AccountingController } from './accounting.controller';
       ) =>
         new RequestTenantFullAccountingFormalApprovalWorkflowCloseoutUseCase(
           getTenantFullAccountingFormalApprovalCommandCenterUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingSignatureCertificationBoundaryAnchorUseCase,
+      inject: [RequestTenantFullAccountingFormalApprovalWorkflowCloseoutUseCase],
+      useFactory: (
+        requestTenantFullAccountingFormalApprovalWorkflowCloseoutUseCase,
+      ) =>
+        new GetTenantFullAccountingSignatureCertificationBoundaryAnchorUseCase(
+          requestTenantFullAccountingFormalApprovalWorkflowCloseoutUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingFormalSignatoryRegistryUseCase,
+      inject: [GetTenantFullAccountingSignatureCertificationBoundaryAnchorUseCase],
+      useFactory: (
+        getTenantFullAccountingSignatureCertificationBoundaryAnchorUseCase,
+      ) =>
+        new GetTenantFullAccountingFormalSignatoryRegistryUseCase(
+          getTenantFullAccountingSignatureCertificationBoundaryAnchorUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingSignatureEvidenceReadinessPackUseCase,
+      inject: [GetTenantFullAccountingFormalSignatoryRegistryUseCase],
+      useFactory: (getTenantFullAccountingFormalSignatoryRegistryUseCase) =>
+        new GetTenantFullAccountingSignatureEvidenceReadinessPackUseCase(
+          getTenantFullAccountingFormalSignatoryRegistryUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingCertificationRequirementWorkspaceUseCase,
+      inject: [GetTenantFullAccountingSignatureEvidenceReadinessPackUseCase],
+      useFactory: (
+        getTenantFullAccountingSignatureEvidenceReadinessPackUseCase,
+      ) =>
+        new GetTenantFullAccountingCertificationRequirementWorkspaceUseCase(
+          getTenantFullAccountingSignatureEvidenceReadinessPackUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingLegalizationBoundaryPacketUseCase,
+      inject: [GetTenantFullAccountingCertificationRequirementWorkspaceUseCase],
+      useFactory: (
+        getTenantFullAccountingCertificationRequirementWorkspaceUseCase,
+      ) =>
+        new GetTenantFullAccountingLegalizationBoundaryPacketUseCase(
+          getTenantFullAccountingCertificationRequirementWorkspaceUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantFullAccountingSignatureCertificationBoundaryCloseoutUseCase,
+      inject: [GetTenantFullAccountingLegalizationBoundaryPacketUseCase],
+      useFactory: (getTenantFullAccountingLegalizationBoundaryPacketUseCase) =>
+        new RequestTenantFullAccountingSignatureCertificationBoundaryCloseoutUseCase(
+          getTenantFullAccountingLegalizationBoundaryPacketUseCase,
         ),
     },
     {

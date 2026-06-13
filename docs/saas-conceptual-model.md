@@ -2823,6 +2823,41 @@ Guardrail: archive handoff 1.7 prepares an operational delivery path only. It
 does not archive officially, legalize books, sign statements, certify balances,
 submit, post, file or replace professional accounting judgment.
 
+### Full Accounting completion closeout 1.8
+
+After archive handoff and operational exit 1.7, full Accounting can close the
+product scope conservatively instead of adding more functional layers. This is
+the final inspection after the delivery desk: the platform checks whether the
+whole lifecycle is covered, whether guardrails survived, whether contracts and
+smoke coverage are stable, and whether operators have a clear final handoff
+story before the roadmap moves to another product candidate.
+
+1. `Full Accounting Completion Anchor`
+   - converts archive handoff closeout into final gates for archive exit,
+     lifecycle coverage, guardrail preservation, contract surface and
+     operational readiness
+2. `Full Accounting Lifecycle Coverage Matrix`
+   - maps candidate, MVP, pilot, graduation, formal design, formal execution,
+     record closeout and archive exit as a single completed product lifecycle
+3. `Full Accounting Guardrail Completion Audit`
+   - confirms no automatic posting, certification, legalization, statutory
+     filing or replacement of professional judgment was introduced
+4. `Full Accounting Contract Inventory`
+   - checks domain types, use cases, API endpoints, web client, smoke coverage
+     and conceptual model as the final technical surface
+5. `Full Accounting Operational Readiness`
+   - prepares operator summary, demo narrative, handoff documentation, support
+     boundary and next-product decision signals
+6. `Full Accounting Completion Closeout`
+   - decides whether to close the Full Accounting scope, continue contract
+     hardening, continue operational readiness, return to archive handoff, open
+     a separate next-product candidate or avoid closing yet
+
+Guardrail: completion closeout 1.8 is a product-scope closeout, not a legal or
+statutory accounting close. It does not open another product automatically and
+does not certify, sign, legalize, submit, post, file or replace professional
+accounting judgment.
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal

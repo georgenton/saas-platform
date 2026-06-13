@@ -6076,6 +6076,18 @@ export interface FullAccountingArchiveHandoffCloseoutResponse {
   blockers: string[]; nextStep: string; guardrails: string[];
 }
 
+export interface FullAccountingCompletionCloseoutResponse {
+  tenantSlug: string; period: string; year: number; generatedAt: string; closeoutStatus: string;
+  completionAnchor: { anchorStatus: string; summary: { gateCount: number; readyGateCount: number; needsReviewGateCount: number; blockedGateCount: number; archiveChecklistCount: number; }; };
+  lifecycleCoverageMatrix: { matrixStatus: string; summary: { rowCount: number; coveredRowCount: number; guardedRowCount: number; needsDocumentationRowCount: number; needsHardeningRowCount: number; }; };
+  guardrailCompletionAudit: { auditStatus: string; summary: { guardrailCount: number; preservedCount: number; warningCount: number; needsReviewCount: number; blockedCount: number; }; };
+  contractInventory: { inventoryStatus: string; summary: { contractCount: number; stableCount: number; notesCount: number; cleanupCount: number; smokeCount: number; }; };
+  operationalReadiness: { readinessStatus: string; summary: { readinessCount: number; readyCount: number; notesCount: number; polishCount: number; documentationCount: number; }; };
+  closeoutChecklist: Array<{ key: string; label: string; status: string; evidenceRefs: string[]; }>;
+  finalDecision: string; summary: { checklistCount: number; readyChecklistCount: number; blockedChecklistCount: number; lifecycleRowCount: number; guardrailCount: number; contractCount: number; readinessCount: number; };
+  blockers: string[]; nextStep: string; guardrails: string[];
+}
+
 export interface FullAccountingFormalRecordCloseoutCloseoutResponse {
   tenantSlug: string; period: string; year: number; generatedAt: string; closeoutStatus: string;
   closeoutAnchor: { anchorStatus: string; summary: { gateCount: number; readyGateCount: number; needsReviewGateCount: number; blockedGateCount: number; assemblyChecklistCount: number; }; };

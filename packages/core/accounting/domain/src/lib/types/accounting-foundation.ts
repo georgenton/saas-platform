@@ -413,6 +413,13 @@ export type FullAccountingArchiveHandoffDecision =
   | 'continue_full_accounting_hardening'
   | 'return_to_formal_record_closeout'
   | 'do_not_handoff_archive';
+export type FullAccountingCompletionCloseoutDecision =
+  | 'close_full_accounting_scope'
+  | 'continue_contract_hardening'
+  | 'continue_operational_readiness'
+  | 'return_to_archive_handoff'
+  | 'open_next_product_candidate'
+  | 'do_not_close_full_accounting';
 export type AccountingAdvancedFormalModuleKey =
   | 'formal_books'
   | 'certified_bank_reconciliation'
@@ -6435,5 +6442,58 @@ export interface TenantFullAccountingArchiveHandoffCloseoutView {
   closeoutChecklist: Array<{ key: string; label: string; status: AccountingReadinessStatus; evidenceRefs: string[]; }>;
   finalDecision: FullAccountingArchiveHandoffDecision;
   summary: { checklistCount: number; readyChecklistCount: number; blockedChecklistCount: number; handoffItemCount: number; exitSignalCount: number; custodyDecisionCount: number; };
+  blockers: string[]; nextStep: string; guardrails: string[];
+}
+
+export interface TenantFullAccountingCompletionAnchorView {
+  tenantSlug: string; period: string; year: number; generatedAt: Date; anchorStatus: AccountingReadinessStatus;
+  archiveHandoffCloseout: TenantFullAccountingArchiveHandoffCloseoutView;
+  completionGates: Array<{ key: string; label: string; status: AccountingReadinessStatus; gateType: 'archive_handoff' | 'lifecycle_coverage' | 'guardrail_preservation' | 'contract_surface' | 'operational_readiness'; completionState: 'ready_to_close' | 'needs_contract_hardening' | 'needs_operational_readiness' | 'return_to_archive_handoff' | 'blocked'; evidenceRefs: string[]; }>;
+  summary: { gateCount: number; readyGateCount: number; needsReviewGateCount: number; blockedGateCount: number; archiveChecklistCount: number; };
+  blockers: string[]; nextStep: string; guardrails: string[];
+}
+
+export interface TenantFullAccountingLifecycleCoverageMatrixView {
+  tenantSlug: string; period: string; year: number; generatedAt: Date; matrixStatus: AccountingReadinessStatus;
+  completionAnchor: TenantFullAccountingCompletionAnchorView;
+  lifecycleRows: Array<{ key: string; label: string; status: AccountingReadinessStatus; lifecycleStage: 'candidate' | 'mvp' | 'pilot' | 'formal_design' | 'formal_execution' | 'record_closeout' | 'archive_exit'; coverageState: 'covered' | 'covered_with_guardrail' | 'needs_documentation' | 'needs_hardening' | 'not_covered'; evidenceRefs: string[]; }>;
+  summary: { rowCount: number; coveredRowCount: number; guardedRowCount: number; needsDocumentationRowCount: number; needsHardeningRowCount: number; };
+  blockers: string[]; nextStep: string; guardrails: string[];
+}
+
+export interface TenantFullAccountingGuardrailCompletionAuditView {
+  tenantSlug: string; period: string; year: number; generatedAt: Date; auditStatus: AccountingReadinessStatus;
+  lifecycleCoverageMatrix: TenantFullAccountingLifecycleCoverageMatrixView;
+  guardrailRows: Array<{ key: string; label: string; status: AccountingReadinessStatus; guardrailType: 'no_auto_posting' | 'no_certification' | 'no_legalization' | 'professional_boundary' | 'no_auto_filing' | 'human_decision_required'; preservationState: 'preserved' | 'preserved_with_warning' | 'needs_review' | 'blocked'; evidenceRefs: string[]; }>;
+  summary: { guardrailCount: number; preservedCount: number; warningCount: number; needsReviewCount: number; blockedCount: number; };
+  blockers: string[]; nextStep: string; guardrails: string[];
+}
+
+export interface TenantFullAccountingContractInventoryView {
+  tenantSlug: string; period: string; year: number; generatedAt: Date; inventoryStatus: AccountingReadinessStatus;
+  guardrailCompletionAudit: TenantFullAccountingGuardrailCompletionAuditView;
+  contractRows: Array<{ key: string; label: string; status: AccountingReadinessStatus; surfaceType: 'domain_types' | 'application_use_cases' | 'api_endpoints' | 'web_client' | 'smoke_coverage' | 'conceptual_model'; hardeningState: 'stable' | 'stable_with_notes' | 'needs_cleanup' | 'needs_smoke' | 'blocked'; evidenceRefs: string[]; }>;
+  summary: { contractCount: number; stableCount: number; notesCount: number; cleanupCount: number; smokeCount: number; };
+  blockers: string[]; nextStep: string; guardrails: string[];
+}
+
+export interface TenantFullAccountingOperationalReadinessView {
+  tenantSlug: string; period: string; year: number; generatedAt: Date; readinessStatus: AccountingReadinessStatus;
+  contractInventory: TenantFullAccountingContractInventoryView;
+  readinessRows: Array<{ key: string; label: string; status: AccountingReadinessStatus; readinessType: 'operator_summary' | 'demo_script' | 'handoff_documentation' | 'support_boundary' | 'next_product_decision'; readinessState: 'ready' | 'ready_with_notes' | 'needs_operator_polish' | 'needs_documentation' | 'blocked'; evidenceRefs: string[]; }>;
+  summary: { readinessCount: number; readyCount: number; notesCount: number; polishCount: number; documentationCount: number; };
+  blockers: string[]; nextStep: string; guardrails: string[];
+}
+
+export interface TenantFullAccountingCompletionCloseoutView {
+  tenantSlug: string; period: string; year: number; generatedAt: Date; closeoutStatus: AccountingReadinessStatus;
+  completionAnchor: TenantFullAccountingCompletionAnchorView;
+  lifecycleCoverageMatrix: TenantFullAccountingLifecycleCoverageMatrixView;
+  guardrailCompletionAudit: TenantFullAccountingGuardrailCompletionAuditView;
+  contractInventory: TenantFullAccountingContractInventoryView;
+  operationalReadiness: TenantFullAccountingOperationalReadinessView;
+  closeoutChecklist: Array<{ key: string; label: string; status: AccountingReadinessStatus; evidenceRefs: string[]; }>;
+  finalDecision: FullAccountingCompletionCloseoutDecision;
+  summary: { checklistCount: number; readyChecklistCount: number; blockedChecklistCount: number; lifecycleRowCount: number; guardrailCount: number; contractCount: number; readinessCount: number; };
   blockers: string[]; nextStep: string; guardrails: string[];
 }

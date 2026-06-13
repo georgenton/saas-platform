@@ -169,6 +169,11 @@ import {
   GetTenantFullAccountingOperationalExitSignalMatrixUseCase,
   GetTenantFullAccountingCustodyDecisionWorkspaceUseCase,
   GetTenantFullAccountingArchiveHandoffCommandCenterUseCase,
+  GetTenantFullAccountingCompletionAnchorUseCase,
+  GetTenantFullAccountingLifecycleCoverageMatrixUseCase,
+  GetTenantFullAccountingGuardrailCompletionAuditUseCase,
+  GetTenantFullAccountingContractInventoryUseCase,
+  GetTenantFullAccountingOperationalReadinessUseCase,
   GetTenantAccountingAdvancedFormalProductScopeContractUseCase,
   GetTenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixUseCase,
   GetTenantAccountingAdvancedProfessionalReviewWorkflowDesignUseCase,
@@ -261,6 +266,7 @@ import {
   RequestTenantFullAccountingFormalRecordAssemblyCloseoutUseCase,
   RequestTenantFullAccountingFormalRecordCloseoutCloseoutUseCase,
   RequestTenantFullAccountingArchiveHandoffCloseoutUseCase,
+  RequestTenantFullAccountingCompletionCloseoutUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -477,6 +483,12 @@ import {
   FullAccountingCustodyDecisionWorkspaceResponseDto,
   FullAccountingArchiveHandoffCommandCenterResponseDto,
   FullAccountingArchiveHandoffCloseoutResponseDto,
+  FullAccountingCompletionAnchorResponseDto,
+  FullAccountingLifecycleCoverageMatrixResponseDto,
+  FullAccountingGuardrailCompletionAuditResponseDto,
+  FullAccountingContractInventoryResponseDto,
+  FullAccountingOperationalReadinessResponseDto,
+  FullAccountingCompletionCloseoutResponseDto,
   FullAccountingFormalCloseoutEvidencePacketResponseDto,
   FullAccountingFormalRecordCloseoutAnchorResponseDto,
   FullAccountingFormalRecordCloseoutCloseoutResponseDto,
@@ -681,6 +693,12 @@ import {
   toFullAccountingCustodyDecisionWorkspaceResponseDto,
   toFullAccountingArchiveHandoffCommandCenterResponseDto,
   toFullAccountingArchiveHandoffCloseoutResponseDto,
+  toFullAccountingCompletionAnchorResponseDto,
+  toFullAccountingLifecycleCoverageMatrixResponseDto,
+  toFullAccountingGuardrailCompletionAuditResponseDto,
+  toFullAccountingContractInventoryResponseDto,
+  toFullAccountingOperationalReadinessResponseDto,
+  toFullAccountingCompletionCloseoutResponseDto,
   toFullAccountingFormalCloseoutEvidencePacketResponseDto,
   toFullAccountingFormalRecordCloseoutAnchorResponseDto,
   toFullAccountingFormalRecordCloseoutCloseoutResponseDto,
@@ -1167,6 +1185,12 @@ export class AccountingController {
     private readonly getTenantFullAccountingCustodyDecisionWorkspaceUseCase: GetTenantFullAccountingCustodyDecisionWorkspaceUseCase,
     private readonly getTenantFullAccountingArchiveHandoffCommandCenterUseCase: GetTenantFullAccountingArchiveHandoffCommandCenterUseCase,
     private readonly requestTenantFullAccountingArchiveHandoffCloseoutUseCase: RequestTenantFullAccountingArchiveHandoffCloseoutUseCase,
+    private readonly getTenantFullAccountingCompletionAnchorUseCase: GetTenantFullAccountingCompletionAnchorUseCase,
+    private readonly getTenantFullAccountingLifecycleCoverageMatrixUseCase: GetTenantFullAccountingLifecycleCoverageMatrixUseCase,
+    private readonly getTenantFullAccountingGuardrailCompletionAuditUseCase: GetTenantFullAccountingGuardrailCompletionAuditUseCase,
+    private readonly getTenantFullAccountingContractInventoryUseCase: GetTenantFullAccountingContractInventoryUseCase,
+    private readonly getTenantFullAccountingOperationalReadinessUseCase: GetTenantFullAccountingOperationalReadinessUseCase,
+    private readonly requestTenantFullAccountingCompletionCloseoutUseCase: RequestTenantFullAccountingCompletionCloseoutUseCase,
   ) {}
 
   @Get(':slug/advanced-discovery/anchor')
@@ -5695,6 +5719,42 @@ export class AccountingController {
   @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
   async getFullAccountingArchiveHandoffCloseout(@Param('slug') tenantSlug: string, @Query('period') period = '2026-06', @Query('year') year = '2026'): Promise<FullAccountingArchiveHandoffCloseoutResponseDto> {
     try { const view = await this.requestTenantFullAccountingArchiveHandoffCloseoutUseCase.execute({ tenantSlug, period, year: Number.parseInt(year, 10) }); return toFullAccountingArchiveHandoffCloseoutResponseDto(view); } catch (error) { if (error instanceof TenantNotFoundError) { throw new NotFoundException(error.message); } throw error; }
+  }
+
+  @Get(':slug/full-accounting-completion-closeout/anchor')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingCompletionAnchor(@Param('slug') tenantSlug: string, @Query('period') period = '2026-06', @Query('year') year = '2026'): Promise<FullAccountingCompletionAnchorResponseDto> {
+    try { const view = await this.getTenantFullAccountingCompletionAnchorUseCase.execute({ tenantSlug, period, year: Number.parseInt(year, 10) }); return toFullAccountingCompletionAnchorResponseDto(view); } catch (error) { if (error instanceof TenantNotFoundError) { throw new NotFoundException(error.message); } throw error; }
+  }
+
+  @Get(':slug/full-accounting-completion-closeout/lifecycle-coverage')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingLifecycleCoverageMatrix(@Param('slug') tenantSlug: string, @Query('period') period = '2026-06', @Query('year') year = '2026'): Promise<FullAccountingLifecycleCoverageMatrixResponseDto> {
+    try { const view = await this.getTenantFullAccountingLifecycleCoverageMatrixUseCase.execute({ tenantSlug, period, year: Number.parseInt(year, 10) }); return toFullAccountingLifecycleCoverageMatrixResponseDto(view); } catch (error) { if (error instanceof TenantNotFoundError) { throw new NotFoundException(error.message); } throw error; }
+  }
+
+  @Get(':slug/full-accounting-completion-closeout/guardrail-audit')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingGuardrailCompletionAudit(@Param('slug') tenantSlug: string, @Query('period') period = '2026-06', @Query('year') year = '2026'): Promise<FullAccountingGuardrailCompletionAuditResponseDto> {
+    try { const view = await this.getTenantFullAccountingGuardrailCompletionAuditUseCase.execute({ tenantSlug, period, year: Number.parseInt(year, 10) }); return toFullAccountingGuardrailCompletionAuditResponseDto(view); } catch (error) { if (error instanceof TenantNotFoundError) { throw new NotFoundException(error.message); } throw error; }
+  }
+
+  @Get(':slug/full-accounting-completion-closeout/contract-inventory')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingContractInventory(@Param('slug') tenantSlug: string, @Query('period') period = '2026-06', @Query('year') year = '2026'): Promise<FullAccountingContractInventoryResponseDto> {
+    try { const view = await this.getTenantFullAccountingContractInventoryUseCase.execute({ tenantSlug, period, year: Number.parseInt(year, 10) }); return toFullAccountingContractInventoryResponseDto(view); } catch (error) { if (error instanceof TenantNotFoundError) { throw new NotFoundException(error.message); } throw error; }
+  }
+
+  @Get(':slug/full-accounting-completion-closeout/operational-readiness')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingOperationalReadiness(@Param('slug') tenantSlug: string, @Query('period') period = '2026-06', @Query('year') year = '2026'): Promise<FullAccountingOperationalReadinessResponseDto> {
+    try { const view = await this.getTenantFullAccountingOperationalReadinessUseCase.execute({ tenantSlug, period, year: Number.parseInt(year, 10) }); return toFullAccountingOperationalReadinessResponseDto(view); } catch (error) { if (error instanceof TenantNotFoundError) { throw new NotFoundException(error.message); } throw error; }
+  }
+
+  @Get(':slug/full-accounting-completion-closeout/closeout')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingCompletionCloseout(@Param('slug') tenantSlug: string, @Query('period') period = '2026-06', @Query('year') year = '2026'): Promise<FullAccountingCompletionCloseoutResponseDto> {
+    try { const view = await this.requestTenantFullAccountingCompletionCloseoutUseCase.execute({ tenantSlug, period, year: Number.parseInt(year, 10) }); return toFullAccountingCompletionCloseoutResponseDto(view); } catch (error) { if (error instanceof TenantNotFoundError) { throw new NotFoundException(error.message); } throw error; }
   }
 
   @Get(':slug/intake-workspace')

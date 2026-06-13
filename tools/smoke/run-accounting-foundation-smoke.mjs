@@ -1326,6 +1326,12 @@ const [
   fullAccountingCustodyDecisionWorkspace,
   fullAccountingArchiveHandoffCommandCenter,
   fullAccountingArchiveHandoffCloseout,
+  fullAccountingCompletionAnchor,
+  fullAccountingLifecycleCoverageMatrix,
+  fullAccountingGuardrailCompletionAudit,
+  fullAccountingContractInventory,
+  fullAccountingOperationalReadiness,
+  fullAccountingCompletionCloseout,
 ] = await Promise.all([
   apiRequest({
     baseUrl,
@@ -2600,6 +2606,12 @@ const [
   apiRequest({ baseUrl, path: accountingPath(`/full-accounting-archive-handoff/custody-decision?${periodQuery()}`), token }),
   apiRequest({ baseUrl, path: accountingPath(`/full-accounting-archive-handoff/command-center?${periodQuery()}`), token }),
   apiRequest({ baseUrl, path: accountingPath(`/full-accounting-archive-handoff/closeout?${periodQuery()}`), token }),
+  apiRequest({ baseUrl, path: accountingPath(`/full-accounting-completion-closeout/anchor?${periodQuery()}`), token }),
+  apiRequest({ baseUrl, path: accountingPath(`/full-accounting-completion-closeout/lifecycle-coverage?${periodQuery()}`), token }),
+  apiRequest({ baseUrl, path: accountingPath(`/full-accounting-completion-closeout/guardrail-audit?${periodQuery()}`), token }),
+  apiRequest({ baseUrl, path: accountingPath(`/full-accounting-completion-closeout/contract-inventory?${periodQuery()}`), token }),
+  apiRequest({ baseUrl, path: accountingPath(`/full-accounting-completion-closeout/operational-readiness?${periodQuery()}`), token }),
+  apiRequest({ baseUrl, path: accountingPath(`/full-accounting-completion-closeout/closeout?${periodQuery()}`), token }),
 ]);
 
 assertStatus(
@@ -3376,6 +3388,12 @@ assertStatus('full accounting operational exit signal matrix', fullAccountingOpe
 assertStatus('full accounting custody decision workspace', fullAccountingCustodyDecisionWorkspace.decisionStatus);
 assertStatus('full accounting archive handoff command center', fullAccountingArchiveHandoffCommandCenter.commandStatus);
 assertStatus('full accounting archive handoff closeout', fullAccountingArchiveHandoffCloseout.closeoutStatus);
+assertStatus('full accounting completion anchor', fullAccountingCompletionAnchor.anchorStatus);
+assertStatus('full accounting lifecycle coverage matrix', fullAccountingLifecycleCoverageMatrix.matrixStatus);
+assertStatus('full accounting guardrail completion audit', fullAccountingGuardrailCompletionAudit.auditStatus);
+assertStatus('full accounting contract inventory', fullAccountingContractInventory.inventoryStatus);
+assertStatus('full accounting operational readiness', fullAccountingOperationalReadiness.readinessStatus);
+assertStatus('full accounting completion closeout', fullAccountingCompletionCloseout.closeoutStatus);
 if (!Array.isArray(advancedDiscoveryCloseout.closeoutChecklist)) {
   throw new Error('advanced-discovery/closeout no devolvio checklist[].');
 }
@@ -3544,6 +3562,9 @@ if (!Array.isArray(fullAccountingFormalRecordCloseoutCloseout.closeoutChecklist)
 }
 if (!Array.isArray(fullAccountingArchiveHandoffCloseout.closeoutChecklist)) {
   throw new Error('full-accounting-archive-handoff/closeout no devolvio checklist[].');
+}
+if (!Array.isArray(fullAccountingCompletionCloseout.closeoutChecklist)) {
+  throw new Error('full-accounting-completion-closeout/closeout no devolvio checklist[].');
 }
 printLine(
   'foundation pack v2',

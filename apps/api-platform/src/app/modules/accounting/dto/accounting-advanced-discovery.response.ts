@@ -147,6 +147,12 @@ import {
   TenantFullAccountingCustodyDecisionWorkspaceView,
   TenantFullAccountingArchiveHandoffCommandCenterView,
   TenantFullAccountingArchiveHandoffCloseoutView,
+  TenantFullAccountingCompletionAnchorView,
+  TenantFullAccountingLifecycleCoverageMatrixView,
+  TenantFullAccountingGuardrailCompletionAuditView,
+  TenantFullAccountingContractInventoryView,
+  TenantFullAccountingOperationalReadinessView,
+  TenantFullAccountingCompletionCloseoutView,
   TenantFullAccountingFormalCloseoutEvidencePacketView,
   TenantFullAccountingFormalRecordCloseoutAnchorView,
   TenantFullAccountingFormalRecordCloseoutCloseoutView,
@@ -607,6 +613,12 @@ export type FullAccountingOperationalExitSignalMatrixResponseDto = Serialized<Te
 export type FullAccountingCustodyDecisionWorkspaceResponseDto = Serialized<TenantFullAccountingCustodyDecisionWorkspaceView>;
 export type FullAccountingArchiveHandoffCommandCenterResponseDto = Serialized<TenantFullAccountingArchiveHandoffCommandCenterView>;
 export type FullAccountingArchiveHandoffCloseoutResponseDto = Serialized<TenantFullAccountingArchiveHandoffCloseoutView>;
+export type FullAccountingCompletionAnchorResponseDto = Serialized<TenantFullAccountingCompletionAnchorView>;
+export type FullAccountingLifecycleCoverageMatrixResponseDto = Serialized<TenantFullAccountingLifecycleCoverageMatrixView>;
+export type FullAccountingGuardrailCompletionAuditResponseDto = Serialized<TenantFullAccountingGuardrailCompletionAuditView>;
+export type FullAccountingContractInventoryResponseDto = Serialized<TenantFullAccountingContractInventoryView>;
+export type FullAccountingOperationalReadinessResponseDto = Serialized<TenantFullAccountingOperationalReadinessView>;
+export type FullAccountingCompletionCloseoutResponseDto = Serialized<TenantFullAccountingCompletionCloseoutView>;
 
 export function toAccountingAdvancedDiscoveryAnchorResponseDto(
   view: TenantAccountingAdvancedDiscoveryAnchorView,
@@ -1772,6 +1784,12 @@ export function toFullAccountingOperationalExitSignalMatrixResponseDto(view: Ten
 export function toFullAccountingCustodyDecisionWorkspaceResponseDto(view: TenantFullAccountingCustodyDecisionWorkspaceView): FullAccountingCustodyDecisionWorkspaceResponseDto { return serialize(view); }
 export function toFullAccountingArchiveHandoffCommandCenterResponseDto(view: TenantFullAccountingArchiveHandoffCommandCenterView): FullAccountingArchiveHandoffCommandCenterResponseDto { return serialize(view); }
 export function toFullAccountingArchiveHandoffCloseoutResponseDto(view: TenantFullAccountingArchiveHandoffCloseoutView): FullAccountingArchiveHandoffCloseoutResponseDto { return serialize(view); }
+export function toFullAccountingCompletionAnchorResponseDto(view: TenantFullAccountingCompletionAnchorView): FullAccountingCompletionAnchorResponseDto { return serialize(view); }
+export function toFullAccountingLifecycleCoverageMatrixResponseDto(view: TenantFullAccountingLifecycleCoverageMatrixView): FullAccountingLifecycleCoverageMatrixResponseDto { return serialize(view); }
+export function toFullAccountingGuardrailCompletionAuditResponseDto(view: TenantFullAccountingGuardrailCompletionAuditView): FullAccountingGuardrailCompletionAuditResponseDto { return serialize(view); }
+export function toFullAccountingContractInventoryResponseDto(view: TenantFullAccountingContractInventoryView): FullAccountingContractInventoryResponseDto { return serialize(view); }
+export function toFullAccountingOperationalReadinessResponseDto(view: TenantFullAccountingOperationalReadinessView): FullAccountingOperationalReadinessResponseDto { return serialize(view); }
+export function toFullAccountingCompletionCloseoutResponseDto(view: TenantFullAccountingCompletionCloseoutView): FullAccountingCompletionCloseoutResponseDto { return serialize(view); }
 
 type Serialized<T> = T extends Date
   ? string

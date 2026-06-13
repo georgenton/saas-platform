@@ -30,6 +30,7 @@ import {
   FullAccountingFormalRecordAssemblyDecision,
   FullAccountingFormalRecordCloseoutDecision,
   FullAccountingArchiveHandoffDecision,
+  FullAccountingCompletionCloseoutDecision,
   FullAccountingProductDesignDecision,
   FullAccountingMvpReadinessDecision,
   FullAccountingMvpOperationsDecision,
@@ -180,6 +181,12 @@ import {
   TenantFullAccountingArchiveHandoffPackageView,
   TenantFullAccountingArchiveHandoffCommandCenterView,
   TenantFullAccountingArchiveHandoffCloseoutView,
+  TenantFullAccountingCompletionAnchorView,
+  TenantFullAccountingLifecycleCoverageMatrixView,
+  TenantFullAccountingGuardrailCompletionAuditView,
+  TenantFullAccountingContractInventoryView,
+  TenantFullAccountingOperationalReadinessView,
+  TenantFullAccountingCompletionCloseoutView,
   TenantFullAccountingCustodyDecisionWorkspaceView,
   TenantFullAccountingFormalCloseoutEvidencePacketView,
   TenantFullAccountingFormalRecordAssemblyAnchorView,
@@ -13486,6 +13493,116 @@ export class RequestTenantFullAccountingArchiveHandoffCloseoutUseCase {
   }
 }
 
+export class GetTenantFullAccountingCompletionAnchorUseCase {
+  constructor(private readonly requestTenantFullAccountingArchiveHandoffCloseoutUseCase: RequestTenantFullAccountingArchiveHandoffCloseoutUseCase, private readonly nowProvider: () => Date = () => new Date()) {}
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingCompletionAnchorView> {
+    const archiveHandoffCloseout = await this.requestTenantFullAccountingArchiveHandoffCloseoutUseCase.execute(input);
+    const completionGates: TenantFullAccountingCompletionAnchorView['completionGates'] = [
+      fullAccountingCompletionGate('archive_handoff', 'Full Accounting archive handoff closed', archiveHandoffCloseout.closeoutStatus, 'archive_handoff', archiveHandoffCloseout.finalDecision === 'ready_for_internal_archive_handoff' || archiveHandoffCloseout.finalDecision === 'ready_for_external_professional_handoff' ? 'ready_to_close' : 'return_to_archive_handoff', ['full_accounting_archive_handoff_closeout']),
+      fullAccountingCompletionGate('lifecycle_coverage', 'Full Accounting lifecycle coverage ready for audit', archiveHandoffCloseout.closeoutStatus, 'lifecycle_coverage', 'ready_to_close', ['full_accounting_lifecycle_coverage_matrix']),
+      fullAccountingCompletionGate('guardrails', 'Full Accounting guardrails preserved through closeout', archiveHandoffCloseout.closeoutStatus, 'guardrail_preservation', 'ready_to_close', ['full_accounting_guardrail_completion_audit']),
+      fullAccountingCompletionGate('contracts', 'Full Accounting API web smoke contract ready for hardening', archiveHandoffCloseout.commandCenter.commandStatus, 'contract_surface', 'needs_contract_hardening', ['full_accounting_contract_inventory']),
+      fullAccountingCompletionGate('operational_readiness', 'Full Accounting operator and demo readiness prepared', archiveHandoffCloseout.closeoutStatus, 'operational_readiness', 'needs_operational_readiness', ['full_accounting_operational_readiness']),
+    ];
+    const blockers = archiveHandoffCloseout.finalDecision === 'ready_for_internal_archive_handoff' || archiveHandoffCloseout.finalDecision === 'ready_for_external_professional_handoff' ? [...archiveHandoffCloseout.blockers] : unique([...archiveHandoffCloseout.blockers, `Full Accounting archive handoff decision is ${archiveHandoffCloseout.finalDecision}.`]);
+    const anchorStatus = resolveStatus(completionGates.map((gate) => gate.status), blockers);
+    return { ...input, generatedAt: this.nowProvider(), anchorStatus, archiveHandoffCloseout, completionGates, summary: { gateCount: completionGates.length, readyGateCount: completionGates.filter((gate) => gate.status === 'ready').length, needsReviewGateCount: completionGates.filter((gate) => gate.status === 'needs_review').length, blockedGateCount: completionGates.filter((gate) => gate.status === 'blocked').length, archiveChecklistCount: archiveHandoffCloseout.summary.checklistCount }, blockers, nextStep: anchorStatus === 'blocked' ? 'Volver a Full Accounting archive handoff 1.7 antes del cierre final.' : 'Auditar cobertura completa del ciclo Full Accounting.', guardrails: ['Completion anchor declara cierre operativo, no certificacion contable.', 'El cierre conservador mantiene contador, auditor y actor legal fuera de automatizacion.'] };
+  }
+}
+
+export class GetTenantFullAccountingLifecycleCoverageMatrixUseCase {
+  constructor(private readonly getTenantFullAccountingCompletionAnchorUseCase: GetTenantFullAccountingCompletionAnchorUseCase, private readonly nowProvider: () => Date = () => new Date()) {}
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingLifecycleCoverageMatrixView> {
+    const completionAnchor = await this.getTenantFullAccountingCompletionAnchorUseCase.execute(input);
+    const lifecycleRows: TenantFullAccountingLifecycleCoverageMatrixView['lifecycleRows'] = [
+      fullAccountingLifecycleCoverageRow('candidate_to_readiness', 'Candidate, MVP readiness and MVP operations covered', completionAnchor.anchorStatus, 'candidate', 'covered', ['full_accounting_candidate_closeout', 'full_accounting_mvp_readiness_closeout', 'full_accounting_mvp_operations_closeout']),
+      fullAccountingLifecycleCoverageRow('pilot_to_graduation', 'Controlled pilot and graduation covered', completionAnchor.anchorStatus, 'pilot', 'covered', ['full_accounting_controlled_pilot_closeout', 'full_accounting_graduation_closeout']),
+      fullAccountingLifecycleCoverageRow('formal_design_to_drafting', 'Formal product design, readiness and drafting covered', completionAnchor.anchorStatus, 'formal_design', 'covered_with_guardrail', ['full_accounting_product_design_closeout', 'full_accounting_formal_readiness_closeout', 'full_accounting_formal_artifact_drafting_closeout']),
+      fullAccountingLifecycleCoverageRow('review_approval_execution', 'Professional review, approval and external execution covered', completionAnchor.anchorStatus, 'formal_execution', 'covered_with_guardrail', ['full_accounting_professional_review_closeout', 'full_accounting_formal_approval_closeout', 'full_accounting_external_execution_tracking_closeout']),
+      fullAccountingLifecycleCoverageRow('record_closeout', 'Formal record assembly and closeout covered', completionAnchor.archiveHandoffCloseout.handoffAnchor.formalRecordCloseout.closeoutStatus, 'record_closeout', 'covered', ['full_accounting_formal_record_assembly_closeout', 'full_accounting_formal_record_closeout_closeout']),
+      fullAccountingLifecycleCoverageRow('archive_exit', 'Archive handoff and operational exit covered', completionAnchor.archiveHandoffCloseout.closeoutStatus, 'archive_exit', 'covered', ['full_accounting_archive_handoff_closeout']),
+    ];
+    const blockers = [...completionAnchor.blockers];
+    const matrixStatus = resolveStatus(lifecycleRows.map((row) => row.status), blockers);
+    return { ...input, generatedAt: this.nowProvider(), matrixStatus, completionAnchor, lifecycleRows, summary: { rowCount: lifecycleRows.length, coveredRowCount: lifecycleRows.filter((row) => row.coverageState === 'covered').length, guardedRowCount: lifecycleRows.filter((row) => row.coverageState === 'covered_with_guardrail').length, needsDocumentationRowCount: lifecycleRows.filter((row) => row.coverageState === 'needs_documentation').length, needsHardeningRowCount: lifecycleRows.filter((row) => row.coverageState === 'needs_hardening').length }, blockers, nextStep: 'Auditar guardrails finales de Full Accounting.', guardrails: ['Lifecycle coverage es mapa de alcance, no evidencia legal.', 'Las etapas formales quedan cubiertas solo con guardrails profesionales.'] };
+  }
+}
+
+export class GetTenantFullAccountingGuardrailCompletionAuditUseCase {
+  constructor(private readonly getTenantFullAccountingLifecycleCoverageMatrixUseCase: GetTenantFullAccountingLifecycleCoverageMatrixUseCase, private readonly nowProvider: () => Date = () => new Date()) {}
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingGuardrailCompletionAuditView> {
+    const lifecycleCoverageMatrix = await this.getTenantFullAccountingLifecycleCoverageMatrixUseCase.execute(input);
+    const guardrailRows: TenantFullAccountingGuardrailCompletionAuditView['guardrailRows'] = [
+      fullAccountingGuardrailAuditRow('no_auto_posting', 'No automatic official postings', lifecycleCoverageMatrix.matrixStatus, 'no_auto_posting', 'preserved', ['full_accounting_posting_policy_boundary']),
+      fullAccountingGuardrailAuditRow('no_certification', 'No platform balance or bank certification', lifecycleCoverageMatrix.matrixStatus, 'no_certification', 'preserved', ['full_accounting_certification_requirement_workspace']),
+      fullAccountingGuardrailAuditRow('no_legalization', 'No legal books legalization by platform', lifecycleCoverageMatrix.matrixStatus, 'no_legalization', 'preserved', ['full_accounting_legalization_boundary_packet']),
+      fullAccountingGuardrailAuditRow('professional_boundary', 'Professional boundary remains explicit', lifecycleCoverageMatrix.completionAnchor.archiveHandoffCloseout.commandCenter.commandStatus, 'professional_boundary', 'preserved_with_warning', ['full_accounting_professional_closeout_boundary']),
+      fullAccountingGuardrailAuditRow('no_auto_filing', 'No automatic filing or statutory submission', lifecycleCoverageMatrix.matrixStatus, 'no_auto_filing', 'preserved', ['full_accounting_external_execution_handoff_closeout']),
+      fullAccountingGuardrailAuditRow('human_decision_required', 'Human decision required before external acts', lifecycleCoverageMatrix.completionAnchor.archiveHandoffCloseout.custodyDecision.decisionStatus, 'human_decision_required', 'preserved', ['full_accounting_custody_decision_workspace']),
+    ];
+    const blockers = [...lifecycleCoverageMatrix.blockers];
+    const auditStatus = resolveStatus(guardrailRows.map((row) => row.status), blockers);
+    return { ...input, generatedAt: this.nowProvider(), auditStatus, lifecycleCoverageMatrix, guardrailRows, summary: { guardrailCount: guardrailRows.length, preservedCount: guardrailRows.filter((row) => row.preservationState === 'preserved').length, warningCount: guardrailRows.filter((row) => row.preservationState === 'preserved_with_warning').length, needsReviewCount: guardrailRows.filter((row) => row.preservationState === 'needs_review').length, blockedCount: guardrailRows.filter((row) => row.preservationState === 'blocked').length }, blockers, nextStep: 'Inventariar contratos API, web, smoke y documentacion final.', guardrails: ['Guardrail audit no autoriza actos oficiales.', 'Preserved with warning mantiene visibilidad de revision profesional.'] };
+  }
+}
+
+export class GetTenantFullAccountingContractInventoryUseCase {
+  constructor(private readonly getTenantFullAccountingGuardrailCompletionAuditUseCase: GetTenantFullAccountingGuardrailCompletionAuditUseCase, private readonly nowProvider: () => Date = () => new Date()) {}
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingContractInventoryView> {
+    const guardrailCompletionAudit = await this.getTenantFullAccountingGuardrailCompletionAuditUseCase.execute(input);
+    const contractRows: TenantFullAccountingContractInventoryView['contractRows'] = [
+      fullAccountingContractInventoryRow('domain_types', 'Domain view contracts exported', guardrailCompletionAudit.auditStatus, 'domain_types', 'stable', ['accounting-foundation-domain-types']),
+      fullAccountingContractInventoryRow('application_use_cases', 'Application use cases compose final lifecycle', guardrailCompletionAudit.auditStatus, 'application_use_cases', 'stable', ['accounting-advanced-discovery-use-cases']),
+      fullAccountingContractInventoryRow('api_endpoints', 'API endpoints expose completion closeout surface', guardrailCompletionAudit.auditStatus, 'api_endpoints', 'stable_with_notes', ['accounting-controller-full-accounting-completion']),
+      fullAccountingContractInventoryRow('web_client', 'Web client exposes final completion summary', guardrailCompletionAudit.auditStatus, 'web_client', 'stable_with_notes', ['web-accounting-dashboard']),
+      fullAccountingContractInventoryRow('smoke_coverage', 'Smoke covers conservative closeout endpoints', guardrailCompletionAudit.auditStatus, 'smoke_coverage', 'needs_smoke', ['run-accounting-foundation-smoke']),
+      fullAccountingContractInventoryRow('conceptual_model', 'Conceptual model records final closeout scope', guardrailCompletionAudit.auditStatus, 'conceptual_model', 'stable', ['saas-conceptual-model']),
+    ];
+    const blockers = [...guardrailCompletionAudit.blockers];
+    const inventoryStatus = resolveStatus(contractRows.map((row) => row.status), blockers);
+    return { ...input, generatedAt: this.nowProvider(), inventoryStatus, guardrailCompletionAudit, contractRows, summary: { contractCount: contractRows.length, stableCount: contractRows.filter((row) => row.hardeningState === 'stable').length, notesCount: contractRows.filter((row) => row.hardeningState === 'stable_with_notes').length, cleanupCount: contractRows.filter((row) => row.hardeningState === 'needs_cleanup').length, smokeCount: contractRows.filter((row) => row.hardeningState === 'needs_smoke').length }, blockers, nextStep: 'Preparar readiness operativa y demo estable de Full Accounting.', guardrails: ['Contract inventory describe superficies tecnicas, no cambia semantica legal.', 'Smoke coverage valida narrativa operativa, no datos oficiales.'] };
+  }
+}
+
+export class GetTenantFullAccountingOperationalReadinessUseCase {
+  constructor(private readonly getTenantFullAccountingContractInventoryUseCase: GetTenantFullAccountingContractInventoryUseCase, private readonly nowProvider: () => Date = () => new Date()) {}
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingOperationalReadinessView> {
+    const contractInventory = await this.getTenantFullAccountingContractInventoryUseCase.execute(input);
+    const readinessRows: TenantFullAccountingOperationalReadinessView['readinessRows'] = [
+      fullAccountingOperationalReadinessRow('operator_summary', 'Operator sees final Full Accounting status', contractInventory.inventoryStatus, 'operator_summary', 'ready', ['web-full-accounting-completion-card']),
+      fullAccountingOperationalReadinessRow('demo_script', 'Demo script can narrate lifecycle from candidate to archive exit', contractInventory.inventoryStatus, 'demo_script', 'ready_with_notes', ['accounting-foundation-smoke']),
+      fullAccountingOperationalReadinessRow('handoff_documentation', 'Handoff documentation records completion decision', contractInventory.inventoryStatus, 'handoff_documentation', 'needs_documentation', ['saas-conceptual-model-full-accounting-completion']),
+      fullAccountingOperationalReadinessRow('support_boundary', 'Support boundary keeps external professional ownership visible', contractInventory.guardrailCompletionAudit.auditStatus, 'support_boundary', 'ready', ['full_accounting_guardrail_completion_audit']),
+      fullAccountingOperationalReadinessRow('next_product_decision', 'Next product decision stays outside automatic Full Accounting closeout', contractInventory.inventoryStatus, 'next_product_decision', 'ready_with_notes', ['full_accounting_completion_closeout']),
+    ];
+    const blockers = [...contractInventory.blockers];
+    const readinessStatus = resolveStatus(readinessRows.map((row) => row.status), blockers);
+    return { ...input, generatedAt: this.nowProvider(), readinessStatus, contractInventory, readinessRows, summary: { readinessCount: readinessRows.length, readyCount: readinessRows.filter((row) => row.readinessState === 'ready').length, notesCount: readinessRows.filter((row) => row.readinessState === 'ready_with_notes').length, polishCount: readinessRows.filter((row) => row.readinessState === 'needs_operator_polish').length, documentationCount: readinessRows.filter((row) => row.readinessState === 'needs_documentation').length }, blockers, nextStep: 'Cerrar Full Accounting o decidir hardening final.', guardrails: ['Operational readiness prepara demo y soporte; no abre producto nuevo.', 'Next product candidate requiere decision explicita posterior.'] };
+  }
+}
+
+export class RequestTenantFullAccountingCompletionCloseoutUseCase {
+  constructor(private readonly getTenantFullAccountingOperationalReadinessUseCase: GetTenantFullAccountingOperationalReadinessUseCase, private readonly nowProvider: () => Date = () => new Date()) {}
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingCompletionCloseoutView> {
+    const operationalReadiness = await this.getTenantFullAccountingOperationalReadinessUseCase.execute(input);
+    const { contractInventory } = operationalReadiness;
+    const { guardrailCompletionAudit } = contractInventory;
+    const { lifecycleCoverageMatrix } = guardrailCompletionAudit;
+    const { completionAnchor } = lifecycleCoverageMatrix;
+    const closeoutChecklist: TenantFullAccountingCompletionCloseoutView['closeoutChecklist'] = [
+      fullAccountingCompletionCloseoutCheck('completion_anchor', 'Full Accounting completion anchor', completionAnchor.anchorStatus, ['full_accounting_completion_anchor']),
+      fullAccountingCompletionCloseoutCheck('lifecycle_coverage', 'Full Accounting lifecycle coverage matrix', lifecycleCoverageMatrix.matrixStatus, ['full_accounting_lifecycle_coverage_matrix']),
+      fullAccountingCompletionCloseoutCheck('guardrail_audit', 'Full Accounting guardrail completion audit', guardrailCompletionAudit.auditStatus, ['full_accounting_guardrail_completion_audit']),
+      fullAccountingCompletionCloseoutCheck('contract_inventory', 'Full Accounting contract inventory', contractInventory.inventoryStatus, ['full_accounting_contract_inventory']),
+      fullAccountingCompletionCloseoutCheck('operational_readiness', 'Full Accounting operational readiness', operationalReadiness.readinessStatus, ['full_accounting_operational_readiness']),
+    ];
+    const blockers = unique([...completionAnchor.blockers, ...lifecycleCoverageMatrix.blockers, ...guardrailCompletionAudit.blockers, ...contractInventory.blockers, ...operationalReadiness.blockers]);
+    const closeoutStatus = resolveStatus(closeoutChecklist.map((item) => item.status), blockers);
+    const finalDecision = fullAccountingCompletionCloseoutDecisionFromStatus(closeoutStatus, contractInventory, operationalReadiness, blockers);
+    return { ...input, generatedAt: this.nowProvider(), closeoutStatus, completionAnchor, lifecycleCoverageMatrix, guardrailCompletionAudit, contractInventory, operationalReadiness, closeoutChecklist, finalDecision, summary: { checklistCount: closeoutChecklist.length, readyChecklistCount: closeoutChecklist.filter((item) => item.status === 'ready').length, blockedChecklistCount: closeoutChecklist.filter((item) => item.status === 'blocked').length, lifecycleRowCount: lifecycleCoverageMatrix.summary.rowCount, guardrailCount: guardrailCompletionAudit.summary.guardrailCount, contractCount: contractInventory.summary.contractCount, readinessCount: operationalReadiness.summary.readinessCount }, blockers, nextStep: finalDecision === 'close_full_accounting_scope' ? 'Declarar Full Accounting cerrado y pasar a decision de siguiente producto.' : finalDecision === 'continue_contract_hardening' ? 'Cerrar hardening de contratos antes de declarar finalizado.' : finalDecision === 'continue_operational_readiness' ? 'Pulir readiness operativa y demo antes de cerrar.' : finalDecision === 'return_to_archive_handoff' ? 'Volver a Full Accounting archive handoff 1.7.' : finalDecision === 'open_next_product_candidate' ? 'Evaluar siguiente candidato de producto despues del cierre.' : 'No cerrar Full Accounting todavia.', guardrails: ['Completion closeout es cierre de alcance de producto, no cierre legal contable.', 'No abre automaticamente impuestos, auditoria, nomina ni otro candidato.'] };
+  }
+}
+
 function check(
   key: string,
   label: string,
@@ -16660,6 +16777,19 @@ function fullAccountingArchiveHandoffDecisionFromStatus(status: AccountingReadin
   if (custodyDecision.summary.externalProfessionalDecisionCount > 0) return 'ready_for_external_professional_handoff';
   if (custodyDecision.summary.internalArchiveDecisionCount > 0) return 'ready_for_internal_archive_handoff';
   return 'do_not_handoff_archive';
+}
+function fullAccountingCompletionGate(key: string, label: string, status: AccountingReadinessStatus, gateType: TenantFullAccountingCompletionAnchorView['completionGates'][number]['gateType'], completionState: TenantFullAccountingCompletionAnchorView['completionGates'][number]['completionState'], evidenceRefs: string[]): TenantFullAccountingCompletionAnchorView['completionGates'][number] { return { key, label, status, gateType, completionState, evidenceRefs }; }
+function fullAccountingLifecycleCoverageRow(key: string, label: string, status: AccountingReadinessStatus, lifecycleStage: TenantFullAccountingLifecycleCoverageMatrixView['lifecycleRows'][number]['lifecycleStage'], coverageState: TenantFullAccountingLifecycleCoverageMatrixView['lifecycleRows'][number]['coverageState'], evidenceRefs: string[]): TenantFullAccountingLifecycleCoverageMatrixView['lifecycleRows'][number] { return { key, label, status, lifecycleStage, coverageState, evidenceRefs }; }
+function fullAccountingGuardrailAuditRow(key: string, label: string, status: AccountingReadinessStatus, guardrailType: TenantFullAccountingGuardrailCompletionAuditView['guardrailRows'][number]['guardrailType'], preservationState: TenantFullAccountingGuardrailCompletionAuditView['guardrailRows'][number]['preservationState'], evidenceRefs: string[]): TenantFullAccountingGuardrailCompletionAuditView['guardrailRows'][number] { return { key, label, status, guardrailType, preservationState, evidenceRefs }; }
+function fullAccountingContractInventoryRow(key: string, label: string, status: AccountingReadinessStatus, surfaceType: TenantFullAccountingContractInventoryView['contractRows'][number]['surfaceType'], hardeningState: TenantFullAccountingContractInventoryView['contractRows'][number]['hardeningState'], evidenceRefs: string[]): TenantFullAccountingContractInventoryView['contractRows'][number] { return { key, label, status, surfaceType, hardeningState, evidenceRefs }; }
+function fullAccountingOperationalReadinessRow(key: string, label: string, status: AccountingReadinessStatus, readinessType: TenantFullAccountingOperationalReadinessView['readinessRows'][number]['readinessType'], readinessState: TenantFullAccountingOperationalReadinessView['readinessRows'][number]['readinessState'], evidenceRefs: string[]): TenantFullAccountingOperationalReadinessView['readinessRows'][number] { return { key, label, status, readinessType, readinessState, evidenceRefs }; }
+function fullAccountingCompletionCloseoutCheck(key: string, label: string, status: AccountingReadinessStatus, evidenceRefs: string[]): TenantFullAccountingCompletionCloseoutView['closeoutChecklist'][number] { return { key, label, status, evidenceRefs }; }
+function fullAccountingCompletionCloseoutDecisionFromStatus(status: AccountingReadinessStatus, contractInventory: TenantFullAccountingContractInventoryView, operationalReadiness: TenantFullAccountingOperationalReadinessView, blockers: string[]): FullAccountingCompletionCloseoutDecision {
+  if (blockers.length > 0 || status === 'blocked') return 'return_to_archive_handoff';
+  if (contractInventory.summary.cleanupCount > 0 || contractInventory.summary.smokeCount > 0) return 'continue_contract_hardening';
+  if (operationalReadiness.summary.polishCount > 0 || operationalReadiness.summary.documentationCount > 0) return 'continue_operational_readiness';
+  if (contractInventory.summary.notesCount > 0 || operationalReadiness.summary.notesCount > 0) return 'close_full_accounting_scope';
+  return 'open_next_product_candidate';
 }
 
 function fullAccountingFormalRecordCloseoutGate(

@@ -407,6 +407,12 @@ export type FullAccountingFormalRecordCloseoutDecision =
   | 'continue_archive_readiness_review'
   | 'return_to_formal_record_assembly'
   | 'do_not_close_formal_record';
+export type FullAccountingArchiveHandoffDecision =
+  | 'ready_for_internal_archive_handoff'
+  | 'ready_for_external_professional_handoff'
+  | 'continue_full_accounting_hardening'
+  | 'return_to_formal_record_closeout'
+  | 'do_not_handoff_archive';
 export type AccountingAdvancedFormalModuleKey =
   | 'formal_books'
   | 'certified_bank_reconciliation'
@@ -6375,5 +6381,59 @@ export interface TenantFullAccountingFormalRecordCloseoutCloseoutView {
   closeoutChecklist: Array<{ key: string; label: string; status: AccountingReadinessStatus; evidenceRefs: string[]; }>;
   finalDecision: FullAccountingFormalRecordCloseoutDecision;
   summary: { checklistCount: number; readyChecklistCount: number; blockedChecklistCount: number; archiveFolderCount: number; evidencePacketCount: number; attestationItemCount: number; };
+  blockers: string[]; nextStep: string; guardrails: string[];
+}
+
+export interface TenantFullAccountingArchiveHandoffAnchorView {
+  tenantSlug: string; period: string; year: number; generatedAt: Date; anchorStatus: AccountingReadinessStatus;
+  formalRecordCloseout: TenantFullAccountingFormalRecordCloseoutCloseoutView;
+  handoffGates: Array<{ key: string; label: string; status: AccountingReadinessStatus; gateType: 'formal_closeout' | 'archive_readiness' | 'evidence_packet' | 'professional_boundary' | 'operational_exit'; handoffState: 'ready_for_internal_handoff' | 'ready_for_external_handoff' | 'needs_hardening' | 'returned_to_closeout' | 'blocked'; evidenceRefs: string[]; }>;
+  summary: { gateCount: number; readyGateCount: number; needsReviewGateCount: number; blockedGateCount: number; formalCloseoutChecklistCount: number; };
+  blockers: string[]; nextStep: string; guardrails: string[];
+}
+
+export interface TenantFullAccountingArchiveHandoffPackageView {
+  tenantSlug: string; period: string; year: number; generatedAt: Date; packageStatus: AccountingReadinessStatus;
+  handoffAnchor: TenantFullAccountingArchiveHandoffAnchorView;
+  handoffItems: Array<{ key: string; label: string; status: AccountingReadinessStatus; itemType: 'archive_manifest' | 'evidence_bundle' | 'professional_boundary' | 'operator_decision' | 'exceptions_register'; custodyMode: 'internal_ready' | 'external_professional_ready' | 'needs_professional_review' | 'hold_for_hardening'; evidenceRefs: string[]; blockerRefs: string[]; }>;
+  summary: { itemCount: number; readyItemCount: number; needsReviewItemCount: number; blockedItemCount: number; externalReadyItemCount: number; };
+  blockers: string[]; nextStep: string; guardrails: string[];
+}
+
+export interface TenantFullAccountingOperationalExitSignalMatrixView {
+  tenantSlug: string; period: string; year: number; generatedAt: Date; matrixStatus: AccountingReadinessStatus;
+  archiveHandoffPackage: TenantFullAccountingArchiveHandoffPackageView;
+  exitSignals: Array<{ key: string; label: string; status: AccountingReadinessStatus; signalType: 'closed_record_ready' | 'professional_review_needed' | 'traceability_complete' | 'retained_evidence_ready' | 'hardening_needed' | 'return_to_closeout_needed'; recommendation: 'internal_archive_handoff' | 'external_professional_handoff' | 'continue_hardening' | 'return_to_closeout'; evidenceRefs: string[]; }>;
+  summary: { signalCount: number; readySignalCount: number; internalHandoffSignalCount: number; externalHandoffSignalCount: number; hardeningSignalCount: number; returnSignalCount: number; };
+  blockers: string[]; nextStep: string; guardrails: string[];
+}
+
+export interface TenantFullAccountingCustodyDecisionWorkspaceView {
+  tenantSlug: string; period: string; year: number; generatedAt: Date; decisionStatus: AccountingReadinessStatus;
+  operationalExitSignalMatrix: TenantFullAccountingOperationalExitSignalMatrixView;
+  custodyDecisions: Array<{ key: string; label: string; status: AccountingReadinessStatus; custodyArea: 'internal_archive' | 'external_professional_handoff' | 'full_accounting_hardening' | 'formal_record_closeout'; decision: 'handoff_internal_archive' | 'handoff_external_professional' | 'continue_hardening' | 'return_to_closeout' | 'do_not_handoff'; evidenceRefs: string[]; }>;
+  summary: { decisionCount: number; readyDecisionCount: number; internalArchiveDecisionCount: number; externalProfessionalDecisionCount: number; hardeningDecisionCount: number; returnToCloseoutDecisionCount: number; };
+  blockers: string[]; nextStep: string; guardrails: string[];
+}
+
+export interface TenantFullAccountingArchiveHandoffCommandCenterView {
+  tenantSlug: string; period: string; year: number; generatedAt: Date; commandStatus: AccountingReadinessStatus;
+  custodyDecision: TenantFullAccountingCustodyDecisionWorkspaceView;
+  commandLanes: Array<{ key: string; label: string; status: AccountingReadinessStatus; metric: string; count: number; }>;
+  suggestedDecision: FullAccountingArchiveHandoffDecision;
+  summary: { laneCount: number; readyLaneCount: number; needsReviewLaneCount: number; blockedLaneCount: number; internalHandoffCount: number; externalHandoffCount: number; };
+  blockers: string[]; nextStep: string; guardrails: string[];
+}
+
+export interface TenantFullAccountingArchiveHandoffCloseoutView {
+  tenantSlug: string; period: string; year: number; generatedAt: Date; closeoutStatus: AccountingReadinessStatus;
+  handoffAnchor: TenantFullAccountingArchiveHandoffAnchorView;
+  archiveHandoffPackage: TenantFullAccountingArchiveHandoffPackageView;
+  operationalExitSignalMatrix: TenantFullAccountingOperationalExitSignalMatrixView;
+  custodyDecision: TenantFullAccountingCustodyDecisionWorkspaceView;
+  commandCenter: TenantFullAccountingArchiveHandoffCommandCenterView;
+  closeoutChecklist: Array<{ key: string; label: string; status: AccountingReadinessStatus; evidenceRefs: string[]; }>;
+  finalDecision: FullAccountingArchiveHandoffDecision;
+  summary: { checklistCount: number; readyChecklistCount: number; blockedChecklistCount: number; handoffItemCount: number; exitSignalCount: number; custodyDecisionCount: number; };
   blockers: string[]; nextStep: string; guardrails: string[];
 }

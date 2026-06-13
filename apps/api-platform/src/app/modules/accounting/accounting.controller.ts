@@ -164,6 +164,11 @@ import {
   GetTenantFullAccountingFormalCloseoutEvidencePacketUseCase,
   GetTenantFullAccountingProfessionalCloseoutAttestationBoundaryUseCase,
   GetTenantFullAccountingFormalRecordCloseoutCommandCenterUseCase,
+  GetTenantFullAccountingArchiveHandoffAnchorUseCase,
+  GetTenantFullAccountingArchiveHandoffPackageUseCase,
+  GetTenantFullAccountingOperationalExitSignalMatrixUseCase,
+  GetTenantFullAccountingCustodyDecisionWorkspaceUseCase,
+  GetTenantFullAccountingArchiveHandoffCommandCenterUseCase,
   GetTenantAccountingAdvancedFormalProductScopeContractUseCase,
   GetTenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixUseCase,
   GetTenantAccountingAdvancedProfessionalReviewWorkflowDesignUseCase,
@@ -255,6 +260,7 @@ import {
   RequestTenantFullAccountingExternalResultIntakeCloseoutUseCase,
   RequestTenantFullAccountingFormalRecordAssemblyCloseoutUseCase,
   RequestTenantFullAccountingFormalRecordCloseoutCloseoutUseCase,
+  RequestTenantFullAccountingArchiveHandoffCloseoutUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -465,6 +471,12 @@ import {
   FullAccountingFormalRecordAssemblyCommandCenterResponseDto,
   FullAccountingFormalRecordIndexWorkspaceResponseDto,
   FullAccountingArchiveReadinessWorkspaceResponseDto,
+  FullAccountingArchiveHandoffAnchorResponseDto,
+  FullAccountingArchiveHandoffPackageResponseDto,
+  FullAccountingOperationalExitSignalMatrixResponseDto,
+  FullAccountingCustodyDecisionWorkspaceResponseDto,
+  FullAccountingArchiveHandoffCommandCenterResponseDto,
+  FullAccountingArchiveHandoffCloseoutResponseDto,
   FullAccountingFormalCloseoutEvidencePacketResponseDto,
   FullAccountingFormalRecordCloseoutAnchorResponseDto,
   FullAccountingFormalRecordCloseoutCloseoutResponseDto,
@@ -663,6 +675,12 @@ import {
   toFullAccountingFormalRecordAssemblyCommandCenterResponseDto,
   toFullAccountingFormalRecordIndexWorkspaceResponseDto,
   toFullAccountingArchiveReadinessWorkspaceResponseDto,
+  toFullAccountingArchiveHandoffAnchorResponseDto,
+  toFullAccountingArchiveHandoffPackageResponseDto,
+  toFullAccountingOperationalExitSignalMatrixResponseDto,
+  toFullAccountingCustodyDecisionWorkspaceResponseDto,
+  toFullAccountingArchiveHandoffCommandCenterResponseDto,
+  toFullAccountingArchiveHandoffCloseoutResponseDto,
   toFullAccountingFormalCloseoutEvidencePacketResponseDto,
   toFullAccountingFormalRecordCloseoutAnchorResponseDto,
   toFullAccountingFormalRecordCloseoutCloseoutResponseDto,
@@ -1143,6 +1161,12 @@ export class AccountingController {
     private readonly getTenantFullAccountingProfessionalCloseoutAttestationBoundaryUseCase: GetTenantFullAccountingProfessionalCloseoutAttestationBoundaryUseCase,
     private readonly getTenantFullAccountingFormalRecordCloseoutCommandCenterUseCase: GetTenantFullAccountingFormalRecordCloseoutCommandCenterUseCase,
     private readonly requestTenantFullAccountingFormalRecordCloseoutCloseoutUseCase: RequestTenantFullAccountingFormalRecordCloseoutCloseoutUseCase,
+    private readonly getTenantFullAccountingArchiveHandoffAnchorUseCase: GetTenantFullAccountingArchiveHandoffAnchorUseCase,
+    private readonly getTenantFullAccountingArchiveHandoffPackageUseCase: GetTenantFullAccountingArchiveHandoffPackageUseCase,
+    private readonly getTenantFullAccountingOperationalExitSignalMatrixUseCase: GetTenantFullAccountingOperationalExitSignalMatrixUseCase,
+    private readonly getTenantFullAccountingCustodyDecisionWorkspaceUseCase: GetTenantFullAccountingCustodyDecisionWorkspaceUseCase,
+    private readonly getTenantFullAccountingArchiveHandoffCommandCenterUseCase: GetTenantFullAccountingArchiveHandoffCommandCenterUseCase,
+    private readonly requestTenantFullAccountingArchiveHandoffCloseoutUseCase: RequestTenantFullAccountingArchiveHandoffCloseoutUseCase,
   ) {}
 
   @Get(':slug/advanced-discovery/anchor')
@@ -5635,6 +5659,42 @@ export class AccountingController {
       if (error instanceof TenantNotFoundError) { throw new NotFoundException(error.message); }
       throw error;
     }
+  }
+
+  @Get(':slug/full-accounting-archive-handoff/anchor')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingArchiveHandoffAnchor(@Param('slug') tenantSlug: string, @Query('period') period = '2026-06', @Query('year') year = '2026'): Promise<FullAccountingArchiveHandoffAnchorResponseDto> {
+    try { const view = await this.getTenantFullAccountingArchiveHandoffAnchorUseCase.execute({ tenantSlug, period, year: Number.parseInt(year, 10) }); return toFullAccountingArchiveHandoffAnchorResponseDto(view); } catch (error) { if (error instanceof TenantNotFoundError) { throw new NotFoundException(error.message); } throw error; }
+  }
+
+  @Get(':slug/full-accounting-archive-handoff/package')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingArchiveHandoffPackage(@Param('slug') tenantSlug: string, @Query('period') period = '2026-06', @Query('year') year = '2026'): Promise<FullAccountingArchiveHandoffPackageResponseDto> {
+    try { const view = await this.getTenantFullAccountingArchiveHandoffPackageUseCase.execute({ tenantSlug, period, year: Number.parseInt(year, 10) }); return toFullAccountingArchiveHandoffPackageResponseDto(view); } catch (error) { if (error instanceof TenantNotFoundError) { throw new NotFoundException(error.message); } throw error; }
+  }
+
+  @Get(':slug/full-accounting-archive-handoff/operational-exit-signals')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingOperationalExitSignalMatrix(@Param('slug') tenantSlug: string, @Query('period') period = '2026-06', @Query('year') year = '2026'): Promise<FullAccountingOperationalExitSignalMatrixResponseDto> {
+    try { const view = await this.getTenantFullAccountingOperationalExitSignalMatrixUseCase.execute({ tenantSlug, period, year: Number.parseInt(year, 10) }); return toFullAccountingOperationalExitSignalMatrixResponseDto(view); } catch (error) { if (error instanceof TenantNotFoundError) { throw new NotFoundException(error.message); } throw error; }
+  }
+
+  @Get(':slug/full-accounting-archive-handoff/custody-decision')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingCustodyDecisionWorkspace(@Param('slug') tenantSlug: string, @Query('period') period = '2026-06', @Query('year') year = '2026'): Promise<FullAccountingCustodyDecisionWorkspaceResponseDto> {
+    try { const view = await this.getTenantFullAccountingCustodyDecisionWorkspaceUseCase.execute({ tenantSlug, period, year: Number.parseInt(year, 10) }); return toFullAccountingCustodyDecisionWorkspaceResponseDto(view); } catch (error) { if (error instanceof TenantNotFoundError) { throw new NotFoundException(error.message); } throw error; }
+  }
+
+  @Get(':slug/full-accounting-archive-handoff/command-center')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingArchiveHandoffCommandCenter(@Param('slug') tenantSlug: string, @Query('period') period = '2026-06', @Query('year') year = '2026'): Promise<FullAccountingArchiveHandoffCommandCenterResponseDto> {
+    try { const view = await this.getTenantFullAccountingArchiveHandoffCommandCenterUseCase.execute({ tenantSlug, period, year: Number.parseInt(year, 10) }); return toFullAccountingArchiveHandoffCommandCenterResponseDto(view); } catch (error) { if (error instanceof TenantNotFoundError) { throw new NotFoundException(error.message); } throw error; }
+  }
+
+  @Get(':slug/full-accounting-archive-handoff/closeout')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingArchiveHandoffCloseout(@Param('slug') tenantSlug: string, @Query('period') period = '2026-06', @Query('year') year = '2026'): Promise<FullAccountingArchiveHandoffCloseoutResponseDto> {
+    try { const view = await this.requestTenantFullAccountingArchiveHandoffCloseoutUseCase.execute({ tenantSlug, period, year: Number.parseInt(year, 10) }); return toFullAccountingArchiveHandoffCloseoutResponseDto(view); } catch (error) { if (error instanceof TenantNotFoundError) { throw new NotFoundException(error.message); } throw error; }
   }
 
   @Get(':slug/intake-workspace')

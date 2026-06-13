@@ -159,6 +159,7 @@ import {
   fetchFullAccountingExternalResultIntakeCloseout,
   fetchFullAccountingFormalRecordAssemblyCloseout,
   fetchFullAccountingFormalRecordCloseoutCloseout,
+  fetchFullAccountingArchiveHandoffCloseout,
   fetchFullAccountingProductDesignCloseout,
   fetchFullAccountingMvpOperationsCloseout,
   fetchFullAccountingMvpReadinessCloseout,
@@ -542,6 +543,7 @@ import {
   FullAccountingExternalResultIntakeCloseoutResponse,
   FullAccountingFormalRecordAssemblyCloseoutResponse,
   FullAccountingFormalRecordCloseoutCloseoutResponse,
+  FullAccountingArchiveHandoffCloseoutResponse,
   FullAccountingProductDesignCloseoutResponse,
   FullAccountingCandidateCloseoutResponse,
   FullAccountingMvpOperationsCloseoutResponse,
@@ -2788,6 +2790,10 @@ export function App() {
   ] = useState<FullAccountingFormalRecordCloseoutCloseoutResponse | null>(
     null,
   );
+  const [
+    fullAccountingArchiveHandoffCloseout,
+    setFullAccountingArchiveHandoffCloseout,
+  ] = useState<FullAccountingArchiveHandoffCloseoutResponse | null>(null);
   const [
     taxComplianceSriFiscalEvidenceWorkspace,
     setTaxComplianceSriFiscalEvidenceWorkspace,
@@ -20968,6 +20974,7 @@ export function App() {
         nextFullAccountingExternalResultIntakeCloseout,
         nextFullAccountingFormalRecordAssemblyCloseout,
         nextFullAccountingFormalRecordCloseoutCloseout,
+        nextFullAccountingArchiveHandoffCloseout,
       ] = accountingEnabled
         ? await Promise.all([
             fetchAccountingIntakeWorkspace(
@@ -21376,6 +21383,12 @@ export function App() {
               year,
             ),
             fetchFullAccountingFormalRecordCloseoutCloseout(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
+            fetchFullAccountingArchiveHandoffCloseout(
               token,
               tenantSlug,
               taxCompliancePeriod,
@@ -21798,6 +21811,9 @@ export function App() {
         );
         setFullAccountingFormalRecordCloseoutCloseout(
           nextFullAccountingFormalRecordCloseoutCloseout,
+        );
+        setFullAccountingArchiveHandoffCloseout(
+          nextFullAccountingArchiveHandoffCloseout,
         );
       });
     } catch (error) {
@@ -39262,8 +39278,27 @@ export function App() {
                                     <p className={styles.muted}>{fullAccountingFormalRecordCloseoutCloseout.nextStep}</p>
                                   </div>
                                 ) : null}
+
+                                {fullAccountingArchiveHandoffCloseout ? (
+                                  <div className={styles.invoiceItemCard}>
+                                    <div className={styles.invoiceCardHeader}>
+                                      <strong>Full Accounting Archive Handoff 1.7</strong>
+                                      <span className={styles.statusPill}>{humanizeKey(fullAccountingArchiveHandoffCloseout.closeoutStatus)}</span>
+                                    </div>
+                                    <div className={styles.invoiceInlineGrid}>
+                                      <div><span className={styles.muted}>Gates</span><strong>{fullAccountingArchiveHandoffCloseout.handoffAnchor.summary.gateCount}</strong></div>
+                                      <div><span className={styles.muted}>Items</span><strong>{fullAccountingArchiveHandoffCloseout.archiveHandoffPackage.summary.itemCount}</strong></div>
+                                      <div><span className={styles.muted}>Signals</span><strong>{fullAccountingArchiveHandoffCloseout.operationalExitSignalMatrix.summary.signalCount}</strong></div>
+                                      <div><span className={styles.muted}>Custody</span><strong>{fullAccountingArchiveHandoffCloseout.custodyDecision.summary.decisionCount}</strong></div>
+                                      <div><span className={styles.muted}>External</span><strong>{fullAccountingArchiveHandoffCloseout.commandCenter.summary.externalHandoffCount}</strong></div>
+                                      <div><span className={styles.muted}>Decision</span><strong>{humanizeKey(fullAccountingArchiveHandoffCloseout.finalDecision)}</strong></div>
+                                    </div>
+                                    <p className={styles.muted}>{fullAccountingArchiveHandoffCloseout.nextStep}</p>
+                                  </div>
+                                ) : null}
                                 <p className={styles.muted}>
-                                  {fullAccountingFormalRecordCloseoutCloseout?.nextStep ??
+                                  {fullAccountingArchiveHandoffCloseout?.nextStep ??
+                                    fullAccountingFormalRecordCloseoutCloseout?.nextStep ??
                                     fullAccountingFormalRecordAssemblyCloseout?.nextStep ??
                                     fullAccountingExternalResultIntakeCloseout?.nextStep ??
                                     fullAccountingExternalExecutionTrackingCloseout?.nextStep ??

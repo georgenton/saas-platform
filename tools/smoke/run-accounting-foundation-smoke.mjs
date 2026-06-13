@@ -1320,6 +1320,12 @@ const [
   fullAccountingProfessionalCloseoutAttestationBoundary,
   fullAccountingFormalRecordCloseoutCommandCenter,
   fullAccountingFormalRecordCloseoutCloseout,
+  fullAccountingArchiveHandoffAnchor,
+  fullAccountingArchiveHandoffPackage,
+  fullAccountingOperationalExitSignalMatrix,
+  fullAccountingCustodyDecisionWorkspace,
+  fullAccountingArchiveHandoffCommandCenter,
+  fullAccountingArchiveHandoffCloseout,
 ] = await Promise.all([
   apiRequest({
     baseUrl,
@@ -2588,6 +2594,12 @@ const [
   apiRequest({ baseUrl, path: accountingPath(`/full-accounting-formal-record-closeout/attestation-boundary?${periodQuery()}`), token }),
   apiRequest({ baseUrl, path: accountingPath(`/full-accounting-formal-record-closeout/command-center?${periodQuery()}`), token }),
   apiRequest({ baseUrl, path: accountingPath(`/full-accounting-formal-record-closeout/closeout?${periodQuery()}`), token }),
+  apiRequest({ baseUrl, path: accountingPath(`/full-accounting-archive-handoff/anchor?${periodQuery()}`), token }),
+  apiRequest({ baseUrl, path: accountingPath(`/full-accounting-archive-handoff/package?${periodQuery()}`), token }),
+  apiRequest({ baseUrl, path: accountingPath(`/full-accounting-archive-handoff/operational-exit-signals?${periodQuery()}`), token }),
+  apiRequest({ baseUrl, path: accountingPath(`/full-accounting-archive-handoff/custody-decision?${periodQuery()}`), token }),
+  apiRequest({ baseUrl, path: accountingPath(`/full-accounting-archive-handoff/command-center?${periodQuery()}`), token }),
+  apiRequest({ baseUrl, path: accountingPath(`/full-accounting-archive-handoff/closeout?${periodQuery()}`), token }),
 ]);
 
 assertStatus(
@@ -3358,6 +3370,12 @@ assertStatus('full accounting formal closeout evidence packet', fullAccountingFo
 assertStatus('full accounting professional closeout attestation boundary', fullAccountingProfessionalCloseoutAttestationBoundary.boundaryStatus);
 assertStatus('full accounting formal record closeout command center', fullAccountingFormalRecordCloseoutCommandCenter.commandStatus);
 assertStatus('full accounting formal record closeout closeout', fullAccountingFormalRecordCloseoutCloseout.closeoutStatus);
+assertStatus('full accounting archive handoff anchor', fullAccountingArchiveHandoffAnchor.anchorStatus);
+assertStatus('full accounting archive handoff package', fullAccountingArchiveHandoffPackage.packageStatus);
+assertStatus('full accounting operational exit signal matrix', fullAccountingOperationalExitSignalMatrix.matrixStatus);
+assertStatus('full accounting custody decision workspace', fullAccountingCustodyDecisionWorkspace.decisionStatus);
+assertStatus('full accounting archive handoff command center', fullAccountingArchiveHandoffCommandCenter.commandStatus);
+assertStatus('full accounting archive handoff closeout', fullAccountingArchiveHandoffCloseout.closeoutStatus);
 if (!Array.isArray(advancedDiscoveryCloseout.closeoutChecklist)) {
   throw new Error('advanced-discovery/closeout no devolvio checklist[].');
 }
@@ -3523,6 +3541,9 @@ if (!Array.isArray(fullAccountingFormalRecordAssemblyCloseout.closeoutChecklist)
 }
 if (!Array.isArray(fullAccountingFormalRecordCloseoutCloseout.closeoutChecklist)) {
   throw new Error('full-accounting-formal-record-closeout/closeout no devolvio checklist[].');
+}
+if (!Array.isArray(fullAccountingArchiveHandoffCloseout.closeoutChecklist)) {
+  throw new Error('full-accounting-archive-handoff/closeout no devolvio checklist[].');
 }
 printLine(
   'foundation pack v2',

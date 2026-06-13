@@ -2863,6 +2863,53 @@ accounting judgment.
 Only introduce full `Accounting` after this product proves the need for formal
 ledgers, journal entries, bank reconciliation and financial statements.
 
+## Stage 10: Product freeze, OpenAPI and frontend handoff
+
+After Full Accounting completion closeout 1.8, the platform should stop opening
+new backend product surfaces temporarily. The next stage is a product freeze
+that turns the existing backend into a clear implementation contract for local
+QA and Claude Design frontend work.
+
+This stage is the architect's handoff binder: the building exists, so the team
+now labels rooms, checks entrances, documents utilities and gives the interior
+designer a reliable floor plan before more construction starts.
+
+### Goal
+
+Freeze the current backend scope, expose an OpenAPI contract and deliver
+screen-by-screen handoff packs so Claude Design can implement the frontend one
+product area at a time.
+
+### Deliverables
+
+1. `OpenAPI Contract Foundation`
+   - generate `docs/api/openapi.json`
+   - expose `GET /api/openapi.json`
+   - expose `GET /api/docs`
+   - group endpoints by product tags for frontend discovery
+2. `Frontend Handoff Index`
+   - document the implementation order and design rules in
+     `docs/frontend-handoff/README.md`
+3. `Platform Shell Handoff`
+   - define auth, tenant context, product navigation and permission states
+4. `Product Command Center Handoff`
+   - define the cross-product home screen and status summaries
+5. `Invoicing Handoff`
+   - define invoice, customer, payment and Ecuador electronic-document screens
+6. `Ecommerce Handoff`
+   - define store setup, product authoring, launch, order, fulfillment,
+     post-sale and invoice handoff screens
+7. `Remaining Product Handoffs`
+   - Tax Compliance EC, Accounting, AI Console, Clinics and Growth are
+     documented as follow-up handoff packs
+
+### Guardrail
+
+This stage does not add new domain behavior. It freezes backend scope, improves
+contract visibility and prepares frontend implementation. Any new backend needs
+found during design should be captured as a contract-hardening request instead
+of being hidden in frontend assumptions.
+
 ### Accounting foundation status
 
 `Accounting` has now graduated from future candidate into a first foundation

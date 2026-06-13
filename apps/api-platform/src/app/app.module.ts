@@ -13,6 +13,7 @@ import { GrowthModule } from './modules/growth/growth.module';
 import { IdentityModule } from './modules/identity/identity.module';
 import { InvoicingModule } from './modules/invoicing/invoicing.module';
 import { MedicalClinicsModule } from './modules/medical-clinics/medical-clinics.module';
+import { OpenApiModule } from './modules/openapi/openapi.module';
 import { PartiesModule } from './modules/parties/parties.module';
 import { PsychologyClinicsModule } from './modules/psychology-clinics/psychology-clinics.module';
 import { TaxComplianceModule } from './modules/tax-compliance/tax-compliance.module';
@@ -32,6 +33,7 @@ import { TenancyModule } from './modules/tenancy/tenancy.module';
     IdentityModule,
     InvoicingModule,
     MedicalClinicsModule,
+    OpenApiModule,
     PartiesModule,
     PsychologyClinicsModule,
     TaxComplianceModule,

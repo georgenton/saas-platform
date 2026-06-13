@@ -2761,6 +2761,37 @@ Guardrail: assembly 1.5 organizes the internal formal record package only. It
 does not archive, emit official books, issue financial statements, certify
 balances, submit, post, file or replace professional accounting judgment.
 
+### Full Accounting formal record closeout 1.6
+
+After formal record assembly 1.5, full Accounting can close the internal formal
+record package and decide whether it is ready for a later archive handoff. This
+layer is the sealed envelope check: it validates archive readiness, evidence
+packets and professional attestation boundaries before any official archive,
+legalization or issuance step.
+
+1. `Full Accounting Formal Record Closeout Anchor`
+   - converts assembly closeout into closeout gates for package, index,
+     consistency, command decision and checklist readiness
+2. `Full Accounting Archive Readiness Workspace`
+   - prepares folders for formal record package, evidence chain, decision log,
+     professional review and exceptions
+3. `Full Accounting Formal Closeout Evidence Packet`
+   - packages source artifacts, index snapshots, consistency snapshots, operator
+     decisions and professional boundaries
+4. `Full Accounting Professional Closeout Attestation Boundary`
+   - separates platform preparation, operator review, external accountant review
+     and explicit non-certification by the platform
+5. `Full Accounting Formal Record Closeout Command Center`
+   - consolidates gates, archive readiness, evidence packets and attestation
+     boundaries into one operating surface
+6. `Full Accounting Formal Record Closeout Closeout`
+   - decides whether to open archive handoff, continue professional attestation,
+     continue archive readiness review, return to assembly or stop closeout
+
+Guardrail: closeout 1.6 is an internal readiness layer. It does not archive
+officially, legalize books, sign statements, certify balances, submit, post,
+file or replace professional accounting judgment.
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal
@@ -2940,6 +2971,9 @@ product. Its current scope is intentionally operational and review-oriented:
 50. Full Accounting formal record assembly 1.5 as the binder. It groups
     accepted artifacts, builds the record index and reviews consistency before
     any formal record closeout, archive or official issuance step.
+51. Full Accounting formal record closeout 1.6 as the sealed envelope check. It
+    validates archive readiness, closeout evidence and professional attestation
+    boundaries before any archive handoff or official issuance step.
 
 Boundary: this foundation still does not perform bank reconciliation, lock
 against certified bank feeds, lock official legal books, issue official

@@ -158,6 +158,7 @@ import {
   fetchFullAccountingExternalExecutionTrackingCloseout,
   fetchFullAccountingExternalResultIntakeCloseout,
   fetchFullAccountingFormalRecordAssemblyCloseout,
+  fetchFullAccountingFormalRecordCloseoutCloseout,
   fetchFullAccountingProductDesignCloseout,
   fetchFullAccountingMvpOperationsCloseout,
   fetchFullAccountingMvpReadinessCloseout,
@@ -540,6 +541,7 @@ import {
   FullAccountingExternalExecutionTrackingCloseoutResponse,
   FullAccountingExternalResultIntakeCloseoutResponse,
   FullAccountingFormalRecordAssemblyCloseoutResponse,
+  FullAccountingFormalRecordCloseoutCloseoutResponse,
   FullAccountingProductDesignCloseoutResponse,
   FullAccountingCandidateCloseoutResponse,
   FullAccountingMvpOperationsCloseoutResponse,
@@ -2778,6 +2780,12 @@ export function App() {
     fullAccountingFormalRecordAssemblyCloseout,
     setFullAccountingFormalRecordAssemblyCloseout,
   ] = useState<FullAccountingFormalRecordAssemblyCloseoutResponse | null>(
+    null,
+  );
+  const [
+    fullAccountingFormalRecordCloseoutCloseout,
+    setFullAccountingFormalRecordCloseoutCloseout,
+  ] = useState<FullAccountingFormalRecordCloseoutCloseoutResponse | null>(
     null,
   );
   const [
@@ -20959,6 +20967,7 @@ export function App() {
         nextFullAccountingExternalExecutionTrackingCloseout,
         nextFullAccountingExternalResultIntakeCloseout,
         nextFullAccountingFormalRecordAssemblyCloseout,
+        nextFullAccountingFormalRecordCloseoutCloseout,
       ] = accountingEnabled
         ? await Promise.all([
             fetchAccountingIntakeWorkspace(
@@ -21361,6 +21370,12 @@ export function App() {
               year,
             ),
             fetchFullAccountingFormalRecordAssemblyCloseout(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
+            fetchFullAccountingFormalRecordCloseoutCloseout(
               token,
               tenantSlug,
               taxCompliancePeriod,
@@ -21780,6 +21795,9 @@ export function App() {
         );
         setFullAccountingFormalRecordAssemblyCloseout(
           nextFullAccountingFormalRecordAssemblyCloseout,
+        );
+        setFullAccountingFormalRecordCloseoutCloseout(
+          nextFullAccountingFormalRecordCloseoutCloseout,
         );
       });
     } catch (error) {
@@ -39226,8 +39244,27 @@ export function App() {
                                     <p className={styles.muted}>{fullAccountingFormalRecordAssemblyCloseout.nextStep}</p>
                                   </div>
                                 ) : null}
+
+                                {fullAccountingFormalRecordCloseoutCloseout ? (
+                                  <div className={styles.invoiceItemCard}>
+                                    <div className={styles.invoiceCardHeader}>
+                                      <strong>Full Accounting Formal Record Closeout 1.6</strong>
+                                      <span className={styles.statusPill}>{humanizeKey(fullAccountingFormalRecordCloseoutCloseout.closeoutStatus)}</span>
+                                    </div>
+                                    <div className={styles.invoiceInlineGrid}>
+                                      <div><span className={styles.muted}>Gates</span><strong>{fullAccountingFormalRecordCloseoutCloseout.closeoutAnchor.summary.gateCount}</strong></div>
+                                      <div><span className={styles.muted}>Folders</span><strong>{fullAccountingFormalRecordCloseoutCloseout.archiveReadiness.summary.folderCount}</strong></div>
+                                      <div><span className={styles.muted}>Packets</span><strong>{fullAccountingFormalRecordCloseoutCloseout.evidencePacket.summary.packetCount}</strong></div>
+                                      <div><span className={styles.muted}>Attestations</span><strong>{fullAccountingFormalRecordCloseoutCloseout.attestationBoundary.summary.itemCount}</strong></div>
+                                      <div><span className={styles.muted}>Archive ready</span><strong>{fullAccountingFormalRecordCloseoutCloseout.commandCenter.summary.archiveReadyCount}</strong></div>
+                                      <div><span className={styles.muted}>Decision</span><strong>{humanizeKey(fullAccountingFormalRecordCloseoutCloseout.finalDecision)}</strong></div>
+                                    </div>
+                                    <p className={styles.muted}>{fullAccountingFormalRecordCloseoutCloseout.nextStep}</p>
+                                  </div>
+                                ) : null}
                                 <p className={styles.muted}>
-                                  {fullAccountingFormalRecordAssemblyCloseout?.nextStep ??
+                                  {fullAccountingFormalRecordCloseoutCloseout?.nextStep ??
+                                    fullAccountingFormalRecordAssemblyCloseout?.nextStep ??
                                     fullAccountingExternalResultIntakeCloseout?.nextStep ??
                                     fullAccountingExternalExecutionTrackingCloseout?.nextStep ??
                                     fullAccountingExternalExecutionHandoffCloseout?.nextStep ??

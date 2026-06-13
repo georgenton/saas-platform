@@ -140,6 +140,12 @@ import {
   TenantFullAccountingFormalRecordAssemblyCloseoutView,
   TenantFullAccountingFormalRecordAssemblyCommandCenterView,
   TenantFullAccountingFormalRecordIndexWorkspaceView,
+  TenantFullAccountingArchiveReadinessWorkspaceView,
+  TenantFullAccountingFormalCloseoutEvidencePacketView,
+  TenantFullAccountingFormalRecordCloseoutAnchorView,
+  TenantFullAccountingFormalRecordCloseoutCloseoutView,
+  TenantFullAccountingFormalRecordCloseoutCommandCenterView,
+  TenantFullAccountingProfessionalCloseoutAttestationBoundaryView,
   TenantFullAccountingRecordConsistencyReviewWorkspaceView,
   TenantFullAccountingFormalSignatoryRegistryView,
   TenantFullAccountingFormalReadinessAnchorView,
@@ -577,6 +583,18 @@ export type FullAccountingFormalRecordAssemblyCommandCenterResponseDto =
   Serialized<TenantFullAccountingFormalRecordAssemblyCommandCenterView>;
 export type FullAccountingFormalRecordAssemblyCloseoutResponseDto =
   Serialized<TenantFullAccountingFormalRecordAssemblyCloseoutView>;
+export type FullAccountingFormalRecordCloseoutAnchorResponseDto =
+  Serialized<TenantFullAccountingFormalRecordCloseoutAnchorView>;
+export type FullAccountingArchiveReadinessWorkspaceResponseDto =
+  Serialized<TenantFullAccountingArchiveReadinessWorkspaceView>;
+export type FullAccountingFormalCloseoutEvidencePacketResponseDto =
+  Serialized<TenantFullAccountingFormalCloseoutEvidencePacketView>;
+export type FullAccountingProfessionalCloseoutAttestationBoundaryResponseDto =
+  Serialized<TenantFullAccountingProfessionalCloseoutAttestationBoundaryView>;
+export type FullAccountingFormalRecordCloseoutCommandCenterResponseDto =
+  Serialized<TenantFullAccountingFormalRecordCloseoutCommandCenterView>;
+export type FullAccountingFormalRecordCloseoutCloseoutResponseDto =
+  Serialized<TenantFullAccountingFormalRecordCloseoutCloseoutView>;
 
 export function toAccountingAdvancedDiscoveryAnchorResponseDto(
   view: TenantAccountingAdvancedDiscoveryAnchorView,
@@ -1729,6 +1747,13 @@ export function toFullAccountingFormalRecordAssemblyCloseoutResponseDto(
 ): FullAccountingFormalRecordAssemblyCloseoutResponseDto {
   return serialize(view);
 }
+
+export function toFullAccountingFormalRecordCloseoutAnchorResponseDto(view: TenantFullAccountingFormalRecordCloseoutAnchorView): FullAccountingFormalRecordCloseoutAnchorResponseDto { return serialize(view); }
+export function toFullAccountingArchiveReadinessWorkspaceResponseDto(view: TenantFullAccountingArchiveReadinessWorkspaceView): FullAccountingArchiveReadinessWorkspaceResponseDto { return serialize(view); }
+export function toFullAccountingFormalCloseoutEvidencePacketResponseDto(view: TenantFullAccountingFormalCloseoutEvidencePacketView): FullAccountingFormalCloseoutEvidencePacketResponseDto { return serialize(view); }
+export function toFullAccountingProfessionalCloseoutAttestationBoundaryResponseDto(view: TenantFullAccountingProfessionalCloseoutAttestationBoundaryView): FullAccountingProfessionalCloseoutAttestationBoundaryResponseDto { return serialize(view); }
+export function toFullAccountingFormalRecordCloseoutCommandCenterResponseDto(view: TenantFullAccountingFormalRecordCloseoutCommandCenterView): FullAccountingFormalRecordCloseoutCommandCenterResponseDto { return serialize(view); }
+export function toFullAccountingFormalRecordCloseoutCloseoutResponseDto(view: TenantFullAccountingFormalRecordCloseoutCloseoutView): FullAccountingFormalRecordCloseoutCloseoutResponseDto { return serialize(view); }
 
 type Serialized<T> = T extends Date
   ? string

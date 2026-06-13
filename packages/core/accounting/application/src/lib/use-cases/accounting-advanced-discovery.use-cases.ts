@@ -29,6 +29,7 @@ import {
   FullAccountingExternalResultIntakeDecision,
   FullAccountingFormalRecordAssemblyDecision,
   FullAccountingFormalRecordCloseoutDecision,
+  FullAccountingArchiveHandoffDecision,
   FullAccountingProductDesignDecision,
   FullAccountingMvpReadinessDecision,
   FullAccountingMvpOperationsDecision,
@@ -175,6 +176,11 @@ import {
   TenantFullAccountingExternalResultIntakeCloseoutView,
   TenantFullAccountingAcceptedArtifactBinderView,
   TenantFullAccountingArchiveReadinessWorkspaceView,
+  TenantFullAccountingArchiveHandoffAnchorView,
+  TenantFullAccountingArchiveHandoffPackageView,
+  TenantFullAccountingArchiveHandoffCommandCenterView,
+  TenantFullAccountingArchiveHandoffCloseoutView,
+  TenantFullAccountingCustodyDecisionWorkspaceView,
   TenantFullAccountingFormalCloseoutEvidencePacketView,
   TenantFullAccountingFormalRecordAssemblyAnchorView,
   TenantFullAccountingFormalRecordAssemblyCloseoutView,
@@ -183,6 +189,7 @@ import {
   TenantFullAccountingFormalRecordCloseoutCommandCenterView,
   TenantFullAccountingFormalRecordAssemblyCommandCenterView,
   TenantFullAccountingFormalRecordIndexWorkspaceView,
+  TenantFullAccountingOperationalExitSignalMatrixView,
   TenantFullAccountingProfessionalCloseoutAttestationBoundaryView,
   TenantFullAccountingRecordConsistencyReviewWorkspaceView,
   TenantFullAccountingFormalSignatoryRegistryView,
@@ -13372,6 +13379,113 @@ export class RequestTenantFullAccountingFormalRecordCloseoutCloseoutUseCase {
   }
 }
 
+export class GetTenantFullAccountingArchiveHandoffAnchorUseCase {
+  constructor(private readonly requestTenantFullAccountingFormalRecordCloseoutCloseoutUseCase: RequestTenantFullAccountingFormalRecordCloseoutCloseoutUseCase, private readonly nowProvider: () => Date = () => new Date()) {}
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingArchiveHandoffAnchorView> {
+    const formalRecordCloseout = await this.requestTenantFullAccountingFormalRecordCloseoutCloseoutUseCase.execute(input);
+    const handoffGates: TenantFullAccountingArchiveHandoffAnchorView['handoffGates'] = [
+      fullAccountingArchiveHandoffGate('formal_closeout', 'Full Accounting formal record closeout accepted', formalRecordCloseout.closeoutStatus, 'formal_closeout', formalRecordCloseout.finalDecision === 'open_archive_handoff' ? 'ready_for_internal_handoff' : 'returned_to_closeout', ['full_accounting_formal_record_closeout_closeout']),
+      fullAccountingArchiveHandoffGate('archive_readiness', 'Full Accounting archive readiness accepted', formalRecordCloseout.archiveReadiness.archiveStatus, 'archive_readiness', formalRecordCloseout.archiveReadiness.archiveStatus === 'ready' ? 'ready_for_internal_handoff' : 'needs_hardening', ['full_accounting_archive_readiness_workspace']),
+      fullAccountingArchiveHandoffGate('evidence_packet', 'Full Accounting evidence packet accepted', formalRecordCloseout.evidencePacket.packetStatus, 'evidence_packet', formalRecordCloseout.evidencePacket.packetStatus === 'ready' ? 'ready_for_internal_handoff' : 'needs_hardening', ['full_accounting_formal_closeout_evidence_packet']),
+      fullAccountingArchiveHandoffGate('professional_boundary', 'Full Accounting professional boundary preserved', formalRecordCloseout.attestationBoundary.boundaryStatus, 'professional_boundary', formalRecordCloseout.attestationBoundary.boundaryStatus === 'ready' ? 'ready_for_external_handoff' : 'needs_hardening', ['full_accounting_professional_closeout_boundary']),
+    ];
+    const blockers = formalRecordCloseout.finalDecision === 'open_archive_handoff' ? [...formalRecordCloseout.blockers] : unique([...formalRecordCloseout.blockers, `Full Accounting formal record closeout decision is ${formalRecordCloseout.finalDecision}.`]);
+    const anchorStatus = resolveStatus(handoffGates.map((gate) => gate.status), blockers);
+    return { ...input, generatedAt: this.nowProvider(), anchorStatus, formalRecordCloseout, handoffGates, summary: { gateCount: handoffGates.length, readyGateCount: handoffGates.filter((gate) => gate.status === 'ready').length, needsReviewGateCount: handoffGates.filter((gate) => gate.status === 'needs_review').length, blockedGateCount: handoffGates.filter((gate) => gate.status === 'blocked').length, formalCloseoutChecklistCount: formalRecordCloseout.summary.checklistCount }, blockers, nextStep: anchorStatus === 'blocked' ? 'Volver a Full Accounting formal record closeout 1.6 antes del handoff.' : 'Preparar paquete de archive handoff operativo.', guardrails: ['Archive handoff anchor decide salida operativa; no archiva oficialmente.', 'La frontera profesional de 1.6 sigue siendo obligatoria.'] };
+  }
+}
+
+export class GetTenantFullAccountingArchiveHandoffPackageUseCase {
+  constructor(private readonly getTenantFullAccountingArchiveHandoffAnchorUseCase: GetTenantFullAccountingArchiveHandoffAnchorUseCase, private readonly nowProvider: () => Date = () => new Date()) {}
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingArchiveHandoffPackageView> {
+    const handoffAnchor = await this.getTenantFullAccountingArchiveHandoffAnchorUseCase.execute(input);
+    const handoffItems: TenantFullAccountingArchiveHandoffPackageView['handoffItems'] = [
+      fullAccountingArchiveHandoffItem('archive_manifest', 'Full Accounting archive manifest', handoffAnchor.anchorStatus, 'archive_manifest', handoffAnchor.anchorStatus === 'ready' ? 'internal_ready' : 'hold_for_hardening', ['full_accounting_archive_handoff_anchor'], handoffAnchor.blockers),
+      fullAccountingArchiveHandoffItem('evidence_bundle', 'Full Accounting closeout evidence bundle', handoffAnchor.formalRecordCloseout.evidencePacket.packetStatus, 'evidence_bundle', 'external_professional_ready', ['full_accounting_formal_closeout_evidence_packet'], []),
+      fullAccountingArchiveHandoffItem('professional_boundary', 'Full Accounting professional boundary note', handoffAnchor.formalRecordCloseout.attestationBoundary.boundaryStatus, 'professional_boundary', 'needs_professional_review', ['full_accounting_professional_closeout_boundary'], []),
+      fullAccountingArchiveHandoffItem('operator_decision', 'Full Accounting operator custody decision record', handoffAnchor.anchorStatus, 'operator_decision', 'internal_ready', ['full_accounting_formal_record_closeout_command_center'], []),
+    ];
+    const blockers = [...handoffAnchor.blockers];
+    const packageStatus = resolveStatus(handoffItems.map((item) => item.status), blockers);
+    return { ...input, generatedAt: this.nowProvider(), packageStatus, handoffAnchor, handoffItems, summary: { itemCount: handoffItems.length, readyItemCount: handoffItems.filter((item) => item.status === 'ready').length, needsReviewItemCount: handoffItems.filter((item) => item.status === 'needs_review').length, blockedItemCount: handoffItems.filter((item) => item.status === 'blocked').length, externalReadyItemCount: handoffItems.filter((item) => item.custodyMode === 'external_professional_ready').length }, blockers, nextStep: 'Evaluar senales de salida operativa Full Accounting.', guardrails: ['Archive handoff package prepara custodia; no ejecuta archivo oficial.', 'Internal archive y handoff profesional son rutas separadas.'] };
+  }
+}
+
+export class GetTenantFullAccountingOperationalExitSignalMatrixUseCase {
+  constructor(private readonly getTenantFullAccountingArchiveHandoffPackageUseCase: GetTenantFullAccountingArchiveHandoffPackageUseCase, private readonly nowProvider: () => Date = () => new Date()) {}
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingOperationalExitSignalMatrixView> {
+    const archiveHandoffPackage = await this.getTenantFullAccountingArchiveHandoffPackageUseCase.execute(input);
+    const { formalRecordCloseout } = archiveHandoffPackage.handoffAnchor;
+    const exitSignals: TenantFullAccountingOperationalExitSignalMatrixView['exitSignals'] = [
+      fullAccountingOperationalExitSignal('closed_record_ready', 'Closed formal record ready', formalRecordCloseout.closeoutStatus, 'closed_record_ready', 'internal_archive_handoff', ['full_accounting_formal_record_closeout_closeout']),
+      fullAccountingOperationalExitSignal('professional_review_needed', 'Professional review handoff preserved', formalRecordCloseout.attestationBoundary.boundaryStatus, 'professional_review_needed', 'external_professional_handoff', ['full_accounting_professional_closeout_boundary']),
+      fullAccountingOperationalExitSignal('traceability_complete', 'Traceability package complete', formalRecordCloseout.evidencePacket.packetStatus, 'traceability_complete', 'internal_archive_handoff', ['full_accounting_formal_closeout_evidence_packet']),
+      fullAccountingOperationalExitSignal('retained_evidence_ready', 'Retained evidence ready', archiveHandoffPackage.packageStatus, 'retained_evidence_ready', 'external_professional_handoff', ['full_accounting_archive_handoff_package']),
+    ];
+    const blockers = [...archiveHandoffPackage.blockers];
+    const matrixStatus = resolveStatus(exitSignals.map((signal) => signal.status), blockers);
+    return { ...input, generatedAt: this.nowProvider(), matrixStatus, archiveHandoffPackage, exitSignals, summary: { signalCount: exitSignals.length, readySignalCount: exitSignals.filter((signal) => signal.status === 'ready').length, internalHandoffSignalCount: exitSignals.filter((signal) => signal.recommendation === 'internal_archive_handoff').length, externalHandoffSignalCount: exitSignals.filter((signal) => signal.recommendation === 'external_professional_handoff').length, hardeningSignalCount: exitSignals.filter((signal) => signal.recommendation === 'continue_hardening').length, returnSignalCount: exitSignals.filter((signal) => signal.recommendation === 'return_to_closeout').length }, blockers, nextStep: 'Convertir senales en decision de custodia.', guardrails: ['Operational exit signals no archivan ni entregan por si solos.', 'La salida externa conserva revision profesional explicita.'] };
+  }
+}
+
+export class GetTenantFullAccountingCustodyDecisionWorkspaceUseCase {
+  constructor(private readonly getTenantFullAccountingOperationalExitSignalMatrixUseCase: GetTenantFullAccountingOperationalExitSignalMatrixUseCase, private readonly nowProvider: () => Date = () => new Date()) {}
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingCustodyDecisionWorkspaceView> {
+    const operationalExitSignalMatrix = await this.getTenantFullAccountingOperationalExitSignalMatrixUseCase.execute(input);
+    const custodyDecisions: TenantFullAccountingCustodyDecisionWorkspaceView['custodyDecisions'] = [
+      fullAccountingCustodyDecision('internal_archive', 'Handoff internal archive package', operationalExitSignalMatrix.matrixStatus, 'internal_archive', 'handoff_internal_archive', ['full_accounting_operational_exit_signal_matrix']),
+      fullAccountingCustodyDecision('external_professional', 'Handoff external professional package', operationalExitSignalMatrix.archiveHandoffPackage.packageStatus, 'external_professional_handoff', 'handoff_external_professional', ['full_accounting_archive_handoff_package']),
+      fullAccountingCustodyDecision('hardening', 'Continue Full Accounting hardening if blockers remain', operationalExitSignalMatrix.matrixStatus, 'full_accounting_hardening', operationalExitSignalMatrix.blockers.length > 0 ? 'continue_hardening' : 'handoff_internal_archive', ['full_accounting_formal_record_closeout_closeout']),
+      fullAccountingCustodyDecision('return_to_closeout', 'Return to formal record closeout if readiness fails', operationalExitSignalMatrix.matrixStatus, 'formal_record_closeout', operationalExitSignalMatrix.blockers.length > 0 ? 'return_to_closeout' : 'handoff_internal_archive', ['full_accounting_formal_record_closeout_closeout']),
+    ];
+    const blockers = [...operationalExitSignalMatrix.blockers];
+    const decisionStatus = resolveStatus(custodyDecisions.map((decision) => decision.status), blockers);
+    return { ...input, generatedAt: this.nowProvider(), decisionStatus, operationalExitSignalMatrix, custodyDecisions, summary: { decisionCount: custodyDecisions.length, readyDecisionCount: custodyDecisions.filter((decision) => decision.status === 'ready').length, internalArchiveDecisionCount: custodyDecisions.filter((decision) => decision.decision === 'handoff_internal_archive').length, externalProfessionalDecisionCount: custodyDecisions.filter((decision) => decision.decision === 'handoff_external_professional').length, hardeningDecisionCount: custodyDecisions.filter((decision) => decision.decision === 'continue_hardening').length, returnToCloseoutDecisionCount: custodyDecisions.filter((decision) => decision.decision === 'return_to_closeout').length }, blockers, nextStep: 'Consolidar command center de archive handoff Full Accounting.', guardrails: ['Custody decision propone ruta; no ejecuta custodia oficial.', 'Do not handoff debe permanecer disponible si hay blockers.'] };
+  }
+}
+
+export class GetTenantFullAccountingArchiveHandoffCommandCenterUseCase {
+  constructor(private readonly getTenantFullAccountingCustodyDecisionWorkspaceUseCase: GetTenantFullAccountingCustodyDecisionWorkspaceUseCase, private readonly nowProvider: () => Date = () => new Date()) {}
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingArchiveHandoffCommandCenterView> {
+    const custodyDecision = await this.getTenantFullAccountingCustodyDecisionWorkspaceUseCase.execute(input);
+    const { operationalExitSignalMatrix } = custodyDecision;
+    const { archiveHandoffPackage } = operationalExitSignalMatrix;
+    const { handoffAnchor } = archiveHandoffPackage;
+    const commandLanes: TenantFullAccountingArchiveHandoffCommandCenterView['commandLanes'] = [
+      fullAccountingArchiveHandoffCommandLane('handoff_anchor', 'Full Accounting archive handoff anchor', handoffAnchor.anchorStatus, 'gates', handoffAnchor.summary.gateCount),
+      fullAccountingArchiveHandoffCommandLane('archive_package', 'Full Accounting archive handoff package', archiveHandoffPackage.packageStatus, 'items', archiveHandoffPackage.summary.itemCount),
+      fullAccountingArchiveHandoffCommandLane('exit_signals', 'Full Accounting operational exit signals', operationalExitSignalMatrix.matrixStatus, 'signals', operationalExitSignalMatrix.summary.signalCount),
+      fullAccountingArchiveHandoffCommandLane('custody_decisions', 'Full Accounting custody decisions', custodyDecision.decisionStatus, 'decisions', custodyDecision.summary.decisionCount),
+    ];
+    const blockers = unique([...handoffAnchor.blockers, ...archiveHandoffPackage.blockers, ...operationalExitSignalMatrix.blockers, ...custodyDecision.blockers]);
+    const commandStatus = resolveStatus(commandLanes.map((lane) => lane.status), blockers);
+    const suggestedDecision = fullAccountingArchiveHandoffDecisionFromStatus(commandStatus, custodyDecision, blockers);
+    return { ...input, generatedAt: this.nowProvider(), commandStatus, custodyDecision, commandLanes, suggestedDecision, summary: { laneCount: commandLanes.length, readyLaneCount: commandLanes.filter((lane) => lane.status === 'ready').length, needsReviewLaneCount: commandLanes.filter((lane) => lane.status === 'needs_review').length, blockedLaneCount: commandLanes.filter((lane) => lane.status === 'blocked').length, internalHandoffCount: custodyDecision.summary.internalArchiveDecisionCount, externalHandoffCount: custodyDecision.summary.externalProfessionalDecisionCount }, blockers, nextStep: suggestedDecision === 'ready_for_internal_archive_handoff' ? 'Cerrar Full Accounting con handoff interno trazable.' : suggestedDecision === 'ready_for_external_professional_handoff' ? 'Preparar handoff externo profesional trazable.' : suggestedDecision === 'continue_full_accounting_hardening' ? 'Continuar hardening antes de handoff.' : 'Volver a Full Accounting formal record closeout 1.6.', guardrails: ['Command center decide readiness; no archiva oficialmente.', 'Internal y external handoff son salidas controladas, no certificaciones.'] };
+  }
+}
+
+export class RequestTenantFullAccountingArchiveHandoffCloseoutUseCase {
+  constructor(private readonly getTenantFullAccountingArchiveHandoffCommandCenterUseCase: GetTenantFullAccountingArchiveHandoffCommandCenterUseCase, private readonly nowProvider: () => Date = () => new Date()) {}
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingArchiveHandoffCloseoutView> {
+    const commandCenter = await this.getTenantFullAccountingArchiveHandoffCommandCenterUseCase.execute(input);
+    const { custodyDecision } = commandCenter;
+    const { operationalExitSignalMatrix } = custodyDecision;
+    const { archiveHandoffPackage } = operationalExitSignalMatrix;
+    const { handoffAnchor } = archiveHandoffPackage;
+    const closeoutChecklist: TenantFullAccountingArchiveHandoffCloseoutView['closeoutChecklist'] = [
+      fullAccountingArchiveHandoffCloseoutCheck('handoff_anchor', 'Full Accounting archive handoff anchor', handoffAnchor.anchorStatus, ['full_accounting_archive_handoff_anchor']),
+      fullAccountingArchiveHandoffCloseoutCheck('archive_handoff_package', 'Full Accounting archive handoff package', archiveHandoffPackage.packageStatus, ['full_accounting_archive_handoff_package']),
+      fullAccountingArchiveHandoffCloseoutCheck('operational_exit_signals', 'Full Accounting operational exit signal matrix', operationalExitSignalMatrix.matrixStatus, ['full_accounting_operational_exit_signal_matrix']),
+      fullAccountingArchiveHandoffCloseoutCheck('custody_decision', 'Full Accounting custody decision workspace', custodyDecision.decisionStatus, ['full_accounting_custody_decision_workspace']),
+      fullAccountingArchiveHandoffCloseoutCheck('command_center', 'Full Accounting archive handoff command center', commandCenter.commandStatus, ['full_accounting_archive_handoff_command_center']),
+    ];
+    const blockers = unique([...handoffAnchor.blockers, ...archiveHandoffPackage.blockers, ...operationalExitSignalMatrix.blockers, ...custodyDecision.blockers, ...commandCenter.blockers]);
+    const closeoutStatus = resolveStatus(closeoutChecklist.map((item) => item.status), blockers);
+    const finalDecision = fullAccountingArchiveHandoffDecisionFromStatus(closeoutStatus, custodyDecision, blockers);
+    return { ...input, generatedAt: this.nowProvider(), closeoutStatus, handoffAnchor, archiveHandoffPackage, operationalExitSignalMatrix, custodyDecision, commandCenter, closeoutChecklist, finalDecision, summary: { checklistCount: closeoutChecklist.length, readyChecklistCount: closeoutChecklist.filter((item) => item.status === 'ready').length, blockedChecklistCount: closeoutChecklist.filter((item) => item.status === 'blocked').length, handoffItemCount: archiveHandoffPackage.summary.itemCount, exitSignalCount: operationalExitSignalMatrix.summary.signalCount, custodyDecisionCount: custodyDecision.summary.decisionCount }, blockers, nextStep: finalDecision === 'ready_for_internal_archive_handoff' ? 'Ejecutar salida operativa de handoff interno.' : finalDecision === 'ready_for_external_professional_handoff' ? 'Ejecutar handoff externo profesional con boundaries.' : finalDecision === 'continue_full_accounting_hardening' ? 'Planificar hardening antes del handoff.' : finalDecision === 'return_to_formal_record_closeout' ? 'Volver a 1.6 para cerrar readiness faltante.' : 'No entregar archivo para este periodo.', guardrails: ['Full Accounting archive handoff 1.7 no archiva oficialmente ni certifica.', 'La plataforma no legaliza libros, firma estados financieros ni reemplaza criterio profesional.'] };
+  }
+}
+
 function check(
   key: string,
   label: string,
@@ -16532,6 +16646,20 @@ function fullAccountingExternalResultIntakeDecisionFromStatus(
     return 'open_formal_record_assembly';
   }
   return 'do_not_accept_external_results';
+}
+
+function fullAccountingArchiveHandoffGate(key: string, label: string, status: AccountingReadinessStatus, gateType: TenantFullAccountingArchiveHandoffAnchorView['handoffGates'][number]['gateType'], handoffState: TenantFullAccountingArchiveHandoffAnchorView['handoffGates'][number]['handoffState'], evidenceRefs: string[]): TenantFullAccountingArchiveHandoffAnchorView['handoffGates'][number] { return { key, label, status, gateType, handoffState, evidenceRefs }; }
+function fullAccountingArchiveHandoffItem(key: string, label: string, status: AccountingReadinessStatus, itemType: TenantFullAccountingArchiveHandoffPackageView['handoffItems'][number]['itemType'], custodyMode: TenantFullAccountingArchiveHandoffPackageView['handoffItems'][number]['custodyMode'], evidenceRefs: string[], blockerRefs: string[]): TenantFullAccountingArchiveHandoffPackageView['handoffItems'][number] { return { key, label, status, itemType, custodyMode, evidenceRefs, blockerRefs }; }
+function fullAccountingOperationalExitSignal(key: string, label: string, status: AccountingReadinessStatus, signalType: TenantFullAccountingOperationalExitSignalMatrixView['exitSignals'][number]['signalType'], recommendation: TenantFullAccountingOperationalExitSignalMatrixView['exitSignals'][number]['recommendation'], evidenceRefs: string[]): TenantFullAccountingOperationalExitSignalMatrixView['exitSignals'][number] { return { key, label, status, signalType, recommendation, evidenceRefs }; }
+function fullAccountingCustodyDecision(key: string, label: string, status: AccountingReadinessStatus, custodyArea: TenantFullAccountingCustodyDecisionWorkspaceView['custodyDecisions'][number]['custodyArea'], decision: TenantFullAccountingCustodyDecisionWorkspaceView['custodyDecisions'][number]['decision'], evidenceRefs: string[]): TenantFullAccountingCustodyDecisionWorkspaceView['custodyDecisions'][number] { return { key, label, status, custodyArea, decision, evidenceRefs }; }
+function fullAccountingArchiveHandoffCommandLane(key: string, label: string, status: AccountingReadinessStatus, metric: string, count: number): TenantFullAccountingArchiveHandoffCommandCenterView['commandLanes'][number] { return { key, label, status, metric, count }; }
+function fullAccountingArchiveHandoffCloseoutCheck(key: string, label: string, status: AccountingReadinessStatus, evidenceRefs: string[]): TenantFullAccountingArchiveHandoffCloseoutView['closeoutChecklist'][number] { return { key, label, status, evidenceRefs }; }
+function fullAccountingArchiveHandoffDecisionFromStatus(status: AccountingReadinessStatus, custodyDecision: TenantFullAccountingCustodyDecisionWorkspaceView, blockers: string[]): FullAccountingArchiveHandoffDecision {
+  if (blockers.length > 0 || status === 'blocked') return 'return_to_formal_record_closeout';
+  if (custodyDecision.summary.hardeningDecisionCount > 0) return 'continue_full_accounting_hardening';
+  if (custodyDecision.summary.externalProfessionalDecisionCount > 0) return 'ready_for_external_professional_handoff';
+  if (custodyDecision.summary.internalArchiveDecisionCount > 0) return 'ready_for_internal_archive_handoff';
+  return 'do_not_handoff_archive';
 }
 
 function fullAccountingFormalRecordCloseoutGate(

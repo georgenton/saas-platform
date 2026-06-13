@@ -6064,6 +6064,18 @@ export interface FullAccountingExternalExecutionTrackingCloseoutResponse {
   guardrails: string[];
 }
 
+export interface FullAccountingArchiveHandoffCloseoutResponse {
+  tenantSlug: string; period: string; year: number; generatedAt: string; closeoutStatus: string;
+  handoffAnchor: { anchorStatus: string; summary: { gateCount: number; readyGateCount: number; needsReviewGateCount: number; blockedGateCount: number; formalCloseoutChecklistCount: number; }; };
+  archiveHandoffPackage: { packageStatus: string; summary: { itemCount: number; readyItemCount: number; needsReviewItemCount: number; blockedItemCount: number; externalReadyItemCount: number; }; };
+  operationalExitSignalMatrix: { matrixStatus: string; summary: { signalCount: number; readySignalCount: number; internalHandoffSignalCount: number; externalHandoffSignalCount: number; hardeningSignalCount: number; returnSignalCount: number; }; };
+  custodyDecision: { decisionStatus: string; summary: { decisionCount: number; readyDecisionCount: number; internalArchiveDecisionCount: number; externalProfessionalDecisionCount: number; hardeningDecisionCount: number; returnToCloseoutDecisionCount: number; }; };
+  commandCenter: { commandStatus: string; suggestedDecision: string; summary: { laneCount: number; readyLaneCount: number; needsReviewLaneCount: number; blockedLaneCount: number; internalHandoffCount: number; externalHandoffCount: number; }; };
+  closeoutChecklist: Array<{ key: string; label: string; status: string; evidenceRefs: string[]; }>;
+  finalDecision: string; summary: { checklistCount: number; readyChecklistCount: number; blockedChecklistCount: number; handoffItemCount: number; exitSignalCount: number; custodyDecisionCount: number; };
+  blockers: string[]; nextStep: string; guardrails: string[];
+}
+
 export interface FullAccountingFormalRecordCloseoutCloseoutResponse {
   tenantSlug: string; period: string; year: number; generatedAt: string; closeoutStatus: string;
   closeoutAnchor: { anchorStatus: string; summary: { gateCount: number; readyGateCount: number; needsReviewGateCount: number; blockedGateCount: number; assemblyChecklistCount: number; }; };

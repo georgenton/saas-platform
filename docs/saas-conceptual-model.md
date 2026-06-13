@@ -2792,6 +2792,37 @@ Guardrail: closeout 1.6 is an internal readiness layer. It does not archive
 officially, legalize books, sign statements, certify balances, submit, post,
 file or replace professional accounting judgment.
 
+### Full Accounting archive handoff and operational exit 1.7
+
+After formal record closeout 1.6, full Accounting can decide whether the sealed
+internal record can leave as an archive handoff, whether professional custody is
+needed, or whether more hardening is required. This layer is the delivery desk:
+it prepares the handoff package, reads operational exit signals and chooses the
+custody route without performing any official archive act.
+
+1. `Full Accounting Archive Handoff Anchor`
+   - converts formal record closeout into handoff gates for closeout, archive
+     readiness, evidence packet, professional boundary and operational exit
+2. `Full Accounting Archive Handoff Package`
+   - packages archive manifest, evidence bundle, professional boundary, operator
+     decision and exception register
+3. `Full Accounting Operational Exit Signal Matrix`
+   - evaluates closed-record, professional-review, traceability, retained
+     evidence, hardening and return-to-closeout signals
+4. `Full Accounting Custody Decision Workspace`
+   - decides whether to hand off internally, hand off externally, continue
+     hardening, return to closeout or block handoff
+5. `Full Accounting Archive Handoff Command Center`
+   - consolidates handoff gates, package, exit signals and custody decisions
+     into one operating surface
+6. `Full Accounting Archive Handoff Closeout`
+   - closes whether the tenant-period is ready for internal handoff, external
+     professional handoff, more hardening, return to closeout or no handoff
+
+Guardrail: archive handoff 1.7 prepares an operational delivery path only. It
+does not archive officially, legalize books, sign statements, certify balances,
+submit, post, file or replace professional accounting judgment.
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal
@@ -2974,6 +3005,9 @@ product. Its current scope is intentionally operational and review-oriented:
 51. Full Accounting formal record closeout 1.6 as the sealed envelope check. It
     validates archive readiness, closeout evidence and professional attestation
     boundaries before any archive handoff or official issuance step.
+52. Full Accounting archive handoff and operational exit 1.7 as the delivery
+    desk. It prepares custody handoff, operational exit signals and handoff
+    decisions without archiving officially or certifying records.
 
 Boundary: this foundation still does not perform bank reconciliation, lock
 against certified bank feeds, lock official legal books, issue official

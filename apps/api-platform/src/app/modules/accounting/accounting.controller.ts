@@ -144,11 +144,16 @@ import {
   GetTenantFullAccountingExternalExecutionTrackingCommandCenterUseCase,
   GetTenantFullAccountingExternalObservationResolutionQueueUseCase,
   GetTenantFullAccountingExternalExecutorAssignmentMatrixUseCase,
+  GetTenantFullAccountingExternalResultIntakeAnchorUseCase,
   GetTenantFullAccountingFormalSignatoryRegistryUseCase,
   GetTenantFullAccountingLegalizationBoundaryPacketUseCase,
   GetTenantFullAccountingSignatureCertificationBoundaryAnchorUseCase,
   GetTenantFullAccountingSignatureEvidenceReadinessPackUseCase,
   GetTenantFullAccountingReturnedEvidenceValidationWorkspaceUseCase,
+  GetTenantFullAccountingReturnedArtifactRegistryUseCase,
+  GetTenantFullAccountingInternalAcceptanceCriteriaWorkspaceUseCase,
+  GetTenantFullAccountingAcceptanceDecisionWorkspaceUseCase,
+  GetTenantFullAccountingInternalAcceptanceCommandCenterUseCase,
   GetTenantAccountingAdvancedFormalProductScopeContractUseCase,
   GetTenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixUseCase,
   GetTenantAccountingAdvancedProfessionalReviewWorkflowDesignUseCase,
@@ -237,6 +242,7 @@ import {
   RequestTenantFullAccountingSignatureCertificationBoundaryCloseoutUseCase,
   RequestTenantFullAccountingExternalExecutionHandoffCloseoutUseCase,
   RequestTenantFullAccountingExternalExecutionTrackingCloseoutUseCase,
+  RequestTenantFullAccountingExternalResultIntakeCloseoutUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -439,6 +445,12 @@ import {
   FullAccountingExternalExecutionTrackingCommandCenterResponseDto,
   FullAccountingExternalObservationResolutionQueueResponseDto,
   FullAccountingReturnedEvidenceValidationWorkspaceResponseDto,
+  FullAccountingExternalResultIntakeAnchorResponseDto,
+  FullAccountingExternalResultIntakeCloseoutResponseDto,
+  FullAccountingReturnedArtifactRegistryResponseDto,
+  FullAccountingInternalAcceptanceCriteriaWorkspaceResponseDto,
+  FullAccountingAcceptanceDecisionWorkspaceResponseDto,
+  FullAccountingInternalAcceptanceCommandCenterResponseDto,
   AccountingAdvancedProfessionalResponsibilityAssignmentMatrixResponseDto,
   AccountingAdvancedProfessionalReviewWorkflowDesignResponseDto,
   AccountingCertifiedBankEvidenceBoundaryResponseDto,
@@ -619,6 +631,12 @@ import {
   toFullAccountingExternalExecutionTrackingCommandCenterResponseDto,
   toFullAccountingExternalObservationResolutionQueueResponseDto,
   toFullAccountingReturnedEvidenceValidationWorkspaceResponseDto,
+  toFullAccountingExternalResultIntakeAnchorResponseDto,
+  toFullAccountingExternalResultIntakeCloseoutResponseDto,
+  toFullAccountingReturnedArtifactRegistryResponseDto,
+  toFullAccountingInternalAcceptanceCriteriaWorkspaceResponseDto,
+  toFullAccountingAcceptanceDecisionWorkspaceResponseDto,
+  toFullAccountingInternalAcceptanceCommandCenterResponseDto,
   toAccountingAdvancedProfessionalResponsibilityAssignmentMatrixResponseDto,
   toAccountingAdvancedProfessionalReviewWorkflowDesignResponseDto,
   toAccountingCertifiedBankEvidenceBoundaryResponseDto,
@@ -1071,6 +1089,12 @@ export class AccountingController {
     private readonly getTenantFullAccountingExternalObservationResolutionQueueUseCase: GetTenantFullAccountingExternalObservationResolutionQueueUseCase,
     private readonly getTenantFullAccountingExternalExecutionTrackingCommandCenterUseCase: GetTenantFullAccountingExternalExecutionTrackingCommandCenterUseCase,
     private readonly requestTenantFullAccountingExternalExecutionTrackingCloseoutUseCase: RequestTenantFullAccountingExternalExecutionTrackingCloseoutUseCase,
+    private readonly getTenantFullAccountingExternalResultIntakeAnchorUseCase: GetTenantFullAccountingExternalResultIntakeAnchorUseCase,
+    private readonly getTenantFullAccountingReturnedArtifactRegistryUseCase: GetTenantFullAccountingReturnedArtifactRegistryUseCase,
+    private readonly getTenantFullAccountingInternalAcceptanceCriteriaWorkspaceUseCase: GetTenantFullAccountingInternalAcceptanceCriteriaWorkspaceUseCase,
+    private readonly getTenantFullAccountingAcceptanceDecisionWorkspaceUseCase: GetTenantFullAccountingAcceptanceDecisionWorkspaceUseCase,
+    private readonly getTenantFullAccountingInternalAcceptanceCommandCenterUseCase: GetTenantFullAccountingInternalAcceptanceCommandCenterUseCase,
+    private readonly requestTenantFullAccountingExternalResultIntakeCloseoutUseCase: RequestTenantFullAccountingExternalResultIntakeCloseoutUseCase,
   ) {}
 
   @Get(':slug/advanced-discovery/anchor')
@@ -5261,6 +5285,134 @@ export class AccountingController {
           { tenantSlug, period, year: Number.parseInt(year, 10) },
         );
       return toFullAccountingExternalExecutionTrackingCloseoutResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-external-result-intake/anchor')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingExternalResultIntakeAnchor(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingExternalResultIntakeAnchorResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingExternalResultIntakeAnchorUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+      return toFullAccountingExternalResultIntakeAnchorResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-external-result-intake/returned-artifacts')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingReturnedArtifactRegistry(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingReturnedArtifactRegistryResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingReturnedArtifactRegistryUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+      return toFullAccountingReturnedArtifactRegistryResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-external-result-intake/acceptance-criteria')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingInternalAcceptanceCriteriaWorkspace(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingInternalAcceptanceCriteriaWorkspaceResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingInternalAcceptanceCriteriaWorkspaceUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+      return toFullAccountingInternalAcceptanceCriteriaWorkspaceResponseDto(
+        view,
+      );
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-external-result-intake/acceptance-decisions')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingAcceptanceDecisionWorkspace(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingAcceptanceDecisionWorkspaceResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingAcceptanceDecisionWorkspaceUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+      return toFullAccountingAcceptanceDecisionWorkspaceResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-external-result-intake/command-center')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingInternalAcceptanceCommandCenter(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingInternalAcceptanceCommandCenterResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingInternalAcceptanceCommandCenterUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+      return toFullAccountingInternalAcceptanceCommandCenterResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-external-result-intake/closeout')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingExternalResultIntakeCloseout(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingExternalResultIntakeCloseoutResponseDto> {
+    try {
+      const view =
+        await this.requestTenantFullAccountingExternalResultIntakeCloseoutUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+      return toFullAccountingExternalResultIntakeCloseoutResponseDto(view);
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);

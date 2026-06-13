@@ -1302,6 +1302,12 @@ const [
   fullAccountingExternalObservationResolutionQueue,
   fullAccountingExternalExecutionTrackingCommandCenter,
   fullAccountingExternalExecutionTrackingCloseout,
+  fullAccountingExternalResultIntakeAnchor,
+  fullAccountingReturnedArtifactRegistry,
+  fullAccountingInternalAcceptanceCriteriaWorkspace,
+  fullAccountingAcceptanceDecisionWorkspace,
+  fullAccountingInternalAcceptanceCommandCenter,
+  fullAccountingExternalResultIntakeCloseout,
 ] = await Promise.all([
   apiRequest({
     baseUrl,
@@ -2516,6 +2522,48 @@ const [
     ),
     token,
   }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-external-result-intake/anchor?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-external-result-intake/returned-artifacts?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-external-result-intake/acceptance-criteria?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-external-result-intake/acceptance-decisions?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-external-result-intake/command-center?${periodQuery()}`,
+    ),
+    token,
+  }),
+  apiRequest({
+    baseUrl,
+    path: accountingPath(
+      `/full-accounting-external-result-intake/closeout?${periodQuery()}`,
+    ),
+    token,
+  }),
 ]);
 
 assertStatus(
@@ -3250,6 +3298,30 @@ assertStatus(
   'full accounting external execution tracking closeout',
   fullAccountingExternalExecutionTrackingCloseout.closeoutStatus,
 );
+assertStatus(
+  'full accounting external result intake anchor',
+  fullAccountingExternalResultIntakeAnchor.intakeStatus,
+);
+assertStatus(
+  'full accounting returned artifact registry',
+  fullAccountingReturnedArtifactRegistry.registryStatus,
+);
+assertStatus(
+  'full accounting internal acceptance criteria workspace',
+  fullAccountingInternalAcceptanceCriteriaWorkspace.criteriaStatus,
+);
+assertStatus(
+  'full accounting acceptance decision workspace',
+  fullAccountingAcceptanceDecisionWorkspace.decisionStatus,
+);
+assertStatus(
+  'full accounting internal acceptance command center',
+  fullAccountingInternalAcceptanceCommandCenter.commandStatus,
+);
+assertStatus(
+  'full accounting external result intake closeout',
+  fullAccountingExternalResultIntakeCloseout.closeoutStatus,
+);
 if (!Array.isArray(advancedDiscoveryCloseout.closeoutChecklist)) {
   throw new Error('advanced-discovery/closeout no devolvio checklist[].');
 }
@@ -3399,6 +3471,15 @@ if (
 ) {
   throw new Error(
     'full-accounting-external-execution-tracking/closeout no devolvio checklist[].',
+  );
+}
+if (
+  !Array.isArray(
+    fullAccountingExternalResultIntakeCloseout.closeoutChecklist,
+  )
+) {
+  throw new Error(
+    'full-accounting-external-result-intake/closeout no devolvio checklist[].',
   );
 }
 printLine(

@@ -389,6 +389,12 @@ export type FullAccountingExternalExecutionTrackingDecision =
   | 'resolve_external_observations'
   | 'return_to_external_execution_handoff'
   | 'do_not_accept_external_results';
+export type FullAccountingExternalResultIntakeDecision =
+  | 'open_formal_record_assembly'
+  | 'continue_internal_acceptance_review'
+  | 'return_to_external_execution_tracking'
+  | 'return_to_external_execution_handoff'
+  | 'do_not_accept_external_results';
 export type AccountingAdvancedFormalModuleKey =
   | 'formal_books'
   | 'certified_bank_reconciliation'
@@ -6021,6 +6027,195 @@ export interface TenantFullAccountingExternalExecutionTrackingCloseoutView {
     ledgerEventCount: number;
     validationCount: number;
     observationCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingExternalResultIntakeAnchorView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  intakeStatus: AccountingReadinessStatus;
+  trackingCloseout: TenantFullAccountingExternalExecutionTrackingCloseoutView;
+  resultIntakeGates: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    externalAct: 'signature' | 'certification' | 'legalization';
+    intakeState:
+      | 'ready_for_internal_review'
+      | 'pending_external_result'
+      | 'observed_external_result'
+      | 'rejected_external_result'
+      | 'insufficient_evidence';
+    evidenceRefs: string[];
+  }>;
+  summary: {
+    gateCount: number;
+    readyGateCount: number;
+    needsReviewGateCount: number;
+    blockedGateCount: number;
+    trackingChecklistCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingReturnedArtifactRegistryView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  registryStatus: AccountingReadinessStatus;
+  intakeAnchor: TenantFullAccountingExternalResultIntakeAnchorView;
+  returnedArtifacts: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    intakeGateKey: string;
+    artifactKind: 'signed' | 'certified' | 'legalized' | 'observed' | 'rejected';
+    actorRef: string;
+    evidenceRefs: string[];
+    blockerRefs: string[];
+  }>;
+  summary: {
+    artifactCount: number;
+    signedArtifactCount: number;
+    certifiedArtifactCount: number;
+    legalizedArtifactCount: number;
+    observedArtifactCount: number;
+    rejectedArtifactCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingInternalAcceptanceCriteriaWorkspaceView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  criteriaStatus: AccountingReadinessStatus;
+  artifactRegistry: TenantFullAccountingReturnedArtifactRegistryView;
+  criteria: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    artifactKey: string;
+    criteriaType:
+      | 'actor_identity'
+      | 'evidence_completeness'
+      | 'approved_artifact_match'
+      | 'traceability_match';
+    evidenceRefs: string[];
+    blockerRefs: string[];
+  }>;
+  summary: {
+    criteriaCount: number;
+    readyCriteriaCount: number;
+    needsReviewCriteriaCount: number;
+    blockedCriteriaCount: number;
+    blockerRefCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingAcceptanceDecisionWorkspaceView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  decisionStatus: AccountingReadinessStatus;
+  criteriaWorkspace: TenantFullAccountingInternalAcceptanceCriteriaWorkspaceView;
+  decisions: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    artifactKey: string;
+    decision:
+      | 'accepted_for_record_assembly'
+      | 'needs_internal_review'
+      | 'return_to_external_tracking'
+      | 'return_to_handoff'
+      | 'rejected_for_period';
+    reason: string;
+  }>;
+  summary: {
+    decisionCount: number;
+    acceptedDecisionCount: number;
+    needsReviewDecisionCount: number;
+    returnToTrackingDecisionCount: number;
+    returnToHandoffDecisionCount: number;
+    rejectedDecisionCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingInternalAcceptanceCommandCenterView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  commandStatus: AccountingReadinessStatus;
+  decisionWorkspace: TenantFullAccountingAcceptanceDecisionWorkspaceView;
+  commandLanes: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    metric: string;
+    count: number;
+  }>;
+  suggestedDecision: FullAccountingExternalResultIntakeDecision;
+  summary: {
+    laneCount: number;
+    readyLaneCount: number;
+    needsReviewLaneCount: number;
+    blockedLaneCount: number;
+    receivedArtifactCount: number;
+    acceptedArtifactCount: number;
+    observedArtifactCount: number;
+    rejectedArtifactCount: number;
+  };
+  blockers: string[];
+  nextStep: string;
+  guardrails: string[];
+}
+
+export interface TenantFullAccountingExternalResultIntakeCloseoutView {
+  tenantSlug: string;
+  period: string;
+  year: number;
+  generatedAt: Date;
+  closeoutStatus: AccountingReadinessStatus;
+  intakeAnchor: TenantFullAccountingExternalResultIntakeAnchorView;
+  artifactRegistry: TenantFullAccountingReturnedArtifactRegistryView;
+  criteriaWorkspace: TenantFullAccountingInternalAcceptanceCriteriaWorkspaceView;
+  decisionWorkspace: TenantFullAccountingAcceptanceDecisionWorkspaceView;
+  commandCenter: TenantFullAccountingInternalAcceptanceCommandCenterView;
+  closeoutChecklist: Array<{
+    key: string;
+    label: string;
+    status: AccountingReadinessStatus;
+    evidenceRefs: string[];
+  }>;
+  finalDecision: FullAccountingExternalResultIntakeDecision;
+  summary: {
+    checklistCount: number;
+    readyChecklistCount: number;
+    blockedChecklistCount: number;
+    intakeGateCount: number;
+    returnedArtifactCount: number;
+    criteriaCount: number;
+    decisionCount: number;
   };
   blockers: string[];
   nextStep: string;

@@ -2699,6 +2699,38 @@ only. It does not accept returned artifacts as official, issue records, submit,
 post, file, certify balances or replace internal acceptance/professional
 judgment.
 
+### Full Accounting external result intake and internal acceptance 1.4
+
+After external execution tracking 1.3, full Accounting can receive external
+results into an internal acceptance desk. This is the receiving desk after the
+control tower: returned signed, certified, legalized, observed or rejected
+artifacts are registered, checked against internal acceptance criteria and
+decided for record assembly, while the platform still does not assemble or
+issue official records.
+
+1. `Full Accounting External Result Intake Anchor`
+   - opens intake gates from tracking closeout validations for signature,
+     certification and legalization returns
+2. `Returned Artifact Registry`
+   - registers returned signed, certified, legalized, observed or rejected
+     artifacts without treating them as official records
+3. `Internal Acceptance Criteria Workspace`
+   - checks actor identity, evidence completeness, approved artifact matching
+     and traceability before acceptance
+4. `Acceptance Decision Workspace`
+   - records whether each returned artifact is accepted for record assembly,
+     needs review, returns to tracking/handoff or is rejected for the period
+5. `Internal Acceptance Command Center`
+   - consolidates returned artifacts, criteria and acceptance decisions in one
+     operating surface
+6. `Full Accounting External Result Intake Closeout`
+   - decides whether to open formal record assembly, continue internal review,
+     return to tracking/handoff or stop accepting external results
+
+Guardrail: external result intake 1.4 receives and evaluates external results
+only. It does not assemble formal records, issue official books/statements,
+submit, post, file, certify balances or replace professional judgment.
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal
@@ -2872,6 +2904,9 @@ product. Its current scope is intentionally operational and review-oriented:
 48. Full Accounting external execution tracking 1.3 as the control tower. It
     tracks external states, returned evidence and observations before opening
     any internal intake or acceptance of external results.
+49. Full Accounting external result intake and internal acceptance 1.4 as the
+    receiving desk. It registers returned artifacts, applies internal
+    acceptance criteria and records decisions before any formal record assembly.
 
 Boundary: this foundation still does not perform bank reconciliation, lock
 against certified bank feeds, lock official legal books, issue official

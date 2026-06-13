@@ -26,6 +26,7 @@ import {
   FullAccountingSignatureCertificationBoundaryDecision,
   FullAccountingExternalExecutionHandoffDecision,
   FullAccountingExternalExecutionTrackingDecision,
+  FullAccountingExternalResultIntakeDecision,
   FullAccountingProductDesignDecision,
   FullAccountingMvpReadinessDecision,
   FullAccountingMvpOperationsDecision,
@@ -168,6 +169,8 @@ import {
   TenantFullAccountingExternalExecutionTrackingCommandCenterView,
   TenantFullAccountingExternalObservationResolutionQueueView,
   TenantFullAccountingExternalExecutorAssignmentMatrixView,
+  TenantFullAccountingExternalResultIntakeAnchorView,
+  TenantFullAccountingExternalResultIntakeCloseoutView,
   TenantFullAccountingFormalSignatoryRegistryView,
   TenantFullAccountingFormalReadinessAnchorView,
   TenantFullAccountingFormalReadinessCloseoutView,
@@ -192,9 +195,13 @@ import {
   TenantFullAccountingApprovalDecisionWorkspaceView,
   TenantFullAccountingFormalApprovalCommandCenterView,
   TenantFullAccountingFormalApprovalEvidencePackView,
+  TenantFullAccountingAcceptanceDecisionWorkspaceView,
+  TenantFullAccountingInternalAcceptanceCommandCenterView,
+  TenantFullAccountingInternalAcceptanceCriteriaWorkspaceView,
   TenantFullAccountingSignatureCertificationBoundaryAnchorView,
   TenantFullAccountingSignatureCertificationBoundaryCloseoutView,
   TenantFullAccountingSignatureEvidenceReadinessPackView,
+  TenantFullAccountingReturnedArtifactRegistryView,
   TenantFullAccountingReturnedEvidenceValidationWorkspaceView,
   TenantFullAccountingPostingApprovalDraftPackView,
   TenantFullAccountingBankReconciliationEvidenceDraftPackView,
@@ -12584,6 +12591,347 @@ export class RequestTenantFullAccountingExternalExecutionTrackingCloseoutUseCase
   }
 }
 
+export class GetTenantFullAccountingExternalResultIntakeAnchorUseCase {
+  constructor(
+    private readonly requestTenantFullAccountingExternalExecutionTrackingCloseoutUseCase: RequestTenantFullAccountingExternalExecutionTrackingCloseoutUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingExternalResultIntakeAnchorView> {
+    const trackingCloseout =
+      await this.requestTenantFullAccountingExternalExecutionTrackingCloseoutUseCase.execute(input);
+    const resultIntakeGates: TenantFullAccountingExternalResultIntakeAnchorView['resultIntakeGates'] =
+      trackingCloseout.validationWorkspace.validations.map((validation) =>
+        fullAccountingExternalResultIntakeGate(
+          `intake_${validation.key}`,
+          `${validation.label} intake gate`,
+          validation.status,
+          fullAccountingExternalActFromValidationKey(validation.eventKey),
+          validation.validationResult === 'valid_return'
+            ? 'ready_for_internal_review'
+            : validation.validationResult === 'observed_return'
+              ? 'observed_external_result'
+              : validation.validationResult === 'rejected_return'
+                ? 'rejected_external_result'
+                : 'insufficient_evidence',
+          validation.receivedEvidence,
+        ),
+      );
+    const blockers =
+      trackingCloseout.finalDecision === 'open_external_result_intake'
+        ? [...trackingCloseout.blockers]
+        : unique([
+            ...trackingCloseout.blockers,
+            `Full Accounting external tracking decision is ${trackingCloseout.finalDecision}.`,
+          ]);
+    const intakeStatus = resolveStatus(resultIntakeGates.map((gate) => gate.status), blockers);
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      intakeStatus,
+      trackingCloseout,
+      resultIntakeGates,
+      summary: {
+        gateCount: resultIntakeGates.length,
+        readyGateCount: resultIntakeGates.filter((gate) => gate.status === 'ready').length,
+        needsReviewGateCount: resultIntakeGates.filter((gate) => gate.status === 'needs_review').length,
+        blockedGateCount: resultIntakeGates.filter((gate) => gate.status === 'blocked').length,
+        trackingChecklistCount: trackingCloseout.summary.checklistCount,
+      },
+      blockers,
+      nextStep:
+        intakeStatus === 'blocked'
+          ? 'Volver a Full Accounting external execution tracking 1.3.'
+          : 'Registrar artefactos Full Accounting retornados para criterios de aceptacion.',
+      guardrails: [
+        'Full Accounting external result intake 1.4 abre revision interna; no oficializa resultados.',
+        'Los resultados externos deben pasar criterios internos antes de expediente formal.',
+      ],
+    };
+  }
+}
+
+export class GetTenantFullAccountingReturnedArtifactRegistryUseCase {
+  constructor(
+    private readonly getTenantFullAccountingExternalResultIntakeAnchorUseCase: GetTenantFullAccountingExternalResultIntakeAnchorUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingReturnedArtifactRegistryView> {
+    const intakeAnchor =
+      await this.getTenantFullAccountingExternalResultIntakeAnchorUseCase.execute(input);
+    const returnedArtifacts: TenantFullAccountingReturnedArtifactRegistryView['returnedArtifacts'] =
+      intakeAnchor.resultIntakeGates.map((gate) =>
+        fullAccountingReturnedArtifact(
+          `artifact_${gate.key}`,
+          `${gate.label} artifact`,
+          gate.status,
+          gate.key,
+          fullAccountingArtifactKindFromIntakeGate(gate),
+          fullAccountingExternalActorForAct(gate.externalAct),
+          gate.evidenceRefs,
+          gate.status === 'ready' ? [] : [`${gate.key}_artifact_not_accepted`],
+        ),
+      );
+    const blockers = [...intakeAnchor.blockers];
+    const registryStatus = resolveStatus(returnedArtifacts.map((artifact) => artifact.status), blockers);
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      registryStatus,
+      intakeAnchor,
+      returnedArtifacts,
+      summary: {
+        artifactCount: returnedArtifacts.length,
+        signedArtifactCount: returnedArtifacts.filter((artifact) => artifact.artifactKind === 'signed').length,
+        certifiedArtifactCount: returnedArtifacts.filter((artifact) => artifact.artifactKind === 'certified').length,
+        legalizedArtifactCount: returnedArtifacts.filter((artifact) => artifact.artifactKind === 'legalized').length,
+        observedArtifactCount: returnedArtifacts.filter((artifact) => artifact.artifactKind === 'observed').length,
+        rejectedArtifactCount: returnedArtifacts.filter((artifact) => artifact.artifactKind === 'rejected').length,
+      },
+      blockers,
+      nextStep: 'Evaluar criterios internos de aceptacion por artefacto Full Accounting.',
+      guardrails: [
+        'Returned artifact registry registra referencias; no almacena evidencia oficial.',
+        'Cada artefacto retornado conserva blockers visibles hasta aceptacion interna.',
+      ],
+    };
+  }
+}
+
+export class GetTenantFullAccountingInternalAcceptanceCriteriaWorkspaceUseCase {
+  constructor(
+    private readonly getTenantFullAccountingReturnedArtifactRegistryUseCase: GetTenantFullAccountingReturnedArtifactRegistryUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingInternalAcceptanceCriteriaWorkspaceView> {
+    const artifactRegistry =
+      await this.getTenantFullAccountingReturnedArtifactRegistryUseCase.execute(input);
+    const criteria: TenantFullAccountingInternalAcceptanceCriteriaWorkspaceView['criteria'] =
+      artifactRegistry.returnedArtifacts.flatMap((artifact) => [
+        fullAccountingInternalAcceptanceCriterion(`actor_${artifact.key}`, `${artifact.label} actor identity`, artifact.status, artifact.key, 'actor_identity', [artifact.actorRef], artifact.status === 'ready' ? [] : [`${artifact.key}_actor_pending`]),
+        fullAccountingInternalAcceptanceCriterion(`evidence_${artifact.key}`, `${artifact.label} evidence completeness`, artifact.status, artifact.key, 'evidence_completeness', artifact.evidenceRefs, artifact.blockerRefs),
+        fullAccountingInternalAcceptanceCriterion(`trace_${artifact.key}`, `${artifact.label} traceability match`, artifact.status, artifact.key, 'traceability_match', [artifact.intakeGateKey], artifact.status === 'ready' ? [] : [`${artifact.key}_trace_pending`]),
+      ]);
+    const blockers = [...artifactRegistry.blockers];
+    const criteriaStatus = resolveStatus(criteria.map((item) => item.status), blockers);
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      criteriaStatus,
+      artifactRegistry,
+      criteria,
+      summary: {
+        criteriaCount: criteria.length,
+        readyCriteriaCount: criteria.filter((item) => item.status === 'ready').length,
+        needsReviewCriteriaCount: criteria.filter((item) => item.status === 'needs_review').length,
+        blockedCriteriaCount: criteria.filter((item) => item.status === 'blocked').length,
+        blockerRefCount: criteria.flatMap((item) => item.blockerRefs).length,
+      },
+      blockers,
+      nextStep: 'Decidir aceptacion interna por resultado externo Full Accounting.',
+      guardrails: [
+        'Los criterios internos no sustituyen aprobacion profesional formal.',
+        'Un artefacto sin trazabilidad completa no entra al expediente formal.',
+      ],
+    };
+  }
+}
+
+export class GetTenantFullAccountingAcceptanceDecisionWorkspaceUseCase {
+  constructor(
+    private readonly getTenantFullAccountingInternalAcceptanceCriteriaWorkspaceUseCase: GetTenantFullAccountingInternalAcceptanceCriteriaWorkspaceUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingAcceptanceDecisionWorkspaceView> {
+    const criteriaWorkspace =
+      await this.getTenantFullAccountingInternalAcceptanceCriteriaWorkspaceUseCase.execute(input);
+    const decisions: TenantFullAccountingAcceptanceDecisionWorkspaceView['decisions'] =
+      criteriaWorkspace.artifactRegistry.returnedArtifacts.map((artifact) =>
+        fullAccountingAcceptanceDecision(
+          `decision_${artifact.key}`,
+          `${artifact.label} acceptance decision`,
+          artifact.status,
+          artifact.key,
+          artifact.status === 'ready'
+            ? 'accepted_for_record_assembly'
+            : artifact.artifactKind === 'rejected'
+              ? 'return_to_handoff'
+              : artifact.artifactKind === 'observed'
+                ? 'return_to_external_tracking'
+                : 'needs_internal_review',
+          artifact.status === 'ready'
+            ? 'Returned artifact meets Full Accounting internal intake criteria.'
+            : 'Returned artifact needs internal review before formal record assembly.',
+        ),
+      );
+    const blockers = [...criteriaWorkspace.blockers];
+    const decisionStatus = resolveStatus(decisions.map((decision) => decision.status), blockers);
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      decisionStatus,
+      criteriaWorkspace,
+      decisions,
+      summary: {
+        decisionCount: decisions.length,
+        acceptedDecisionCount: decisions.filter((decision) => decision.decision === 'accepted_for_record_assembly').length,
+        needsReviewDecisionCount: decisions.filter((decision) => decision.decision === 'needs_internal_review').length,
+        returnToTrackingDecisionCount: decisions.filter((decision) => decision.decision === 'return_to_external_tracking').length,
+        returnToHandoffDecisionCount: decisions.filter((decision) => decision.decision === 'return_to_handoff').length,
+        rejectedDecisionCount: decisions.filter((decision) => decision.decision === 'rejected_for_period').length,
+      },
+      blockers,
+      nextStep: 'Consolidar aceptacion interna Full Accounting en command center.',
+      guardrails: [
+        'Acceptance decision workspace decide intake interno; no arma expediente formal.',
+        'La aceptacion interna no emite libros ni estados financieros oficiales.',
+      ],
+    };
+  }
+}
+
+export class GetTenantFullAccountingInternalAcceptanceCommandCenterUseCase {
+  constructor(
+    private readonly getTenantFullAccountingAcceptanceDecisionWorkspaceUseCase: GetTenantFullAccountingAcceptanceDecisionWorkspaceUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingInternalAcceptanceCommandCenterView> {
+    const decisionWorkspace =
+      await this.getTenantFullAccountingAcceptanceDecisionWorkspaceUseCase.execute(input);
+    const { criteriaWorkspace } = decisionWorkspace;
+    const { artifactRegistry } = criteriaWorkspace;
+    const commandLanes: TenantFullAccountingInternalAcceptanceCommandCenterView['commandLanes'] = [
+      fullAccountingInternalAcceptanceCommandLane('returned_artifacts', 'Full Accounting returned artifacts', artifactRegistry.registryStatus, 'artifacts', artifactRegistry.summary.artifactCount),
+      fullAccountingInternalAcceptanceCommandLane('acceptance_criteria', 'Full Accounting acceptance criteria', criteriaWorkspace.criteriaStatus, 'criteria', criteriaWorkspace.summary.criteriaCount),
+      fullAccountingInternalAcceptanceCommandLane('acceptance_decisions', 'Full Accounting acceptance decisions', decisionWorkspace.decisionStatus, 'decisions', decisionWorkspace.summary.decisionCount),
+    ];
+    const blockers = unique([
+      ...artifactRegistry.blockers,
+      ...criteriaWorkspace.blockers,
+      ...decisionWorkspace.blockers,
+    ]);
+    const commandStatus = resolveStatus(commandLanes.map((lane) => lane.status), blockers);
+    const suggestedDecision = fullAccountingExternalResultIntakeDecisionFromStatus(
+      commandStatus,
+      decisionWorkspace,
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      commandStatus,
+      decisionWorkspace,
+      commandLanes,
+      suggestedDecision,
+      summary: {
+        laneCount: commandLanes.length,
+        readyLaneCount: commandLanes.filter((lane) => lane.status === 'ready').length,
+        needsReviewLaneCount: commandLanes.filter((lane) => lane.status === 'needs_review').length,
+        blockedLaneCount: commandLanes.filter((lane) => lane.status === 'blocked').length,
+        receivedArtifactCount: artifactRegistry.summary.artifactCount,
+        acceptedArtifactCount: decisionWorkspace.summary.acceptedDecisionCount,
+        observedArtifactCount: artifactRegistry.summary.observedArtifactCount,
+        rejectedArtifactCount: artifactRegistry.summary.rejectedArtifactCount,
+      },
+      blockers,
+      nextStep:
+        suggestedDecision === 'open_formal_record_assembly'
+          ? 'Preparar Full Accounting formal record assembly 1.5 con resultados aceptados.'
+          : suggestedDecision === 'continue_internal_acceptance_review'
+            ? 'Completar revision interna antes de armar expediente formal.'
+            : suggestedDecision === 'return_to_external_execution_tracking'
+              ? 'Volver a Full Accounting external execution tracking 1.3.'
+              : 'Volver a Full Accounting external execution handoff 1.2.',
+      guardrails: [
+        'Internal acceptance command center consolida aceptacion interna; no oficializa records.',
+        'Formal record assembly debe ocurrir en un bloque posterior.',
+      ],
+    };
+  }
+}
+
+export class RequestTenantFullAccountingExternalResultIntakeCloseoutUseCase {
+  constructor(
+    private readonly getTenantFullAccountingInternalAcceptanceCommandCenterUseCase: GetTenantFullAccountingInternalAcceptanceCommandCenterUseCase,
+    private readonly nowProvider: () => Date = () => new Date(),
+  ) {}
+
+  async execute(input: AccountingAdvancedDiscoveryInput): Promise<TenantFullAccountingExternalResultIntakeCloseoutView> {
+    const commandCenter =
+      await this.getTenantFullAccountingInternalAcceptanceCommandCenterUseCase.execute(input);
+    const { decisionWorkspace } = commandCenter;
+    const { criteriaWorkspace } = decisionWorkspace;
+    const { artifactRegistry } = criteriaWorkspace;
+    const { intakeAnchor } = artifactRegistry;
+    const closeoutChecklist: TenantFullAccountingExternalResultIntakeCloseoutView['closeoutChecklist'] = [
+      fullAccountingExternalResultIntakeCloseoutCheck('intake_anchor', 'Full Accounting external result intake anchor', intakeAnchor.intakeStatus, ['full_accounting_external_result_intake_anchor']),
+      fullAccountingExternalResultIntakeCloseoutCheck('artifact_registry', 'Full Accounting returned artifact registry', artifactRegistry.registryStatus, ['full_accounting_returned_artifact_registry']),
+      fullAccountingExternalResultIntakeCloseoutCheck('acceptance_criteria', 'Full Accounting internal acceptance criteria workspace', criteriaWorkspace.criteriaStatus, ['full_accounting_internal_acceptance_criteria_workspace']),
+      fullAccountingExternalResultIntakeCloseoutCheck('acceptance_decisions', 'Full Accounting acceptance decision workspace', decisionWorkspace.decisionStatus, ['full_accounting_acceptance_decision_workspace']),
+      fullAccountingExternalResultIntakeCloseoutCheck('acceptance_command_center', 'Full Accounting internal acceptance command center', commandCenter.commandStatus, ['full_accounting_internal_acceptance_command_center']),
+    ];
+    const blockers = unique([
+      ...intakeAnchor.blockers,
+      ...artifactRegistry.blockers,
+      ...criteriaWorkspace.blockers,
+      ...decisionWorkspace.blockers,
+      ...commandCenter.blockers,
+    ]);
+    const closeoutStatus = resolveStatus(closeoutChecklist.map((item) => item.status), blockers);
+    const finalDecision = fullAccountingExternalResultIntakeDecisionFromStatus(
+      closeoutStatus,
+      decisionWorkspace,
+      blockers,
+    );
+
+    return {
+      ...input,
+      generatedAt: this.nowProvider(),
+      closeoutStatus,
+      intakeAnchor,
+      artifactRegistry,
+      criteriaWorkspace,
+      decisionWorkspace,
+      commandCenter,
+      closeoutChecklist,
+      finalDecision,
+      summary: {
+        checklistCount: closeoutChecklist.length,
+        readyChecklistCount: closeoutChecklist.filter((item) => item.status === 'ready').length,
+        blockedChecklistCount: closeoutChecklist.filter((item) => item.status === 'blocked').length,
+        intakeGateCount: intakeAnchor.summary.gateCount,
+        returnedArtifactCount: artifactRegistry.summary.artifactCount,
+        criteriaCount: criteriaWorkspace.summary.criteriaCount,
+        decisionCount: decisionWorkspace.summary.decisionCount,
+      },
+      blockers,
+      nextStep:
+        finalDecision === 'open_formal_record_assembly'
+          ? 'Iniciar Full Accounting formal record assembly 1.5 con resultados externos aceptados.'
+          : finalDecision === 'continue_internal_acceptance_review'
+            ? 'Completar revision interna antes de armar expediente formal.'
+            : finalDecision === 'return_to_external_execution_tracking'
+              ? 'Volver a Full Accounting external execution tracking 1.3.'
+              : finalDecision === 'return_to_external_execution_handoff'
+                ? 'Volver a Full Accounting external execution handoff 1.2.'
+                : 'No aceptar resultados externos para este periodo.',
+      guardrails: [
+        'Full Accounting external result intake closeout no arma ni emite registros oficiales.',
+        'Formal record assembly debe abrirse como etapa separada con evidencia aceptada.',
+      ],
+    };
+  }
+}
+
 function check(
   key: string,
   label: string,
@@ -15606,6 +15954,142 @@ function fullAccountingExternalExecutionTrackingDecisionFromStatus(
   }
   if (validationWorkspace.summary.insufficientEvidenceCount > 0) {
     return 'continue_external_execution_tracking';
+  }
+  return 'do_not_accept_external_results';
+}
+
+function fullAccountingExternalResultIntakeGate(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  externalAct: TenantFullAccountingExternalResultIntakeAnchorView['resultIntakeGates'][number]['externalAct'],
+  intakeState: TenantFullAccountingExternalResultIntakeAnchorView['resultIntakeGates'][number]['intakeState'],
+  evidenceRefs: string[],
+): TenantFullAccountingExternalResultIntakeAnchorView['resultIntakeGates'][number] {
+  return { key, label, status, externalAct, intakeState, evidenceRefs };
+}
+
+function fullAccountingReturnedArtifact(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  intakeGateKey: string,
+  artifactKind: TenantFullAccountingReturnedArtifactRegistryView['returnedArtifacts'][number]['artifactKind'],
+  actorRef: string,
+  evidenceRefs: string[],
+  blockerRefs: string[],
+): TenantFullAccountingReturnedArtifactRegistryView['returnedArtifacts'][number] {
+  return {
+    key,
+    label,
+    status,
+    intakeGateKey,
+    artifactKind,
+    actorRef,
+    evidenceRefs,
+    blockerRefs,
+  };
+}
+
+function fullAccountingInternalAcceptanceCriterion(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  artifactKey: string,
+  criteriaType: TenantFullAccountingInternalAcceptanceCriteriaWorkspaceView['criteria'][number]['criteriaType'],
+  evidenceRefs: string[],
+  blockerRefs: string[],
+): TenantFullAccountingInternalAcceptanceCriteriaWorkspaceView['criteria'][number] {
+  return {
+    key,
+    label,
+    status,
+    artifactKey,
+    criteriaType,
+    evidenceRefs,
+    blockerRefs,
+  };
+}
+
+function fullAccountingAcceptanceDecision(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  artifactKey: string,
+  decision: TenantFullAccountingAcceptanceDecisionWorkspaceView['decisions'][number]['decision'],
+  reason: string,
+): TenantFullAccountingAcceptanceDecisionWorkspaceView['decisions'][number] {
+  return { key, label, status, artifactKey, decision, reason };
+}
+
+function fullAccountingInternalAcceptanceCommandLane(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  metric: string,
+  count: number,
+): TenantFullAccountingInternalAcceptanceCommandCenterView['commandLanes'][number] {
+  return { key, label, status, metric, count };
+}
+
+function fullAccountingExternalResultIntakeCloseoutCheck(
+  key: string,
+  label: string,
+  status: AccountingReadinessStatus,
+  evidenceRefs: string[],
+): TenantFullAccountingExternalResultIntakeCloseoutView['closeoutChecklist'][number] {
+  return { key, label, status, evidenceRefs };
+}
+
+function fullAccountingExternalActFromValidationKey(
+  eventKey: string,
+): TenantFullAccountingExternalResultIntakeAnchorView['resultIntakeGates'][number]['externalAct'] {
+  if (eventKey.includes('certification')) {
+    return 'certification';
+  }
+  if (eventKey.includes('legalization')) {
+    return 'legalization';
+  }
+  return 'signature';
+}
+
+function fullAccountingArtifactKindFromIntakeGate(
+  gate: TenantFullAccountingExternalResultIntakeAnchorView['resultIntakeGates'][number],
+): TenantFullAccountingReturnedArtifactRegistryView['returnedArtifacts'][number]['artifactKind'] {
+  if (gate.intakeState === 'observed_external_result') {
+    return 'observed';
+  }
+  if (gate.intakeState === 'rejected_external_result') {
+    return 'rejected';
+  }
+  if (gate.externalAct === 'certification') {
+    return 'certified';
+  }
+  if (gate.externalAct === 'legalization') {
+    return 'legalized';
+  }
+  return 'signed';
+}
+
+function fullAccountingExternalResultIntakeDecisionFromStatus(
+  status: AccountingReadinessStatus,
+  decisionWorkspace: TenantFullAccountingAcceptanceDecisionWorkspaceView,
+  blockers: string[],
+): FullAccountingExternalResultIntakeDecision {
+  if (blockers.length > 0 || status === 'blocked') {
+    return 'return_to_external_execution_handoff';
+  }
+  if (decisionWorkspace.summary.returnToHandoffDecisionCount > 0) {
+    return 'return_to_external_execution_handoff';
+  }
+  if (decisionWorkspace.summary.returnToTrackingDecisionCount > 0) {
+    return 'return_to_external_execution_tracking';
+  }
+  if (decisionWorkspace.summary.needsReviewDecisionCount > 0) {
+    return 'continue_internal_acceptance_review';
+  }
+  if (decisionWorkspace.summary.acceptedDecisionCount > 0) {
+    return 'open_formal_record_assembly';
   }
   return 'do_not_accept_external_results';
 }

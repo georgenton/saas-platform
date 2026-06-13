@@ -156,6 +156,7 @@ import {
   fetchFullAccountingSignatureCertificationBoundaryCloseout,
   fetchFullAccountingExternalExecutionHandoffCloseout,
   fetchFullAccountingExternalExecutionTrackingCloseout,
+  fetchFullAccountingExternalResultIntakeCloseout,
   fetchFullAccountingProductDesignCloseout,
   fetchFullAccountingMvpOperationsCloseout,
   fetchFullAccountingMvpReadinessCloseout,
@@ -536,6 +537,7 @@ import {
   FullAccountingSignatureCertificationBoundaryCloseoutResponse,
   FullAccountingExternalExecutionHandoffCloseoutResponse,
   FullAccountingExternalExecutionTrackingCloseoutResponse,
+  FullAccountingExternalResultIntakeCloseoutResponse,
   FullAccountingProductDesignCloseoutResponse,
   FullAccountingCandidateCloseoutResponse,
   FullAccountingMvpOperationsCloseoutResponse,
@@ -2762,6 +2764,12 @@ export function App() {
     fullAccountingExternalExecutionTrackingCloseout,
     setFullAccountingExternalExecutionTrackingCloseout,
   ] = useState<FullAccountingExternalExecutionTrackingCloseoutResponse | null>(
+    null,
+  );
+  const [
+    fullAccountingExternalResultIntakeCloseout,
+    setFullAccountingExternalResultIntakeCloseout,
+  ] = useState<FullAccountingExternalResultIntakeCloseoutResponse | null>(
     null,
   );
   const [
@@ -20941,6 +20949,7 @@ export function App() {
         nextFullAccountingSignatureCertificationBoundaryCloseout,
         nextFullAccountingExternalExecutionHandoffCloseout,
         nextFullAccountingExternalExecutionTrackingCloseout,
+        nextFullAccountingExternalResultIntakeCloseout,
       ] = accountingEnabled
         ? await Promise.all([
             fetchAccountingIntakeWorkspace(
@@ -21336,6 +21345,12 @@ export function App() {
               taxCompliancePeriod,
               year,
             ),
+            fetchFullAccountingExternalResultIntakeCloseout(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
           ])
         : [
             null,
@@ -21371,6 +21386,7 @@ export function App() {
             null,
             null,
             [],
+            null,
             null,
             null,
             null,
@@ -21743,6 +21759,9 @@ export function App() {
         );
         setFullAccountingExternalExecutionTrackingCloseout(
           nextFullAccountingExternalExecutionTrackingCloseout,
+        );
+        setFullAccountingExternalResultIntakeCloseout(
+          nextFullAccountingExternalResultIntakeCloseout,
         );
       });
     } catch (error) {
@@ -39078,8 +39097,100 @@ export function App() {
                                     </p>
                                   </div>
                                 ) : null}
+                                {fullAccountingExternalResultIntakeCloseout ? (
+                                  <div className={styles.invoiceItemCard}>
+                                    <div className={styles.invoiceCardHeader}>
+                                      <strong>
+                                        Full Accounting External Result Intake
+                                        1.4
+                                      </strong>
+                                      <span className={styles.statusPill}>
+                                        {humanizeKey(
+                                          fullAccountingExternalResultIntakeCloseout.closeoutStatus,
+                                        )}
+                                      </span>
+                                    </div>
+                                    <div className={styles.invoiceInlineGrid}>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Gates
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingExternalResultIntakeCloseout
+                                              .intakeAnchor.summary.gateCount
+                                          }
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Artifacts
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingExternalResultIntakeCloseout
+                                              .artifactRegistry.summary
+                                              .artifactCount
+                                          }
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Criteria
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingExternalResultIntakeCloseout
+                                              .criteriaWorkspace.summary
+                                              .criteriaCount
+                                          }
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Decisions
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingExternalResultIntakeCloseout
+                                              .decisionWorkspace.summary
+                                              .decisionCount
+                                          }
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Accepted
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingExternalResultIntakeCloseout
+                                              .commandCenter.summary
+                                              .acceptedArtifactCount
+                                          }
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Decision
+                                        </span>
+                                        <strong>
+                                          {humanizeKey(
+                                            fullAccountingExternalResultIntakeCloseout.finalDecision,
+                                          )}
+                                        </strong>
+                                      </div>
+                                    </div>
+                                    <p className={styles.muted}>
+                                      {
+                                        fullAccountingExternalResultIntakeCloseout.nextStep
+                                      }
+                                    </p>
+                                  </div>
+                                ) : null}
                                 <p className={styles.muted}>
-                                  {fullAccountingExternalExecutionTrackingCloseout?.nextStep ??
+                                  {fullAccountingExternalResultIntakeCloseout?.nextStep ??
+                                    fullAccountingExternalExecutionTrackingCloseout?.nextStep ??
                                     fullAccountingExternalExecutionHandoffCloseout?.nextStep ??
                                     fullAccountingSignatureCertificationBoundaryCloseout?.nextStep ??
                                     fullAccountingFormalApprovalWorkflowCloseout?.nextStep ??

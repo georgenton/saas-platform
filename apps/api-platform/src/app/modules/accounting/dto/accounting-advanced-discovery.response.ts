@@ -133,6 +133,8 @@ import {
   TenantFullAccountingExternalExecutionTrackingCommandCenterView,
   TenantFullAccountingExternalObservationResolutionQueueView,
   TenantFullAccountingExternalExecutorAssignmentMatrixView,
+  TenantFullAccountingExternalResultIntakeAnchorView,
+  TenantFullAccountingExternalResultIntakeCloseoutView,
   TenantFullAccountingFormalSignatoryRegistryView,
   TenantFullAccountingFormalReadinessAnchorView,
   TenantFullAccountingFormalReadinessCloseoutView,
@@ -157,9 +159,13 @@ import {
   TenantFullAccountingApprovalDecisionWorkspaceView,
   TenantFullAccountingFormalApprovalCommandCenterView,
   TenantFullAccountingFormalApprovalEvidencePackView,
+  TenantFullAccountingAcceptanceDecisionWorkspaceView,
+  TenantFullAccountingInternalAcceptanceCommandCenterView,
+  TenantFullAccountingInternalAcceptanceCriteriaWorkspaceView,
   TenantFullAccountingSignatureCertificationBoundaryAnchorView,
   TenantFullAccountingSignatureCertificationBoundaryCloseoutView,
   TenantFullAccountingSignatureEvidenceReadinessPackView,
+  TenantFullAccountingReturnedArtifactRegistryView,
   TenantFullAccountingReturnedEvidenceValidationWorkspaceView,
   TenantFullAccountingPostingApprovalDraftPackView,
   TenantFullAccountingBankReconciliationEvidenceDraftPackView,
@@ -541,6 +547,18 @@ export type FullAccountingExternalExecutionTrackingCommandCenterResponseDto =
   Serialized<TenantFullAccountingExternalExecutionTrackingCommandCenterView>;
 export type FullAccountingExternalExecutionTrackingCloseoutResponseDto =
   Serialized<TenantFullAccountingExternalExecutionTrackingCloseoutView>;
+export type FullAccountingExternalResultIntakeAnchorResponseDto =
+  Serialized<TenantFullAccountingExternalResultIntakeAnchorView>;
+export type FullAccountingReturnedArtifactRegistryResponseDto =
+  Serialized<TenantFullAccountingReturnedArtifactRegistryView>;
+export type FullAccountingInternalAcceptanceCriteriaWorkspaceResponseDto =
+  Serialized<TenantFullAccountingInternalAcceptanceCriteriaWorkspaceView>;
+export type FullAccountingAcceptanceDecisionWorkspaceResponseDto =
+  Serialized<TenantFullAccountingAcceptanceDecisionWorkspaceView>;
+export type FullAccountingInternalAcceptanceCommandCenterResponseDto =
+  Serialized<TenantFullAccountingInternalAcceptanceCommandCenterView>;
+export type FullAccountingExternalResultIntakeCloseoutResponseDto =
+  Serialized<TenantFullAccountingExternalResultIntakeCloseoutView>;
 
 export function toAccountingAdvancedDiscoveryAnchorResponseDto(
   view: TenantAccountingAdvancedDiscoveryAnchorView,
@@ -1619,6 +1637,42 @@ export function toFullAccountingExternalExecutionTrackingCommandCenterResponseDt
 export function toFullAccountingExternalExecutionTrackingCloseoutResponseDto(
   view: TenantFullAccountingExternalExecutionTrackingCloseoutView,
 ): FullAccountingExternalExecutionTrackingCloseoutResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingExternalResultIntakeAnchorResponseDto(
+  view: TenantFullAccountingExternalResultIntakeAnchorView,
+): FullAccountingExternalResultIntakeAnchorResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingReturnedArtifactRegistryResponseDto(
+  view: TenantFullAccountingReturnedArtifactRegistryView,
+): FullAccountingReturnedArtifactRegistryResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingInternalAcceptanceCriteriaWorkspaceResponseDto(
+  view: TenantFullAccountingInternalAcceptanceCriteriaWorkspaceView,
+): FullAccountingInternalAcceptanceCriteriaWorkspaceResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingAcceptanceDecisionWorkspaceResponseDto(
+  view: TenantFullAccountingAcceptanceDecisionWorkspaceView,
+): FullAccountingAcceptanceDecisionWorkspaceResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingInternalAcceptanceCommandCenterResponseDto(
+  view: TenantFullAccountingInternalAcceptanceCommandCenterView,
+): FullAccountingInternalAcceptanceCommandCenterResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingExternalResultIntakeCloseoutResponseDto(
+  view: TenantFullAccountingExternalResultIntakeCloseoutView,
+): FullAccountingExternalResultIntakeCloseoutResponseDto {
   return serialize(view);
 }
 

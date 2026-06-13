@@ -160,6 +160,7 @@ import {
   fetchFullAccountingFormalRecordAssemblyCloseout,
   fetchFullAccountingFormalRecordCloseoutCloseout,
   fetchFullAccountingArchiveHandoffCloseout,
+  fetchFullAccountingCompletionCloseout,
   fetchFullAccountingProductDesignCloseout,
   fetchFullAccountingMvpOperationsCloseout,
   fetchFullAccountingMvpReadinessCloseout,
@@ -544,6 +545,7 @@ import {
   FullAccountingFormalRecordAssemblyCloseoutResponse,
   FullAccountingFormalRecordCloseoutCloseoutResponse,
   FullAccountingArchiveHandoffCloseoutResponse,
+  FullAccountingCompletionCloseoutResponse,
   FullAccountingProductDesignCloseoutResponse,
   FullAccountingCandidateCloseoutResponse,
   FullAccountingMvpOperationsCloseoutResponse,
@@ -2794,6 +2796,10 @@ export function App() {
     fullAccountingArchiveHandoffCloseout,
     setFullAccountingArchiveHandoffCloseout,
   ] = useState<FullAccountingArchiveHandoffCloseoutResponse | null>(null);
+  const [
+    fullAccountingCompletionCloseout,
+    setFullAccountingCompletionCloseout,
+  ] = useState<FullAccountingCompletionCloseoutResponse | null>(null);
   const [
     taxComplianceSriFiscalEvidenceWorkspace,
     setTaxComplianceSriFiscalEvidenceWorkspace,
@@ -20975,6 +20981,7 @@ export function App() {
         nextFullAccountingFormalRecordAssemblyCloseout,
         nextFullAccountingFormalRecordCloseoutCloseout,
         nextFullAccountingArchiveHandoffCloseout,
+        nextFullAccountingCompletionCloseout,
       ] = accountingEnabled
         ? await Promise.all([
             fetchAccountingIntakeWorkspace(
@@ -21394,6 +21401,12 @@ export function App() {
               taxCompliancePeriod,
               year,
             ),
+            fetchFullAccountingCompletionCloseout(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
           ])
         : [
             null,
@@ -21463,7 +21476,8 @@ export function App() {
             null,
             null,
             null,
-          ];
+            null,
+        ];
 
       startTransition(() => {
         setTaxComplianceWorkspace(nextWorkspace);
@@ -21814,6 +21828,9 @@ export function App() {
         );
         setFullAccountingArchiveHandoffCloseout(
           nextFullAccountingArchiveHandoffCloseout,
+        );
+        setFullAccountingCompletionCloseout(
+          nextFullAccountingCompletionCloseout,
         );
       });
     } catch (error) {
@@ -39296,8 +39313,27 @@ export function App() {
                                     <p className={styles.muted}>{fullAccountingArchiveHandoffCloseout.nextStep}</p>
                                   </div>
                                 ) : null}
+
+                                {fullAccountingCompletionCloseout ? (
+                                  <div className={styles.invoiceItemCard}>
+                                    <div className={styles.invoiceCardHeader}>
+                                      <strong>Full Accounting Completion Closeout 1.8</strong>
+                                      <span className={styles.statusPill}>{humanizeKey(fullAccountingCompletionCloseout.closeoutStatus)}</span>
+                                    </div>
+                                    <div className={styles.invoiceInlineGrid}>
+                                      <div><span className={styles.muted}>Coverage</span><strong>{fullAccountingCompletionCloseout.lifecycleCoverageMatrix.summary.rowCount}</strong></div>
+                                      <div><span className={styles.muted}>Guardrails</span><strong>{fullAccountingCompletionCloseout.guardrailCompletionAudit.summary.guardrailCount}</strong></div>
+                                      <div><span className={styles.muted}>Contracts</span><strong>{fullAccountingCompletionCloseout.contractInventory.summary.contractCount}</strong></div>
+                                      <div><span className={styles.muted}>Readiness</span><strong>{fullAccountingCompletionCloseout.operationalReadiness.summary.readinessCount}</strong></div>
+                                      <div><span className={styles.muted}>Checklist</span><strong>{fullAccountingCompletionCloseout.summary.readyChecklistCount}/{fullAccountingCompletionCloseout.summary.checklistCount}</strong></div>
+                                      <div><span className={styles.muted}>Decision</span><strong>{humanizeKey(fullAccountingCompletionCloseout.finalDecision)}</strong></div>
+                                    </div>
+                                    <p className={styles.muted}>{fullAccountingCompletionCloseout.nextStep}</p>
+                                  </div>
+                                ) : null}
                                 <p className={styles.muted}>
-                                  {fullAccountingArchiveHandoffCloseout?.nextStep ??
+                                  {fullAccountingCompletionCloseout?.nextStep ??
+                                    fullAccountingArchiveHandoffCloseout?.nextStep ??
                                     fullAccountingFormalRecordCloseoutCloseout?.nextStep ??
                                     fullAccountingFormalRecordAssemblyCloseout?.nextStep ??
                                     fullAccountingExternalResultIntakeCloseout?.nextStep ??

@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.107.67
+
+### Patch Changes
+
+- 9480ca0: Add OpenAPI contract endpoints, generated API contract artifacts and frontend handoff documentation for Claude Design.
+
 ## 0.107.66
 
 ### Patch Changes

@@ -1,5 +1,14 @@
 # api-platform
 
+## 0.107.60
+
+### Patch Changes
+
+- 5493922: Add Full Accounting external execution handoff 1.2 with handoff anchor,
+  external executor assignments, evidence bundles, instruction packs, return
+  evidence intake, closeout API, dashboard wiring, conceptual model updates, and
+  smoke coverage.
+
 ## 0.107.59
 
 ### Patch Changes

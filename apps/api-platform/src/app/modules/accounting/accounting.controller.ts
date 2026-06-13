@@ -154,6 +154,11 @@ import {
   GetTenantFullAccountingInternalAcceptanceCriteriaWorkspaceUseCase,
   GetTenantFullAccountingAcceptanceDecisionWorkspaceUseCase,
   GetTenantFullAccountingInternalAcceptanceCommandCenterUseCase,
+  GetTenantFullAccountingFormalRecordAssemblyAnchorUseCase,
+  GetTenantFullAccountingAcceptedArtifactBinderUseCase,
+  GetTenantFullAccountingFormalRecordIndexWorkspaceUseCase,
+  GetTenantFullAccountingRecordConsistencyReviewWorkspaceUseCase,
+  GetTenantFullAccountingFormalRecordAssemblyCommandCenterUseCase,
   GetTenantAccountingAdvancedFormalProductScopeContractUseCase,
   GetTenantAccountingAdvancedProfessionalResponsibilityAssignmentMatrixUseCase,
   GetTenantAccountingAdvancedProfessionalReviewWorkflowDesignUseCase,
@@ -243,6 +248,7 @@ import {
   RequestTenantFullAccountingExternalExecutionHandoffCloseoutUseCase,
   RequestTenantFullAccountingExternalExecutionTrackingCloseoutUseCase,
   RequestTenantFullAccountingExternalResultIntakeCloseoutUseCase,
+  RequestTenantFullAccountingFormalRecordAssemblyCloseoutUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -447,6 +453,12 @@ import {
   FullAccountingReturnedEvidenceValidationWorkspaceResponseDto,
   FullAccountingExternalResultIntakeAnchorResponseDto,
   FullAccountingExternalResultIntakeCloseoutResponseDto,
+  FullAccountingAcceptedArtifactBinderResponseDto,
+  FullAccountingFormalRecordAssemblyAnchorResponseDto,
+  FullAccountingFormalRecordAssemblyCloseoutResponseDto,
+  FullAccountingFormalRecordAssemblyCommandCenterResponseDto,
+  FullAccountingFormalRecordIndexWorkspaceResponseDto,
+  FullAccountingRecordConsistencyReviewWorkspaceResponseDto,
   FullAccountingReturnedArtifactRegistryResponseDto,
   FullAccountingInternalAcceptanceCriteriaWorkspaceResponseDto,
   FullAccountingAcceptanceDecisionWorkspaceResponseDto,
@@ -633,6 +645,12 @@ import {
   toFullAccountingReturnedEvidenceValidationWorkspaceResponseDto,
   toFullAccountingExternalResultIntakeAnchorResponseDto,
   toFullAccountingExternalResultIntakeCloseoutResponseDto,
+  toFullAccountingAcceptedArtifactBinderResponseDto,
+  toFullAccountingFormalRecordAssemblyAnchorResponseDto,
+  toFullAccountingFormalRecordAssemblyCloseoutResponseDto,
+  toFullAccountingFormalRecordAssemblyCommandCenterResponseDto,
+  toFullAccountingFormalRecordIndexWorkspaceResponseDto,
+  toFullAccountingRecordConsistencyReviewWorkspaceResponseDto,
   toFullAccountingReturnedArtifactRegistryResponseDto,
   toFullAccountingInternalAcceptanceCriteriaWorkspaceResponseDto,
   toFullAccountingAcceptanceDecisionWorkspaceResponseDto,
@@ -1095,6 +1113,12 @@ export class AccountingController {
     private readonly getTenantFullAccountingAcceptanceDecisionWorkspaceUseCase: GetTenantFullAccountingAcceptanceDecisionWorkspaceUseCase,
     private readonly getTenantFullAccountingInternalAcceptanceCommandCenterUseCase: GetTenantFullAccountingInternalAcceptanceCommandCenterUseCase,
     private readonly requestTenantFullAccountingExternalResultIntakeCloseoutUseCase: RequestTenantFullAccountingExternalResultIntakeCloseoutUseCase,
+    private readonly getTenantFullAccountingFormalRecordAssemblyAnchorUseCase: GetTenantFullAccountingFormalRecordAssemblyAnchorUseCase,
+    private readonly getTenantFullAccountingAcceptedArtifactBinderUseCase: GetTenantFullAccountingAcceptedArtifactBinderUseCase,
+    private readonly getTenantFullAccountingFormalRecordIndexWorkspaceUseCase: GetTenantFullAccountingFormalRecordIndexWorkspaceUseCase,
+    private readonly getTenantFullAccountingRecordConsistencyReviewWorkspaceUseCase: GetTenantFullAccountingRecordConsistencyReviewWorkspaceUseCase,
+    private readonly getTenantFullAccountingFormalRecordAssemblyCommandCenterUseCase: GetTenantFullAccountingFormalRecordAssemblyCommandCenterUseCase,
+    private readonly requestTenantFullAccountingFormalRecordAssemblyCloseoutUseCase: RequestTenantFullAccountingFormalRecordAssemblyCloseoutUseCase,
   ) {}
 
   @Get(':slug/advanced-discovery/anchor')
@@ -5417,6 +5441,102 @@ export class AccountingController {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);
       }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-formal-record-assembly/anchor')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingFormalRecordAssemblyAnchor(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingFormalRecordAssemblyAnchorResponseDto> {
+    try {
+      const view = await this.getTenantFullAccountingFormalRecordAssemblyAnchorUseCase.execute({ tenantSlug, period, year: Number.parseInt(year, 10) });
+      return toFullAccountingFormalRecordAssemblyAnchorResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) { throw new NotFoundException(error.message); }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-formal-record-assembly/accepted-artifact-binder')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingAcceptedArtifactBinder(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingAcceptedArtifactBinderResponseDto> {
+    try {
+      const view = await this.getTenantFullAccountingAcceptedArtifactBinderUseCase.execute({ tenantSlug, period, year: Number.parseInt(year, 10) });
+      return toFullAccountingAcceptedArtifactBinderResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) { throw new NotFoundException(error.message); }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-formal-record-assembly/record-index')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingFormalRecordIndexWorkspace(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingFormalRecordIndexWorkspaceResponseDto> {
+    try {
+      const view = await this.getTenantFullAccountingFormalRecordIndexWorkspaceUseCase.execute({ tenantSlug, period, year: Number.parseInt(year, 10) });
+      return toFullAccountingFormalRecordIndexWorkspaceResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) { throw new NotFoundException(error.message); }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-formal-record-assembly/consistency-review')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingRecordConsistencyReviewWorkspace(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingRecordConsistencyReviewWorkspaceResponseDto> {
+    try {
+      const view = await this.getTenantFullAccountingRecordConsistencyReviewWorkspaceUseCase.execute({ tenantSlug, period, year: Number.parseInt(year, 10) });
+      return toFullAccountingRecordConsistencyReviewWorkspaceResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) { throw new NotFoundException(error.message); }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-formal-record-assembly/command-center')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingFormalRecordAssemblyCommandCenter(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingFormalRecordAssemblyCommandCenterResponseDto> {
+    try {
+      const view = await this.getTenantFullAccountingFormalRecordAssemblyCommandCenterUseCase.execute({ tenantSlug, period, year: Number.parseInt(year, 10) });
+      return toFullAccountingFormalRecordAssemblyCommandCenterResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) { throw new NotFoundException(error.message); }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-formal-record-assembly/closeout')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingFormalRecordAssemblyCloseout(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingFormalRecordAssemblyCloseoutResponseDto> {
+    try {
+      const view = await this.requestTenantFullAccountingFormalRecordAssemblyCloseoutUseCase.execute({ tenantSlug, period, year: Number.parseInt(year, 10) });
+      return toFullAccountingFormalRecordAssemblyCloseoutResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) { throw new NotFoundException(error.message); }
       throw error;
     }
   }

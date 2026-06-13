@@ -1308,6 +1308,12 @@ const [
   fullAccountingAcceptanceDecisionWorkspace,
   fullAccountingInternalAcceptanceCommandCenter,
   fullAccountingExternalResultIntakeCloseout,
+  fullAccountingFormalRecordAssemblyAnchor,
+  fullAccountingAcceptedArtifactBinder,
+  fullAccountingFormalRecordIndexWorkspace,
+  fullAccountingRecordConsistencyReviewWorkspace,
+  fullAccountingFormalRecordAssemblyCommandCenter,
+  fullAccountingFormalRecordAssemblyCloseout,
 ] = await Promise.all([
   apiRequest({
     baseUrl,
@@ -2564,6 +2570,12 @@ const [
     ),
     token,
   }),
+  apiRequest({ baseUrl, path: accountingPath(`/full-accounting-formal-record-assembly/anchor?${periodQuery()}`), token }),
+  apiRequest({ baseUrl, path: accountingPath(`/full-accounting-formal-record-assembly/accepted-artifact-binder?${periodQuery()}`), token }),
+  apiRequest({ baseUrl, path: accountingPath(`/full-accounting-formal-record-assembly/record-index?${periodQuery()}`), token }),
+  apiRequest({ baseUrl, path: accountingPath(`/full-accounting-formal-record-assembly/consistency-review?${periodQuery()}`), token }),
+  apiRequest({ baseUrl, path: accountingPath(`/full-accounting-formal-record-assembly/command-center?${periodQuery()}`), token }),
+  apiRequest({ baseUrl, path: accountingPath(`/full-accounting-formal-record-assembly/closeout?${periodQuery()}`), token }),
 ]);
 
 assertStatus(
@@ -3322,6 +3334,12 @@ assertStatus(
   'full accounting external result intake closeout',
   fullAccountingExternalResultIntakeCloseout.closeoutStatus,
 );
+assertStatus('full accounting formal record assembly anchor', fullAccountingFormalRecordAssemblyAnchor.assemblyStatus);
+assertStatus('full accounting accepted artifact binder', fullAccountingAcceptedArtifactBinder.binderStatus);
+assertStatus('full accounting formal record index workspace', fullAccountingFormalRecordIndexWorkspace.indexStatus);
+assertStatus('full accounting record consistency review workspace', fullAccountingRecordConsistencyReviewWorkspace.reviewStatus);
+assertStatus('full accounting formal record assembly command center', fullAccountingFormalRecordAssemblyCommandCenter.commandStatus);
+assertStatus('full accounting formal record assembly closeout', fullAccountingFormalRecordAssemblyCloseout.closeoutStatus);
 if (!Array.isArray(advancedDiscoveryCloseout.closeoutChecklist)) {
   throw new Error('advanced-discovery/closeout no devolvio checklist[].');
 }
@@ -3481,6 +3499,9 @@ if (
   throw new Error(
     'full-accounting-external-result-intake/closeout no devolvio checklist[].',
   );
+}
+if (!Array.isArray(fullAccountingFormalRecordAssemblyCloseout.closeoutChecklist)) {
+  throw new Error('full-accounting-formal-record-assembly/closeout no devolvio checklist[].');
 }
 printLine(
   'foundation pack v2',

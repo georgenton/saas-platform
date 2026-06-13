@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.107.66
+
+### Patch Changes
+
+- 8afe8cf: Add Full Accounting completion closeout 1.8 with lifecycle coverage, guardrail audit, contract inventory, operational readiness, API endpoints, web summary and smoke coverage.
+
 ## 0.107.65
 
 ### Patch Changes

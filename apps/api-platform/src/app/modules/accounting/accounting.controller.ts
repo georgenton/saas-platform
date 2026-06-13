@@ -135,6 +135,11 @@ import {
   GetTenantFullAccountingApprovalDecisionWorkspaceUseCase,
   GetTenantFullAccountingFormalApprovalCommandCenterUseCase,
   GetTenantFullAccountingCertificationRequirementWorkspaceUseCase,
+  GetTenantFullAccountingExecutionHandoffEvidenceBundleUseCase,
+  GetTenantFullAccountingExecutionReturnEvidenceIntakeUseCase,
+  GetTenantFullAccountingExternalExecutionHandoffAnchorUseCase,
+  GetTenantFullAccountingExternalExecutionInstructionPackUseCase,
+  GetTenantFullAccountingExternalExecutorAssignmentMatrixUseCase,
   GetTenantFullAccountingFormalSignatoryRegistryUseCase,
   GetTenantFullAccountingLegalizationBoundaryPacketUseCase,
   GetTenantFullAccountingSignatureCertificationBoundaryAnchorUseCase,
@@ -225,6 +230,7 @@ import {
   RequestTenantFullAccountingProfessionalReviewExecutionCloseoutUseCase,
   RequestTenantFullAccountingFormalApprovalWorkflowCloseoutUseCase,
   RequestTenantFullAccountingSignatureCertificationBoundaryCloseoutUseCase,
+  RequestTenantFullAccountingExternalExecutionHandoffCloseoutUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -415,6 +421,12 @@ import {
   FullAccountingSignatureCertificationBoundaryAnchorResponseDto,
   FullAccountingSignatureCertificationBoundaryCloseoutResponseDto,
   FullAccountingSignatureEvidenceReadinessPackResponseDto,
+  FullAccountingExecutionHandoffEvidenceBundleResponseDto,
+  FullAccountingExecutionReturnEvidenceIntakeResponseDto,
+  FullAccountingExternalExecutionHandoffAnchorResponseDto,
+  FullAccountingExternalExecutionHandoffCloseoutResponseDto,
+  FullAccountingExternalExecutionInstructionPackResponseDto,
+  FullAccountingExternalExecutorAssignmentMatrixResponseDto,
   AccountingAdvancedProfessionalResponsibilityAssignmentMatrixResponseDto,
   AccountingAdvancedProfessionalReviewWorkflowDesignResponseDto,
   AccountingCertifiedBankEvidenceBoundaryResponseDto,
@@ -583,6 +595,12 @@ import {
   toFullAccountingSignatureCertificationBoundaryAnchorResponseDto,
   toFullAccountingSignatureCertificationBoundaryCloseoutResponseDto,
   toFullAccountingSignatureEvidenceReadinessPackResponseDto,
+  toFullAccountingExecutionHandoffEvidenceBundleResponseDto,
+  toFullAccountingExecutionReturnEvidenceIntakeResponseDto,
+  toFullAccountingExternalExecutionHandoffAnchorResponseDto,
+  toFullAccountingExternalExecutionHandoffCloseoutResponseDto,
+  toFullAccountingExternalExecutionInstructionPackResponseDto,
+  toFullAccountingExternalExecutorAssignmentMatrixResponseDto,
   toAccountingAdvancedProfessionalResponsibilityAssignmentMatrixResponseDto,
   toAccountingAdvancedProfessionalReviewWorkflowDesignResponseDto,
   toAccountingCertifiedBankEvidenceBoundaryResponseDto,
@@ -1023,6 +1041,12 @@ export class AccountingController {
     private readonly getTenantFullAccountingCertificationRequirementWorkspaceUseCase: GetTenantFullAccountingCertificationRequirementWorkspaceUseCase,
     private readonly getTenantFullAccountingLegalizationBoundaryPacketUseCase: GetTenantFullAccountingLegalizationBoundaryPacketUseCase,
     private readonly requestTenantFullAccountingSignatureCertificationBoundaryCloseoutUseCase: RequestTenantFullAccountingSignatureCertificationBoundaryCloseoutUseCase,
+    private readonly getTenantFullAccountingExternalExecutionHandoffAnchorUseCase: GetTenantFullAccountingExternalExecutionHandoffAnchorUseCase,
+    private readonly getTenantFullAccountingExternalExecutorAssignmentMatrixUseCase: GetTenantFullAccountingExternalExecutorAssignmentMatrixUseCase,
+    private readonly getTenantFullAccountingExecutionHandoffEvidenceBundleUseCase: GetTenantFullAccountingExecutionHandoffEvidenceBundleUseCase,
+    private readonly getTenantFullAccountingExternalExecutionInstructionPackUseCase: GetTenantFullAccountingExternalExecutionInstructionPackUseCase,
+    private readonly getTenantFullAccountingExecutionReturnEvidenceIntakeUseCase: GetTenantFullAccountingExecutionReturnEvidenceIntakeUseCase,
+    private readonly requestTenantFullAccountingExternalExecutionHandoffCloseoutUseCase: RequestTenantFullAccountingExternalExecutionHandoffCloseoutUseCase,
   ) {}
 
   @Get(':slug/advanced-discovery/anchor')
@@ -4957,6 +4981,132 @@ export class AccountingController {
           { tenantSlug, period, year: Number.parseInt(year, 10) },
         );
       return toFullAccountingSignatureCertificationBoundaryCloseoutResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-external-execution-handoff/anchor')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingExternalExecutionHandoffAnchor(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingExternalExecutionHandoffAnchorResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingExternalExecutionHandoffAnchorUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+      return toFullAccountingExternalExecutionHandoffAnchorResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-external-execution-handoff/executor-assignments')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingExternalExecutorAssignmentMatrix(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingExternalExecutorAssignmentMatrixResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingExternalExecutorAssignmentMatrixUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+      return toFullAccountingExternalExecutorAssignmentMatrixResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-external-execution-handoff/evidence-bundle')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingExecutionHandoffEvidenceBundle(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingExecutionHandoffEvidenceBundleResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingExecutionHandoffEvidenceBundleUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+      return toFullAccountingExecutionHandoffEvidenceBundleResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-external-execution-handoff/instruction-pack')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingExternalExecutionInstructionPack(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingExternalExecutionInstructionPackResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingExternalExecutionInstructionPackUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+      return toFullAccountingExternalExecutionInstructionPackResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-external-execution-handoff/return-intake')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingExecutionReturnEvidenceIntake(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingExecutionReturnEvidenceIntakeResponseDto> {
+    try {
+      const view =
+        await this.getTenantFullAccountingExecutionReturnEvidenceIntakeUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+      return toFullAccountingExecutionReturnEvidenceIntakeResponseDto(view);
+    } catch (error) {
+      if (error instanceof TenantNotFoundError) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
+  }
+
+  @Get(':slug/full-accounting-external-execution-handoff/closeout')
+  @RequireTenantPermission(ACCOUNTING_PERMISSIONS.READ)
+  async getFullAccountingExternalExecutionHandoffCloseout(
+    @Param('slug') tenantSlug: string,
+    @Query('period') period = '2026-06',
+    @Query('year') year = '2026',
+  ): Promise<FullAccountingExternalExecutionHandoffCloseoutResponseDto> {
+    try {
+      const view =
+        await this.requestTenantFullAccountingExternalExecutionHandoffCloseoutUseCase.execute(
+          { tenantSlug, period, year: Number.parseInt(year, 10) },
+        );
+      return toFullAccountingExternalExecutionHandoffCloseoutResponseDto(view);
     } catch (error) {
       if (error instanceof TenantNotFoundError) {
         throw new NotFoundException(error.message);

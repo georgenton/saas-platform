@@ -2632,6 +2632,39 @@ Guardrail: signature and certification boundary 1.1 does not sign, certify,
 legalize, submit, post, file, issue official artifacts or replace the external
 professional/legal actor.
 
+### Full Accounting external execution handoff 1.2
+
+After signature and certification boundary 1.1, full Accounting can prepare a
+controlled handoff to external executors. This is the courier desk after the
+customs desk: the platform packages who should execute each external act, what
+evidence travels with the handoff, what instructions apply, and what return
+evidence is expected, without sending, signing, certifying, legalizing or
+accepting official results.
+
+1. `Full Accounting External Execution Handoff Anchor`
+   - verifies the signature/certification closeout and opens handoff gates for
+     signature, certification and legalization
+2. `External Executor Assignment Matrix`
+   - maps external accountants, auditors, legal representatives, bank
+     certifiers and legalization authorities to the act they own
+3. `Execution Handoff Evidence Bundle`
+   - packages approved artifacts, boundary evidence and blockers per executor
+     assignment
+4. `External Execution Instruction Pack`
+   - prepares instructions and expected return evidence for each external
+     executor without triggering execution
+5. `Execution Return Evidence Intake`
+   - defines the channels and required evidence expected from signed,
+     certified, legalized, observed or rejected returns
+6. `Full Accounting External Execution Handoff Closeout`
+   - decides whether to open external execution tracking, continue handoff
+     preparation, return to boundary/formal approval or stop the handoff
+
+Guardrail: external execution handoff 1.2 prepares packages and instructions
+only. It does not transmit official artifacts, execute external acts, accept
+returned artifacts as official, submit, post, file or replace professional
+judgment.
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal
@@ -2799,6 +2832,9 @@ product. Its current scope is intentionally operational and review-oriented:
 46. Full Accounting signature and certification boundary 1.1 as the customs
     desk. It maps signatories, certification requirements, missing evidence and
     legalization boundaries before any external execution handoff opens.
+47. Full Accounting external execution handoff 1.2 as the courier desk. It
+    prepares executor assignments, evidence bundles, instructions and return
+    intake before any external tracking or official result acceptance begins.
 
 Boundary: this foundation still does not perform bank reconciliation, lock
 against certified bank feeds, lock official legal books, issue official

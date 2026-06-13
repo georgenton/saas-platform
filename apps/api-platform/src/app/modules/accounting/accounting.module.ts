@@ -141,6 +141,11 @@ import {
   GetTenantFullAccountingApprovalDecisionWorkspaceUseCase,
   GetTenantFullAccountingFormalApprovalCommandCenterUseCase,
   GetTenantFullAccountingCertificationRequirementWorkspaceUseCase,
+  GetTenantFullAccountingExecutionHandoffEvidenceBundleUseCase,
+  GetTenantFullAccountingExecutionReturnEvidenceIntakeUseCase,
+  GetTenantFullAccountingExternalExecutionHandoffAnchorUseCase,
+  GetTenantFullAccountingExternalExecutionInstructionPackUseCase,
+  GetTenantFullAccountingExternalExecutorAssignmentMatrixUseCase,
   GetTenantFullAccountingFormalSignatoryRegistryUseCase,
   GetTenantFullAccountingLegalizationBoundaryPacketUseCase,
   GetTenantFullAccountingSignatureCertificationBoundaryAnchorUseCase,
@@ -231,6 +236,7 @@ import {
   RequestTenantFullAccountingProfessionalReviewExecutionCloseoutUseCase,
   RequestTenantFullAccountingFormalApprovalWorkflowCloseoutUseCase,
   RequestTenantFullAccountingSignatureCertificationBoundaryCloseoutUseCase,
+  RequestTenantFullAccountingExternalExecutionHandoffCloseoutUseCase,
   RequestTenantAccountingAiReviewAssistantPacketUseCase,
   RequestTenantAccountingFinancialStatementFinalReviewPacketUseCase,
   RequestTenantAccountingFinancialStatementReviewPacketUseCase,
@@ -2057,6 +2063,68 @@ import { AccountingController } from './accounting.controller';
       useFactory: (getTenantFullAccountingLegalizationBoundaryPacketUseCase) =>
         new RequestTenantFullAccountingSignatureCertificationBoundaryCloseoutUseCase(
           getTenantFullAccountingLegalizationBoundaryPacketUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingExternalExecutionHandoffAnchorUseCase,
+      inject: [
+        RequestTenantFullAccountingSignatureCertificationBoundaryCloseoutUseCase,
+      ],
+      useFactory: (
+        requestTenantFullAccountingSignatureCertificationBoundaryCloseoutUseCase,
+      ) =>
+        new GetTenantFullAccountingExternalExecutionHandoffAnchorUseCase(
+          requestTenantFullAccountingSignatureCertificationBoundaryCloseoutUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingExternalExecutorAssignmentMatrixUseCase,
+      inject: [GetTenantFullAccountingExternalExecutionHandoffAnchorUseCase],
+      useFactory: (
+        getTenantFullAccountingExternalExecutionHandoffAnchorUseCase,
+      ) =>
+        new GetTenantFullAccountingExternalExecutorAssignmentMatrixUseCase(
+          getTenantFullAccountingExternalExecutionHandoffAnchorUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingExecutionHandoffEvidenceBundleUseCase,
+      inject: [GetTenantFullAccountingExternalExecutorAssignmentMatrixUseCase],
+      useFactory: (
+        getTenantFullAccountingExternalExecutorAssignmentMatrixUseCase,
+      ) =>
+        new GetTenantFullAccountingExecutionHandoffEvidenceBundleUseCase(
+          getTenantFullAccountingExternalExecutorAssignmentMatrixUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingExternalExecutionInstructionPackUseCase,
+      inject: [GetTenantFullAccountingExecutionHandoffEvidenceBundleUseCase],
+      useFactory: (
+        getTenantFullAccountingExecutionHandoffEvidenceBundleUseCase,
+      ) =>
+        new GetTenantFullAccountingExternalExecutionInstructionPackUseCase(
+          getTenantFullAccountingExecutionHandoffEvidenceBundleUseCase,
+        ),
+    },
+    {
+      provide: GetTenantFullAccountingExecutionReturnEvidenceIntakeUseCase,
+      inject: [GetTenantFullAccountingExternalExecutionInstructionPackUseCase],
+      useFactory: (
+        getTenantFullAccountingExternalExecutionInstructionPackUseCase,
+      ) =>
+        new GetTenantFullAccountingExecutionReturnEvidenceIntakeUseCase(
+          getTenantFullAccountingExternalExecutionInstructionPackUseCase,
+        ),
+    },
+    {
+      provide: RequestTenantFullAccountingExternalExecutionHandoffCloseoutUseCase,
+      inject: [GetTenantFullAccountingExecutionReturnEvidenceIntakeUseCase],
+      useFactory: (
+        getTenantFullAccountingExecutionReturnEvidenceIntakeUseCase,
+      ) =>
+        new RequestTenantFullAccountingExternalExecutionHandoffCloseoutUseCase(
+          getTenantFullAccountingExecutionReturnEvidenceIntakeUseCase,
         ),
     },
     {

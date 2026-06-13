@@ -2665,6 +2665,40 @@ only. It does not transmit official artifacts, execute external acts, accept
 returned artifacts as official, submit, post, file or replace professional
 judgment.
 
+### Full Accounting external execution tracking 1.3
+
+After external execution handoff 1.2, full Accounting can track the journey of
+external signature, certification and legalization work. This is the control
+tower after the courier desk: it records where each external act stands, what
+evidence came back, what observations must be routed, and whether the period is
+ready for internal intake, while the platform still does not accept or
+officialize returned results.
+
+1. `Full Accounting External Execution Tracking Anchor`
+   - opens tracking lanes for signature, certification and legalization from
+     the handoff closeout
+2. `External Execution Status Ledger`
+   - records queued, in-review, returned, observed and rejected states per
+     external act
+3. `Returned Evidence Validation Workspace`
+   - compares returned evidence against the expected signed, certified or
+     legalized proof
+4. `External Observation Resolution Queue`
+   - routes observed, rejected or insufficient returns back to the right prior
+     workspace before any intake
+5. `External Execution Tracking Command Center`
+   - consolidates external events, returned results and routed observations in
+     one operating surface
+6. `Full Accounting External Execution Tracking Closeout`
+   - decides whether to open external result intake/internal acceptance,
+     continue tracking, resolve observations, return to handoff or stop
+     accepting external results
+
+Guardrail: external execution tracking 1.3 observes and validates the journey
+only. It does not accept returned artifacts as official, issue records, submit,
+post, file, certify balances or replace internal acceptance/professional
+judgment.
+
 ### Future accounting graduation
 
 Only introduce full `Accounting` after this product proves the need for formal
@@ -2835,6 +2869,9 @@ product. Its current scope is intentionally operational and review-oriented:
 47. Full Accounting external execution handoff 1.2 as the courier desk. It
     prepares executor assignments, evidence bundles, instructions and return
     intake before any external tracking or official result acceptance begins.
+48. Full Accounting external execution tracking 1.3 as the control tower. It
+    tracks external states, returned evidence and observations before opening
+    any internal intake or acceptance of external results.
 
 Boundary: this foundation still does not perform bank reconciliation, lock
 against certified bank feeds, lock official legal books, issue official

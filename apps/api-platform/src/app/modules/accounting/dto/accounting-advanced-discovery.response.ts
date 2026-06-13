@@ -127,6 +127,11 @@ import {
   TenantFullAccountingExternalExecutionHandoffAnchorView,
   TenantFullAccountingExternalExecutionHandoffCloseoutView,
   TenantFullAccountingExternalExecutionInstructionPackView,
+  TenantFullAccountingExternalExecutionStatusLedgerView,
+  TenantFullAccountingExternalExecutionTrackingAnchorView,
+  TenantFullAccountingExternalExecutionTrackingCloseoutView,
+  TenantFullAccountingExternalExecutionTrackingCommandCenterView,
+  TenantFullAccountingExternalObservationResolutionQueueView,
   TenantFullAccountingExternalExecutorAssignmentMatrixView,
   TenantFullAccountingFormalSignatoryRegistryView,
   TenantFullAccountingFormalReadinessAnchorView,
@@ -155,6 +160,7 @@ import {
   TenantFullAccountingSignatureCertificationBoundaryAnchorView,
   TenantFullAccountingSignatureCertificationBoundaryCloseoutView,
   TenantFullAccountingSignatureEvidenceReadinessPackView,
+  TenantFullAccountingReturnedEvidenceValidationWorkspaceView,
   TenantFullAccountingPostingApprovalDraftPackView,
   TenantFullAccountingBankReconciliationEvidenceDraftPackView,
   TenantFullAccountingReviewChangeRequestPackView,
@@ -523,6 +529,18 @@ export type FullAccountingExecutionReturnEvidenceIntakeResponseDto =
   Serialized<TenantFullAccountingExecutionReturnEvidenceIntakeView>;
 export type FullAccountingExternalExecutionHandoffCloseoutResponseDto =
   Serialized<TenantFullAccountingExternalExecutionHandoffCloseoutView>;
+export type FullAccountingExternalExecutionTrackingAnchorResponseDto =
+  Serialized<TenantFullAccountingExternalExecutionTrackingAnchorView>;
+export type FullAccountingExternalExecutionStatusLedgerResponseDto =
+  Serialized<TenantFullAccountingExternalExecutionStatusLedgerView>;
+export type FullAccountingReturnedEvidenceValidationWorkspaceResponseDto =
+  Serialized<TenantFullAccountingReturnedEvidenceValidationWorkspaceView>;
+export type FullAccountingExternalObservationResolutionQueueResponseDto =
+  Serialized<TenantFullAccountingExternalObservationResolutionQueueView>;
+export type FullAccountingExternalExecutionTrackingCommandCenterResponseDto =
+  Serialized<TenantFullAccountingExternalExecutionTrackingCommandCenterView>;
+export type FullAccountingExternalExecutionTrackingCloseoutResponseDto =
+  Serialized<TenantFullAccountingExternalExecutionTrackingCloseoutView>;
 
 export function toAccountingAdvancedDiscoveryAnchorResponseDto(
   view: TenantAccountingAdvancedDiscoveryAnchorView,
@@ -1565,6 +1583,42 @@ export function toFullAccountingExecutionReturnEvidenceIntakeResponseDto(
 export function toFullAccountingExternalExecutionHandoffCloseoutResponseDto(
   view: TenantFullAccountingExternalExecutionHandoffCloseoutView,
 ): FullAccountingExternalExecutionHandoffCloseoutResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingExternalExecutionTrackingAnchorResponseDto(
+  view: TenantFullAccountingExternalExecutionTrackingAnchorView,
+): FullAccountingExternalExecutionTrackingAnchorResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingExternalExecutionStatusLedgerResponseDto(
+  view: TenantFullAccountingExternalExecutionStatusLedgerView,
+): FullAccountingExternalExecutionStatusLedgerResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingReturnedEvidenceValidationWorkspaceResponseDto(
+  view: TenantFullAccountingReturnedEvidenceValidationWorkspaceView,
+): FullAccountingReturnedEvidenceValidationWorkspaceResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingExternalObservationResolutionQueueResponseDto(
+  view: TenantFullAccountingExternalObservationResolutionQueueView,
+): FullAccountingExternalObservationResolutionQueueResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingExternalExecutionTrackingCommandCenterResponseDto(
+  view: TenantFullAccountingExternalExecutionTrackingCommandCenterView,
+): FullAccountingExternalExecutionTrackingCommandCenterResponseDto {
+  return serialize(view);
+}
+
+export function toFullAccountingExternalExecutionTrackingCloseoutResponseDto(
+  view: TenantFullAccountingExternalExecutionTrackingCloseoutView,
+): FullAccountingExternalExecutionTrackingCloseoutResponseDto {
   return serialize(view);
 }
 

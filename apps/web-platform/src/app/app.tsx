@@ -155,6 +155,7 @@ import {
   fetchFullAccountingFormalApprovalWorkflowCloseout,
   fetchFullAccountingSignatureCertificationBoundaryCloseout,
   fetchFullAccountingExternalExecutionHandoffCloseout,
+  fetchFullAccountingExternalExecutionTrackingCloseout,
   fetchFullAccountingProductDesignCloseout,
   fetchFullAccountingMvpOperationsCloseout,
   fetchFullAccountingMvpReadinessCloseout,
@@ -534,6 +535,7 @@ import {
   FullAccountingFormalApprovalWorkflowCloseoutResponse,
   FullAccountingSignatureCertificationBoundaryCloseoutResponse,
   FullAccountingExternalExecutionHandoffCloseoutResponse,
+  FullAccountingExternalExecutionTrackingCloseoutResponse,
   FullAccountingProductDesignCloseoutResponse,
   FullAccountingCandidateCloseoutResponse,
   FullAccountingMvpOperationsCloseoutResponse,
@@ -2754,6 +2756,12 @@ export function App() {
     fullAccountingExternalExecutionHandoffCloseout,
     setFullAccountingExternalExecutionHandoffCloseout,
   ] = useState<FullAccountingExternalExecutionHandoffCloseoutResponse | null>(
+    null,
+  );
+  const [
+    fullAccountingExternalExecutionTrackingCloseout,
+    setFullAccountingExternalExecutionTrackingCloseout,
+  ] = useState<FullAccountingExternalExecutionTrackingCloseoutResponse | null>(
     null,
   );
   const [
@@ -20932,6 +20940,7 @@ export function App() {
         nextFullAccountingFormalApprovalWorkflowCloseout,
         nextFullAccountingSignatureCertificationBoundaryCloseout,
         nextFullAccountingExternalExecutionHandoffCloseout,
+        nextFullAccountingExternalExecutionTrackingCloseout,
       ] = accountingEnabled
         ? await Promise.all([
             fetchAccountingIntakeWorkspace(
@@ -21321,6 +21330,12 @@ export function App() {
               taxCompliancePeriod,
               year,
             ),
+            fetchFullAccountingExternalExecutionTrackingCloseout(
+              token,
+              tenantSlug,
+              taxCompliancePeriod,
+              year,
+            ),
           ])
         : [
             null,
@@ -21356,6 +21371,7 @@ export function App() {
             null,
             null,
             [],
+            null,
             null,
             null,
             null,
@@ -21724,6 +21740,9 @@ export function App() {
         );
         setFullAccountingExternalExecutionHandoffCloseout(
           nextFullAccountingExternalExecutionHandoffCloseout,
+        );
+        setFullAccountingExternalExecutionTrackingCloseout(
+          nextFullAccountingExternalExecutionTrackingCloseout,
         );
       });
     } catch (error) {
@@ -38966,8 +38985,102 @@ export function App() {
                                     </p>
                                   </div>
                                 ) : null}
+                                {fullAccountingExternalExecutionTrackingCloseout ? (
+                                  <div className={styles.invoiceItemCard}>
+                                    <div className={styles.invoiceCardHeader}>
+                                      <strong>
+                                        Full Accounting External Execution
+                                        Tracking 1.3
+                                      </strong>
+                                      <span className={styles.statusPill}>
+                                        {humanizeKey(
+                                          fullAccountingExternalExecutionTrackingCloseout.closeoutStatus,
+                                        )}
+                                      </span>
+                                    </div>
+                                    <div className={styles.invoiceInlineGrid}>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Lanes
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingExternalExecutionTrackingCloseout
+                                              .trackingAnchor.summary
+                                              .laneCount
+                                          }
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Events
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingExternalExecutionTrackingCloseout
+                                              .statusLedger.summary.eventCount
+                                          }
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Validations
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingExternalExecutionTrackingCloseout
+                                              .validationWorkspace.summary
+                                              .validationCount
+                                          }
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Observations
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingExternalExecutionTrackingCloseout
+                                              .observationQueue.summary
+                                              .routedObservationCount
+                                          }{' '}
+                                          routed
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Returns
+                                        </span>
+                                        <strong>
+                                          {
+                                            fullAccountingExternalExecutionTrackingCloseout
+                                              .commandCenter.summary
+                                              .returnedCount
+                                          }{' '}
+                                          valid
+                                        </strong>
+                                      </div>
+                                      <div>
+                                        <span className={styles.muted}>
+                                          Decision
+                                        </span>
+                                        <strong>
+                                          {humanizeKey(
+                                            fullAccountingExternalExecutionTrackingCloseout.finalDecision,
+                                          )}
+                                        </strong>
+                                      </div>
+                                    </div>
+                                    <p className={styles.muted}>
+                                      {
+                                        fullAccountingExternalExecutionTrackingCloseout.nextStep
+                                      }
+                                    </p>
+                                  </div>
+                                ) : null}
                                 <p className={styles.muted}>
-                                  {fullAccountingExternalExecutionHandoffCloseout?.nextStep ??
+                                  {fullAccountingExternalExecutionTrackingCloseout?.nextStep ??
+                                    fullAccountingExternalExecutionHandoffCloseout?.nextStep ??
                                     fullAccountingSignatureCertificationBoundaryCloseout?.nextStep ??
                                     fullAccountingFormalApprovalWorkflowCloseout?.nextStep ??
                                     fullAccountingProfessionalReviewExecutionCloseout?.nextStep ??

@@ -69,6 +69,7 @@ import {
   FullAccountingFormalApprovalWorkflowCloseoutResponse,
   FullAccountingSignatureCertificationBoundaryCloseoutResponse,
   FullAccountingExternalExecutionHandoffCloseoutResponse,
+  FullAccountingExternalExecutionTrackingCloseoutResponse,
   FullAccountingProductDesignCloseoutResponse,
   FullAccountingCandidateCloseoutResponse,
   FullAccountingMvpOperationsCloseoutResponse,
@@ -3654,6 +3655,22 @@ export async function fetchFullAccountingExternalExecutionHandoffCloseout(
     `/accounting/tenants/${encodeURIComponent(
       tenantSlug,
     )}/full-accounting-external-execution-handoff/closeout?period=${encodeURIComponent(
+      period,
+    )}&year=${encodeURIComponent(String(year))}`,
+    { method: 'GET', token },
+  );
+}
+
+export async function fetchFullAccountingExternalExecutionTrackingCloseout(
+  token: string,
+  tenantSlug: string,
+  period: string,
+  year: number,
+): Promise<FullAccountingExternalExecutionTrackingCloseoutResponse> {
+  return request<FullAccountingExternalExecutionTrackingCloseoutResponse>(
+    `/accounting/tenants/${encodeURIComponent(
+      tenantSlug,
+    )}/full-accounting-external-execution-tracking/closeout?period=${encodeURIComponent(
       period,
     )}&year=${encodeURIComponent(String(year))}`,
     { method: 'GET', token },

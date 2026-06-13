@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.107.64
+
+### Patch Changes
+
+- 7c8d80d: Add Full Accounting formal record closeout 1.6 with closeout gates, archive readiness, evidence packets, professional attestation boundary, command center, closeout, API endpoints, web summary and smoke coverage.
+
 ## 0.107.63
 
 ### Patch Changes

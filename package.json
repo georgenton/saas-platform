@@ -33,6 +33,8 @@
     "smoke:ai:guarded-execution-invoice-lane": "node tools/smoke/run-ai-guarded-execution-invoice-lane-smoke.mjs",
     "smoke:ai:guarded-execution-invoice-rejection-fallback": "node tools/smoke/run-ai-guarded-execution-invoice-rejection-fallback-smoke.mjs",
     "smoke:ai:closeout": "node tools/smoke/run-ai-closeout-smoke-pack.mjs",
+    "openapi:generate": "node tools/openapi/generate-openapi-contract.mjs",
+    "openapi:check": "node tools/openapi/generate-openapi-contract.mjs && git diff --exit-code docs/api/openapi.json",
     "dev:whatsapp-monitor-collector": "node tools/observability/run-whatsapp-operational-monitor-collector.mjs",
     "smoke:growth:whatsapp-monitor-observability": "node tools/smoke/run-whatsapp-operational-monitor-observability-smoke.mjs",
     "smoke:growth:whatsapp-provider-taxonomy": "node tools/smoke/run-whatsapp-provider-taxonomy-smoke.mjs",

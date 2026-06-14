@@ -11,6 +11,8 @@ consume existing contracts before requesting new backend scope.
 - Local documentation page: `GET /api/docs`
 - Conceptual product model: `docs/saas-conceptual-model.md`
 - Manual QA references: `docs/manual-testing.md`
+- Claude Design workflow: `docs/design/README.md`
+- Claude Design prompts: `docs/design/prompts`
 
 ## Implementation Order
 

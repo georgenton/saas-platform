@@ -57,6 +57,7 @@ Recommended slice folders:
 
 - Does the design use only backend endpoints present in `docs/api/openapi.json`?
 - Does it include desktop and mobile layouts?
+- Does it include design moods beyond light/dark?
 - Does it define loading, empty, error, ready, disabled and blocked states?
 - Does it preserve tenant/product/permission context?
 - Does it avoid inventing new products or backend behavior?
@@ -77,6 +78,48 @@ The interface should feel corporate, trustworthy and friendly:
 - professional financial/clinical/tax confidence
 - accessible contrast and keyboard/touch targets
 - polished mobile behavior, not desktop squeezed into a phone
+
+## Design Moods
+
+The frontend should support user comfort moods, not just light and dark themes.
+This is a frontend-first UX layer inspired by cognitive comfort, emotional tone
+and accessibility. Backend persistence is intentionally deferred until after the
+frontend design is validated.
+
+Required design moods:
+
+- `comfort`: default corporate-friendly mode with balanced contrast and calm
+  warmth
+- `focus`: reduced visual noise, denser work surfaces and stronger hierarchy
+  for deep operational work
+- `calm`: softer contrast, gentler surfaces and less urgent visual treatment
+  for long sessions or sensitive workflows
+- `high-contrast`: accessibility-first contrast, clear borders and stronger
+  focus states
+- `night`: dark low-glare mode for late work, distinct from a simple color
+  inversion
+
+Claude Design should define tokens for each mood:
+
+- background surfaces
+- text colors
+- borders and dividers
+- primary and secondary accents
+- status colors
+- focus rings
+- density/spacing adjustments when appropriate
+- mobile navigation treatment
+
+For now, moods may be represented in mock JSON and local UI state. Do not add
+new backend endpoints for preferences in design deliverables.
+
+Backlog for later backend implementation:
+
+- tenant/user UI preference persistence
+- default mood per user
+- per-device or per-session override
+- accessibility preference sync
+- audit-safe handling for clinical/tax/accounting screens
 
 Avoid:
 

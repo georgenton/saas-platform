@@ -38,6 +38,10 @@ The desired visual language is corporate, trustworthy and super friendly. Think
 of a polished operations cockpit for a serious SaaS company: calm, elegant,
 clear and satisfying to use every day.
 
+The shell must also introduce design moods. These are not only light/dark
+themes; they are comfort modes that help different users feel cognitively and
+emotionally comfortable while working.
+
 ## Visual Direction
 
 Use a refined corporate UI:
@@ -60,6 +64,47 @@ Suggested tone:
 - executive
 - approachable
 - operational
+
+## Design Moods
+
+Design a mood system with at least these modes:
+
+1. `comfort`
+   - default mode
+   - corporate, friendly, balanced contrast
+   - warm but restrained
+2. `focus`
+   - for intensive operational work
+   - less decoration, stronger hierarchy, slightly denser surfaces
+   - keeps tables/work queues easy to scan
+3. `calm`
+   - for long sessions or sensitive workflows
+   - softer surfaces, gentle contrast, less urgent visual language
+   - useful for clinical, tax and accounting contexts
+4. `high-contrast`
+   - accessibility-first
+   - strong contrast, clear borders, strong keyboard focus treatment
+5. `night`
+   - low-glare dark mode
+   - not a simple inversion
+   - must preserve status readability and chart/card clarity
+
+Provide design tokens for each mood:
+
+- background colors
+- surface colors
+- text colors
+- border/divider colors
+- primary accent
+- secondary accent
+- success/warning/danger/info states
+- focus ring
+- shadow/elevation behavior
+- optional density adjustments
+
+The user should be able to switch moods from the shell UI. For now, represent
+this as local UI state and mock JSON only. Do not invent backend endpoints for
+theme persistence. Add a note that backend persistence is future backlog.
 
 Avoid:
 
@@ -150,6 +195,8 @@ Mock data must include:
 - permission-limited products
 - local/dev environment flag
 - one backend error example
+- available design moods
+- selected design mood
 
 ## Output Required
 
@@ -160,11 +207,12 @@ Return a complete design delivery with:
 3. Component hierarchy
 4. Route map
 5. Design tokens
-6. Interaction notes
-7. Accessibility notes
-8. State matrix
-9. Mock JSON files
-10. Integration notes for React/Vite/TypeScript
+6. Design mood tokens
+7. Interaction notes
+8. Accessibility notes
+9. State matrix
+10. Mock JSON files
+11. Integration notes for React/Vite/TypeScript
 
 ## Implementation Constraints
 
@@ -178,6 +226,7 @@ Prefer:
 - accessible navigation
 - icon-ready buttons and navigation items
 - clean replacement path from mock JSON to real API calls
+- mood switching implemented as local state first
 
 Do not require a full UI framework migration unless absolutely necessary.
 
@@ -190,3 +239,5 @@ Do not require a full UI framework migration unless absolutely necessary.
 - The shell must make tenant context obvious at all times.
 - Disabled products should be visible but clearly unavailable.
 - Permission denied states should be calm, explanatory and actionable.
+- Mood selection is frontend-only for now; backend persistence belongs in a
+  later backlog.

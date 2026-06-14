@@ -44,3 +44,20 @@ local QA and frontend design handoff.
 - Do not redesign every screen at once.
 - Do not imply tax filing, accounting certification, legal signature or clinical
   diagnosis automation unless a future backend contract explicitly supports it.
+
+## Frontend-First Backlog
+
+The frontend may explore design moods during the Claude Design phase. These
+moods are a user-comfort UX layer beyond light/dark theme selection.
+
+Initial moods:
+
+- comfort
+- focus
+- calm
+- high-contrast
+- night
+
+Backend persistence is intentionally deferred until after the frontend proves
+the experience. Future backend scope may include user preference persistence,
+per-device overrides, tenant defaults and accessibility preference sync.

@@ -1,0 +1,9 @@
+{
+  "_endpoint": "GET /api/platform/plans",
+  "_note": "Plan catalog for the upgrade screen. current=true marks the tenant's active plan.",
+  "plans": [
+    { "key": "starter", "name": "Starter", "price": "$19 / mes" },
+    { "key": "growth", "name": "Growth", "price": "$49 / mes", "current": true },
+    { "key": "scale", "name": "Scale", "price": "$129 / mes" }
+  ]
+}

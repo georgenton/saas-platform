@@ -1340,6 +1340,182 @@ function humanizeKey(value: string | null): string {
   return value.split('_').join(' ');
 }
 
+type CommandCenterAccessState =
+  | 'enabled'
+  | 'permission_limited'
+  | 'blocked_by_plan'
+  | 'available'
+  | 'disabled';
+
+type CommandCenterReadinessTone = 'success' | 'warning' | 'neutral';
+
+type CommandCenterProductDefinition = {
+  key: string;
+  aliases: string[];
+  name: string;
+  domain: 'finance' | 'commerce' | 'ai' | 'clinics';
+  purpose: string;
+  href: string;
+  requiredPermission?: string;
+  requiresPlan?: string;
+  addonPrice?: string;
+  includes: string[];
+};
+
+type CommandCenterProduct = CommandCenterProductDefinition & {
+  accessState: CommandCenterAccessState;
+  readiness: Array<{
+    label: string;
+    value: string;
+    tone: CommandCenterReadinessTone;
+  }>;
+  evidence: {
+    label: string;
+    source: string;
+    when: string;
+  } | null;
+  blocker: string | null;
+  primaryAction: string;
+  secondaryAction: string | null;
+};
+
+const COMMAND_CENTER_DOMAINS: Array<{
+  key: CommandCenterProductDefinition['domain'];
+  name: string;
+  summary: string;
+}> = [
+  {
+    key: 'finance',
+    name: 'Finanzas y Cumplimiento',
+    summary: 'Facturacion, impuestos y cierre contable.',
+  },
+  {
+    key: 'commerce',
+    name: 'Crecimiento y Comercio',
+    summary: 'Conversaciones, tienda y post-venta.',
+  },
+  {
+    key: 'ai',
+    name: 'IA y Automatizacion',
+    summary: 'Sugerencias, aprobaciones y ejecucion protegida.',
+  },
+  {
+    key: 'clinics',
+    name: 'Clinicas',
+    summary: 'Operaciones clinicas separadas por dominio.',
+  },
+];
+
+const COMMAND_CENTER_PRODUCTS: CommandCenterProductDefinition[] = [
+  {
+    key: 'invoicing',
+    aliases: ['invoicing'],
+    name: 'Electronic Invoicing EC',
+    domain: 'finance',
+    purpose: 'Emision electronica SRI: facturas, notas, guias y retenciones.',
+    href: '#invoicing-domain',
+    includes: ['Perfil emisor SRI', 'Documentos electronicos', 'Pagos y reportes'],
+  },
+  {
+    key: 'tax-compliance-ec',
+    aliases: ['tax-compliance-ec', 'tax-compliance'],
+    name: 'Tax Compliance EC',
+    domain: 'finance',
+    purpose: 'Prepara IVA, renta y retenciones con handoff al contador.',
+    href: '#tax-compliance-ec',
+    requiredPermission: 'tax.manage',
+    includes: ['Periodos fiscales', 'Evidencia tributaria', 'Revision contable'],
+  },
+  {
+    key: 'accounting',
+    aliases: ['accounting', 'full-accounting'],
+    name: 'Full Accounting',
+    domain: 'finance',
+    purpose: 'Libros formales, conciliacion y cierre con limite profesional.',
+    href: '#accounting-domain',
+    requiresPlan: 'scale',
+    includes: ['Cierre mensual', 'Conciliacion bancaria', 'Handoff al contador'],
+  },
+  {
+    key: 'growth',
+    aliases: ['growth'],
+    name: 'Growth',
+    domain: 'commerce',
+    purpose: 'WhatsApp, conversaciones, casos operativos y CRM ligero.',
+    href: '#growth-console',
+    requiredPermission: 'growth.conversations.read',
+    includes: ['Conversaciones WhatsApp', 'Casos operativos', 'Monitoreo de proveedor'],
+  },
+  {
+    key: 'ecommerce',
+    aliases: ['ecommerce'],
+    name: 'Ecommerce',
+    domain: 'commerce',
+    purpose: 'Catalogo, tienda, pedidos y operacion post-venta.',
+    href: '#ecommerce-domain',
+    includes: ['Tienda y catalogo', 'Pedidos', 'Handoff a facturacion'],
+  },
+  {
+    key: 'ai-console',
+    aliases: ['ai', 'ai-console'],
+    name: 'AI Console',
+    domain: 'ai',
+    purpose: 'Sugerir, aprobar y ejecutar con guardas. Nunca actua sola.',
+    href: '#ai-console',
+    includes: ['Aprobaciones', 'Ejecucion protegida', 'Memoria y retrieval'],
+  },
+  {
+    key: 'medical-clinics',
+    aliases: ['medical', 'medical-clinics'],
+    name: 'Medical Clinics',
+    domain: 'clinics',
+    purpose: 'Pacientes, citas y paquetes de encuentro clinico.',
+    href: '#medical-clinics-domain',
+    addonPrice: '$39 / mes',
+    includes: ['Pacientes y citas', 'Expedientes', 'Paquetes de encuentro'],
+  },
+  {
+    key: 'psychology-clinics',
+    aliases: ['psychology', 'psychology-clinics'],
+    name: 'Psychology Clinics',
+    domain: 'clinics',
+    purpose: 'Terapeutas, sesiones y notas con revision previa.',
+    href: '#psychology-clinics-domain',
+    addonPrice: '$29 / mes',
+    includes: ['Sesiones', 'Notas revisables', 'Agenda terapeutica'],
+  },
+];
+
+const COMMAND_CENTER_ACCESS_LABELS: Record<CommandCenterAccessState, string> = {
+  enabled: 'Activo',
+  permission_limited: 'Permiso limitado',
+  blocked_by_plan: 'Requiere plan',
+  available: 'Disponible',
+  disabled: 'No habilitado',
+};
+
+function productIsInSet(
+  product: CommandCenterProductDefinition,
+  productKeys: Set<string>,
+): boolean {
+  return product.aliases.some((alias) => productKeys.has(alias));
+}
+
+function planSatisfiesRequirement(
+  currentPlan: PlatformPlan | null,
+  requiredPlan: string | undefined,
+): boolean {
+  if (!requiredPlan) {
+    return true;
+  }
+
+  const normalizedPlan = `${currentPlan?.id ?? ''} ${currentPlan?.name ?? ''}`
+    .toLowerCase()
+    .trim();
+
+  return normalizedPlan.includes(requiredPlan.toLowerCase());
+}
+
 function resolveNumericYear(value: string): number {
   const parsed = Number.parseInt(value, 10);
 
@@ -9376,6 +9552,329 @@ export function App() {
   const storageLimit = getNumberEntitlement(
     currentEntitlements,
     'storage_limit_gb',
+  );
+  const commandCenterProducts = useMemo<CommandCenterProduct[]>(() => {
+    const permissionKeys = new Set(currentTenancy?.permissionKeys ?? []);
+    const productCatalogKeys = new Set(productCatalog.map((product) => product.key));
+    const activeCatalogKeys = new Set(
+      productCatalog
+        .filter((product) => product.isActive)
+        .map((product) => product.key),
+    );
+
+    const resolveAccessState = (
+      product: CommandCenterProductDefinition,
+    ): CommandCenterAccessState => {
+      const isEnabled = productIsInSet(product, enabledProductKeys);
+      const existsInCatalog =
+        productCatalogKeys.size === 0 || productIsInSet(product, productCatalogKeys);
+      const isCatalogActive =
+        activeCatalogKeys.size === 0 || productIsInSet(product, activeCatalogKeys);
+
+      if (product.key === 'ai-console' && aiEnabled) {
+        return canAccessTransversalAiConsole ? 'enabled' : 'permission_limited';
+      }
+
+      if (isEnabled) {
+        if (
+          product.requiredPermission &&
+          !permissionKeys.has(product.requiredPermission)
+        ) {
+          return 'permission_limited';
+        }
+
+        return 'enabled';
+      }
+
+      if (!existsInCatalog || !isCatalogActive) {
+        return 'disabled';
+      }
+
+      if (!planSatisfiesRequirement(currentPlan, product.requiresPlan)) {
+        return 'blocked_by_plan';
+      }
+
+      return product.addonPrice ? 'available' : 'disabled';
+    };
+
+    const buildReadiness = (
+      product: CommandCenterProductDefinition,
+      accessState: CommandCenterAccessState,
+    ): CommandCenterProduct['readiness'] => {
+      if (!['enabled', 'permission_limited'].includes(accessState)) {
+        return [];
+      }
+
+      switch (product.key) {
+        case 'invoicing':
+          return [
+            {
+              label: 'Emisor',
+              value: issuerProfile ? 'Configurado' : 'Pendiente',
+              tone: issuerProfile ? 'success' : 'warning',
+            },
+            {
+              label: 'Modo SRI',
+              value: issuerProfile?.environment
+                ? humanizeKey(issuerProfile.environment)
+                : electronicSubmissionSettings
+                  ? 'Configurado'
+                  : 'Sin cargar',
+              tone:
+                issuerProfile?.environment === 'production'
+                  ? 'success'
+                  : electronicSubmissionSettings
+                    ? 'neutral'
+                    : 'warning',
+            },
+            {
+              label: 'Facturas',
+              value: `${issuedInvoiceCount}/${invoices.length} emitidas`,
+              tone: invoices.length > 0 ? 'success' : 'neutral',
+            },
+          ];
+        case 'tax-compliance-ec':
+          return [
+            {
+              label: 'Periodo',
+              value: taxCompliancePeriod,
+              tone: 'neutral',
+            },
+            {
+              label: 'Eventos',
+              value: `${taxComplianceEvents.length}`,
+              tone: taxComplianceEvents.length > 0 ? 'success' : 'warning',
+            },
+            {
+              label: 'Revision contador',
+              value: `${taxComplianceAccountantReviews.length}`,
+              tone:
+                taxComplianceAccountantReviews.length > 0 ? 'success' : 'warning',
+            },
+          ];
+        case 'growth':
+          return [
+            {
+              label: 'WhatsApp',
+              value: whatsappSummary ? 'Monitoreado' : 'Sin cargar',
+              tone: whatsappSummary ? 'success' : 'neutral',
+            },
+            {
+              label: 'Alertas',
+              value: `${whatsappSummary?.operationalAlerts.length ?? 0}`,
+              tone:
+                (whatsappSummary?.operationalAlerts.length ?? 0) > 0
+                  ? 'warning'
+                  : 'success',
+            },
+            {
+              label: 'Casos abiertos',
+              value: `${filteredGrowthOperationalCases.length}`,
+              tone: filteredGrowthOperationalCases.length > 0 ? 'warning' : 'neutral',
+            },
+          ];
+        case 'ecommerce':
+          return [
+            {
+              label: 'Tienda',
+              value: tenantEcommerceCompletionDashboard
+                ? humanizeKey(tenantEcommerceCompletionDashboard.closeoutStatus)
+                : 'Sin cargar',
+              tone: tenantEcommerceCompletionDashboard ? 'success' : 'neutral',
+            },
+            {
+              label: 'Post-venta',
+              value: tenantEcommerceOrderPostSaleReportingSummary
+                ? humanizeKey(
+                    tenantEcommerceOrderPostSaleReportingSummary.reportingStatus,
+                  )
+                : 'Sin cargar',
+              tone: tenantEcommerceOrderPostSaleReportingSummary
+                ? 'success'
+                : 'neutral',
+            },
+            {
+              label: 'Handoff',
+              value: tenantEcommerceInvoiceDraftHandoffWorkspace
+                ? 'Activo'
+                : 'Pendiente',
+              tone: tenantEcommerceInvoiceDraftHandoffWorkspace
+                ? 'success'
+                : 'warning',
+            },
+          ];
+        case 'ai-console':
+          return [
+            {
+              label: 'Aprobaciones',
+              value: `${tenantAiApprovalRequests.length}`,
+              tone: tenantAiApprovalRequests.length > 0 ? 'warning' : 'neutral',
+            },
+            {
+              label: 'Guarded execution',
+              value: tenantAiOperationsSummary ? 'Activo' : 'Sin cargar',
+              tone: tenantAiOperationsSummary ? 'success' : 'neutral',
+            },
+            {
+              label: 'Asistente',
+              value: visibleAiMemoryAgents.length > 0 ? 'Listo' : 'Pendiente',
+              tone: visibleAiMemoryAgents.length > 0 ? 'success' : 'neutral',
+            },
+          ];
+        default:
+          return [];
+      }
+    };
+
+    const buildEvidence = (
+      product: CommandCenterProductDefinition,
+      accessState: CommandCenterAccessState,
+    ): CommandCenterProduct['evidence'] => {
+      if (!['enabled', 'permission_limited'].includes(accessState)) {
+        return null;
+      }
+
+      switch (product.key) {
+        case 'invoicing':
+          return selectedInvoiceSummary
+            ? {
+                label: `Factura ${selectedInvoiceSummary.number}`,
+                source: humanizeKey(selectedInvoiceSummary.status),
+                when: formatDate(selectedInvoiceSummary.issuedAt),
+              }
+            : {
+                label: 'Resumen de facturacion disponible',
+                source: `${invoices.length} documentos`,
+                when: 'Workspace actual',
+              };
+        case 'tax-compliance-ec':
+          return {
+            label: `${taxComplianceEvents.length} eventos tributarios`,
+            source: `Periodo ${taxCompliancePeriod}`,
+            when: taxComplianceWorkspace
+              ? humanizeKey(taxComplianceWorkspace.status)
+              : 'Sin cargar',
+          };
+        case 'growth':
+          return {
+            label: whatsappSummary
+              ? `${whatsappSummary.operationalAlerts.length} alertas operativas`
+              : 'Workbench de conversaciones',
+            source: canReadGrowthConversations ? 'Growth habilitado' : 'Solo lectura',
+            when: whatsappSummary ? 'Monitor activo' : 'Sin cargar',
+          };
+        case 'ecommerce':
+          return {
+            label: tenantEcommerceOrderPostSaleReportingSummary
+              ? humanizeKey(
+                  tenantEcommerceOrderPostSaleReportingSummary.reportingStatus,
+                )
+              : 'Post-venta y handoff listos para operar',
+            source: 'Ecommerce operational chain',
+            when: tenantEcommerceOrderPostSaleReportingSummary
+              ? 'Reporting cargado'
+              : 'Sin cargar',
+          };
+        case 'ai-console':
+          return {
+            label: `${tenantAiApprovalRequests.length} aprobaciones en memoria`,
+            source: 'AI suggestion-first',
+            when: tenantAiOperationsSummary
+              ? formatDate(tenantAiOperationsSummary.generatedAt)
+              : 'Sin cargar',
+          };
+        default:
+          return null;
+      }
+    };
+
+    return COMMAND_CENTER_PRODUCTS.map((product) => {
+      const accessState = resolveAccessState(product);
+      const requiresPermission =
+        product.requiredPermission && !permissionKeys.has(product.requiredPermission);
+      const blocker =
+        accessState === 'permission_limited'
+          ? `Solo lectura: necesitas el permiso ${product.requiredPermission}.`
+          : accessState === 'blocked_by_plan'
+            ? `Incluido en el plan ${product.requiresPlan}. Tu plan actual es ${
+                currentPlan?.name ?? 'sin plan'
+              }.`
+            : accessState === 'available'
+              ? `Disponible como add-on${product.addonPrice ? ` (${product.addonPrice})` : ''}.`
+              : accessState === 'disabled'
+                ? 'No habilitado para este workspace; visible como modulo futuro.'
+                : requiresPermission
+                  ? `Permiso requerido: ${product.requiredPermission}.`
+                  : null;
+      const primaryAction =
+        accessState === 'enabled'
+          ? 'Entrar'
+          : accessState === 'permission_limited'
+            ? 'Entrar en solo lectura'
+            : accessState === 'blocked_by_plan'
+              ? 'Ver plan Scale'
+              : accessState === 'available'
+                ? 'Activar add-on'
+                : 'Ver en Marketplace';
+
+      return {
+        ...product,
+        accessState,
+        readiness: buildReadiness(product, accessState),
+        evidence: buildEvidence(product, accessState),
+        blocker,
+        primaryAction,
+        secondaryAction:
+          accessState === 'permission_limited'
+            ? 'Solicitar permiso'
+            : accessState === 'enabled'
+              ? 'Ver evidencia'
+              : null,
+      };
+    });
+  }, [
+    aiEnabled,
+    canAccessTransversalAiConsole,
+    canReadGrowthConversations,
+    currentPlan,
+    currentTenancy,
+    electronicSubmissionSettings,
+    enabledProductKeys,
+    filteredGrowthOperationalCases.length,
+    invoices.length,
+    issuedInvoiceCount,
+    issuerProfile,
+    productCatalog,
+    selectedInvoiceSummary,
+    taxComplianceAccountantReviews.length,
+    taxComplianceEvents.length,
+    taxCompliancePeriod,
+    taxComplianceWorkspace,
+    tenantAiApprovalRequests.length,
+    tenantAiOperationsSummary,
+    tenantEcommerceCompletionDashboard,
+    tenantEcommerceInvoiceDraftHandoffWorkspace,
+    tenantEcommerceOrderPostSaleReportingSummary,
+    visibleAiMemoryAgents.length,
+    whatsappSummary,
+  ]);
+  const commandCenterAccessCounts = useMemo(
+    () =>
+      commandCenterProducts.reduce(
+        (counts, product) => {
+          counts[product.accessState] += 1;
+
+          return counts;
+        },
+        {
+          enabled: 0,
+          permission_limited: 0,
+          blocked_by_plan: 0,
+          available: 0,
+          disabled: 0,
+        } satisfies Record<CommandCenterAccessState, number>,
+      ),
+    [commandCenterProducts],
   );
 
   useEffect(() => {
@@ -26462,6 +26961,233 @@ export function App() {
             <strong>
               {session ? flowLabel(session.sessionState.recommendedFlow) : 'Sin sesion'}
             </strong>
+          </div>
+        </section>
+
+        <section
+          className={styles.commandCenter}
+          id="product-command-center"
+          aria-label="Product Command Center"
+        >
+          <div className={styles.commandCenterHeader}>
+            <div>
+              <span className={styles.label}>Product Command Center</span>
+              <h2>Centro operativo del workspace</h2>
+              <p>
+                Tus productos activos, disponibles y bloqueados en una sola vista
+                modular. Las acciones de add-on y plan quedan visibles como
+                estados futuros, sin inventar endpoints.
+              </p>
+            </div>
+            {currentTenancy ? (
+              <span className={styles.statusPill}>Tenant activo</span>
+            ) : (
+              <span className={styles.statusPillWarning}>Sin tenant</span>
+            )}
+          </div>
+
+          <div className={styles.commandSummaryRail}>
+            <article className={styles.commandSummaryCard}>
+              <span className={styles.label}>Tenant</span>
+              <h3>{currentTenancy?.tenant.name ?? 'Sin workspace activo'}</h3>
+              <dl>
+                <div>
+                  <dt>Slug</dt>
+                  <dd>{currentTenancy?.tenant.slug ?? 'sin tenant'}</dd>
+                </div>
+                <div>
+                  <dt>Rol</dt>
+                  <dd>{currentTenancy?.roleKeys.join(', ') || 'sin rol'}</dd>
+                </div>
+                <div>
+                  <dt>Miembros</dt>
+                  <dd>{session?.tenancies.length ?? 0} workspace(s)</dd>
+                </div>
+              </dl>
+            </article>
+
+            <article className={styles.commandSummaryCard}>
+              <span className={styles.label}>Subscription</span>
+              <h3>{currentPlan?.name ?? currentSubscription?.planId ?? 'Sin plan'}</h3>
+              <dl>
+                <div>
+                  <dt>Estado</dt>
+                  <dd>{currentSubscription?.status ?? 'No registrada'}</dd>
+                </div>
+                <div>
+                  <dt>Precio</dt>
+                  <dd>
+                    {currentPlan
+                      ? `${formatMoney(
+                          currentPlan.priceInCents,
+                          currentPlan.currency,
+                        )}/${currentPlan.billingCycle}`
+                      : 'No definido'}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Capacidad</dt>
+                  <dd>
+                    {maxUsers ? `${maxUsers} usuarios` : 'Usuarios sin limite definido'}
+                  </dd>
+                </div>
+              </dl>
+            </article>
+
+            <article className={styles.commandSummaryCard}>
+              <span className={styles.label}>Product access</span>
+              <h3>{commandCenterProducts.length} modulos visibles</h3>
+              <div className={styles.accessLegend}>
+                {(Object.keys(commandCenterAccessCounts) as CommandCenterAccessState[]).map(
+                  (state) => (
+                    <span className={styles.accessLegendItem} key={state}>
+                      <i className={styles[`accessDot_${state}`]} />
+                      {COMMAND_CENTER_ACCESS_LABELS[state]}
+                      <strong>{commandCenterAccessCounts[state]}</strong>
+                    </span>
+                  ),
+                )}
+              </div>
+            </article>
+          </div>
+
+          {!session ? (
+            <div className={styles.commandBanner}>
+              Conecta un Bearer token para transformar esta vista en un Command
+              Center del tenant real.
+            </div>
+          ) : null}
+          {catalogError ? <p className={styles.errorBanner}>{catalogError}</p> : null}
+          {catalogLoading ? (
+            <div className={styles.commandBanner}>Cargando catalogo y productos...</div>
+          ) : null}
+
+          <div className={styles.commandDomains}>
+            {COMMAND_CENTER_DOMAINS.map((domain) => {
+              const domainProducts = commandCenterProducts.filter(
+                (product) => product.domain === domain.key,
+              );
+              const activeCount = domainProducts.filter(
+                (product) =>
+                  product.accessState === 'enabled' ||
+                  product.accessState === 'permission_limited',
+              ).length;
+
+              return (
+                <section className={styles.commandDomainSection} key={domain.key}>
+                  <div className={styles.commandDomainHeader}>
+                    <div>
+                      <h3>{domain.name}</h3>
+                      <p>{domain.summary}</p>
+                    </div>
+                    <span className={styles.statusPill}>
+                      {activeCount} activos · {domainProducts.length} total
+                    </span>
+                  </div>
+
+                  <div className={styles.productStatusGrid}>
+                    {domainProducts.map((product) => {
+                      const isOperational =
+                        product.accessState === 'enabled' ||
+                        product.accessState === 'permission_limited';
+                      const primaryIsLink =
+                        product.accessState === 'enabled' ||
+                        product.accessState === 'permission_limited';
+
+                      return (
+                        <article
+                          className={`${styles.productStatusCard} ${
+                            isOperational
+                              ? styles.productStatusCardActive
+                              : styles.productStatusCardInactive
+                          }`}
+                          key={product.key}
+                        >
+                          <div className={styles.productStatusHeader}>
+                            <span className={styles.productIconTile}>
+                              {product.name
+                                .split(' ')
+                                .slice(0, 2)
+                                .map((part) => part[0])
+                                .join('')}
+                            </span>
+                            <div>
+                              <h4>{product.name}</h4>
+                              <p>{product.purpose}</p>
+                            </div>
+                            <span
+                              className={`${styles.productAccessPill} ${
+                                styles[`productAccess_${product.accessState}`]
+                              }`}
+                            >
+                              {COMMAND_CENTER_ACCESS_LABELS[product.accessState]}
+                            </span>
+                          </div>
+
+                          {isOperational ? (
+                            <div className={styles.readinessList}>
+                              {product.readiness.map((item) => (
+                                <div className={styles.readinessRow} key={item.label}>
+                                  <span>{item.label}</span>
+                                  <strong>
+                                    <i
+                                      className={
+                                        styles[`readinessDot_${item.tone}`]
+                                      }
+                                    />
+                                    {item.value}
+                                  </strong>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <ul className={styles.includesList}>
+                              {product.includes.map((item) => (
+                                <li key={item}>{item}</li>
+                              ))}
+                            </ul>
+                          )}
+
+                          {product.evidence ? (
+                            <div className={styles.evidenceStrip}>
+                              <strong>{product.evidence.label}</strong>
+                              <span>
+                                {product.evidence.source} · {product.evidence.when}
+                              </span>
+                            </div>
+                          ) : null}
+
+                          {product.blocker ? (
+                            <div className={styles.blockerRow}>{product.blocker}</div>
+                          ) : null}
+
+                          <div className={styles.productActionRow}>
+                            {primaryIsLink ? (
+                              <a className={styles.primaryButton} href={product.href}>
+                                {product.primaryAction}
+                              </a>
+                            ) : (
+                              <button
+                                className={styles.secondaryButton}
+                                disabled
+                                type="button"
+                              >
+                                {product.primaryAction}
+                              </button>
+                            )}
+                            {product.secondaryAction ? (
+                              <button className={styles.ghostButton} disabled type="button">
+                                {product.secondaryAction}
+                              </button>
+                            ) : null}
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
+                </section>
+              );
+            })}
           </div>
         </section>
 

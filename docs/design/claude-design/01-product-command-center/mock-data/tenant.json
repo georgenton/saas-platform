@@ -1,0 +1,17 @@
+{
+  "_endpoint": "GET /api/tenancy/tenants/{slug}",
+  "_note": "Tenant summary card. environment ∈ production | staging | dev. memberships feed the tenant switcher in the top bar.",
+  "tenant": {
+    "slug": "acme-logistica",
+    "name": "Acme Logística S.A.",
+    "ruc": "1790012345001",
+    "role": "Owner",
+    "environment": "production",
+    "members": 6,
+    "since": "2024"
+  },
+  "memberships": [
+    { "name": "Acme Logística S.A.", "slug": "acme-logistica", "role": "Owner" },
+    { "name": "Andes Salud", "slug": "andes-salud", "role": "Operator" }
+  ]
+}

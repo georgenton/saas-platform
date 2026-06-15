@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.107.73
+
+### Patch Changes
+
+- 37b918b: Add the first real web platform shell structure with mood-aware chrome, workspace navigation, and tokenized shared UI surfaces.
+
 ## 0.107.72
 
 ### Patch Changes

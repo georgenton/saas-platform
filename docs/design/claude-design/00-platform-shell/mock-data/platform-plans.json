@@ -1,0 +1,9 @@
+{
+  "_endpoint": "GET /api/platform/plans",
+  "_note": "Commercial plans. Display data only — no checkout endpoint is implied; add-product/upgrade is a UI state.",
+  "plans": [
+    { "key": "starter", "name": "Starter", "priceDisplay": "$19 / mo", "products": ["invoicing", "parties"] },
+    { "key": "growth", "name": "Growth", "priceDisplay": "$49 / mo", "current": true, "products": ["invoicing", "ecommerce", "growth", "tax-compliance-ec", "ai-console", "parties"] },
+    { "key": "scale", "name": "Scale", "priceDisplay": "$129 / mo", "products": ["invoicing", "ecommerce", "growth", "tax-compliance-ec", "ai-console", "accounting", "medical", "psychology", "parties"] }
+  ]
+}

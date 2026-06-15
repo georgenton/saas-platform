@@ -1,0 +1,325 @@
+/* ==========================================================================
+   Mood tokens — SaaS Platform
+   Five comfort moods, each a COMPLETE semantic theme for the whole shell —
+   app background, sidebar, top bar, navigation, cards, panels, buttons, status,
+   focus rings, elevation, borders, mobile nav and density. Switching is one
+   attribute on the shell root: <div data-mood="focus">.
+
+     comfort        default · premium, friendly, trustworthy · ink sidebar
+     focus          denser · sharper hierarchy · low noise · charcoal sidebar
+     calm           soft, gentle contrast · light sage · sensitive workflows
+     high-contrast  accessibility-first · strong borders & visible focus
+     night          full low-glare dark shell · not a flat inversion
+
+   Two layers of tokens:
+   1. CONTENT semantics (--surface, --text, --primary, status, shadow, density)
+   2. CHROME semantics (--sidebar-*, --topbar-*) so the navigation shell carries
+      its own personality per mood. The shell scopes the --sidebar-* values onto
+      content tokens for its subtree, so primitives need no special-casing.
+   ========================================================================== */
+
+/* ----------------------------------------------------------------- COMFORT */
+:root,
+[data-mood='comfort'] {
+  color-scheme: light;
+
+  --app-bg:         #f2f4f8;
+  --surface:        #ffffff;
+  --surface-raised: #ffffff;
+  --surface-sunken: #f2f4f8;
+  --surface-hover:  #eceff5;
+  --surface-active: #e3e8f0;
+
+  --text-strong:  #161b21;
+  --text:         #3c4453;
+  --text-muted:   #6b7686;
+  --text-subtle:  #919cab;
+  --text-inverse: #ffffff;
+
+  --border:        #e6e9f0;
+  --border-strong: #d4d9e3;
+  --divider:       #eef1f6;
+
+  --primary:          #2a63d6;
+  --primary-hover:    #1f4fbd;
+  --primary-active:   #1b4099;
+  --primary-contrast: #ffffff;
+  --primary-soft:     #eaf0fc;
+  --on-primary-soft:  #1b4099;
+
+  --success: #15834a; --success-soft: #e8f6ef; --on-success-soft: #11663a;
+  --warning: #b06d09; --warning-soft: #fbf1e0; --on-warning-soft: #8a5408;
+  --danger:  #be2f2c; --danger-soft:  #fbeae9; --on-danger-soft:  #991f1f;
+  --info:    #1574a3; --info-soft:    #e7f2f8; --on-info-soft:    #135c81;
+
+  --focus-ring:        #5a86e8;
+  --focus-ring-shadow: 0 0 0 3px rgba(42, 99, 214, 0.28);
+
+  --shadow-sm: 0 1px 2px rgba(20, 26, 40, 0.06), 0 1px 1px rgba(20, 26, 40, 0.04);
+  --shadow-md: 0 6px 16px rgba(20, 26, 40, 0.09), 0 2px 4px rgba(20, 26, 40, 0.05);
+  --shadow-lg: 0 18px 38px rgba(20, 26, 40, 0.14), 0 6px 12px rgba(20, 26, 40, 0.07);
+
+  --control-h: 40px;
+  --card-pad:  20px;
+  --gutter:    20px;
+  --row-h:     44px;
+
+  /* Chrome — premium deep-ink sidebar, clean white top bar */
+  --sidebar-bg:             #1a2233;
+  --sidebar-fg:             #c2cad9;
+  --sidebar-fg-strong:      #ffffff;
+  --sidebar-muted:          #8089a0;
+  --sidebar-border:         #28324a;
+  --sidebar-hover:          rgba(255, 255, 255, 0.06);
+  --sidebar-active-bg:      rgba(90, 134, 232, 0.22);
+  --sidebar-active-fg:      #ffffff;
+  --sidebar-surface:        #232d44;
+  --sidebar-surface-border: #38446042;
+  --sidebar-accent:         #6e9bff;
+  --topbar-bg:              #ffffff;
+  --topbar-border:          #e6e9f0;
+}
+
+/* ------------------------------------------------------------------- FOCUS */
+[data-mood='focus'] {
+  color-scheme: light;
+
+  --app-bg:         #e7ebf1;
+  --surface:        #ffffff;
+  --surface-raised: #ffffff;
+  --surface-sunken: #e7ebf1;
+  --surface-hover:  #e0e6ee;
+  --surface-active: #d3dbe6;
+
+  --text-strong:  #0c1014;
+  --text:         #2b323d;
+  --text-muted:   #565f6d;
+  --text-subtle:  #7c8696;
+  --text-inverse: #ffffff;
+
+  --border:        #d6dce4;
+  --border-strong: #bcc4d0;
+  --divider:       #e1e6ee;
+
+  --primary:          #1f4fbd;
+  --primary-hover:    #1b4099;
+  --primary-active:   #1a3676;
+  --primary-contrast: #ffffff;
+  --primary-soft:     #e6edfa;
+  --on-primary-soft:  #1a3676;
+
+  --success: #11663a; --success-soft: #e6f4ec; --on-success-soft: #0d4f2d;
+  --warning: #8a5408; --warning-soft: #f9eed9; --on-warning-soft: #6e4206;
+  --danger:  #991f1f; --danger-soft:  #fbe6e5; --on-danger-soft:  #7c1717;
+  --info:    #135c81; --info-soft:    #e3eff6; --on-info-soft:    #0f4a68;
+
+  --focus-ring:        #1f4fbd;
+  --focus-ring-shadow: 0 0 0 2px rgba(31, 79, 189, 0.45);
+
+  --shadow-sm: 0 1px 1px rgba(12, 16, 24, 0.07);
+  --shadow-md: 0 2px 6px rgba(12, 16, 24, 0.10);
+  --shadow-lg: 0 8px 18px rgba(12, 16, 24, 0.12);
+
+  --control-h: 36px;
+  --card-pad:  16px;
+  --gutter:    16px;
+  --row-h:     36px;
+
+  /* Chrome — darker charcoal sidebar for a serious operations console */
+  --sidebar-bg:             #12161e;
+  --sidebar-fg:             #c0c8d4;
+  --sidebar-fg-strong:      #ffffff;
+  --sidebar-muted:          #79828f;
+  --sidebar-border:         #222932;
+  --sidebar-hover:          rgba(255, 255, 255, 0.05);
+  --sidebar-active-bg:      rgba(90, 134, 232, 0.26);
+  --sidebar-active-fg:      #ffffff;
+  --sidebar-surface:        #1c222c;
+  --sidebar-surface-border: #2c3440;
+  --sidebar-accent:         #6e9bff;
+  --topbar-bg:              #ffffff;
+  --topbar-border:          #d6dce4;
+}
+
+/* -------------------------------------------------------------------- CALM */
+[data-mood='calm'] {
+  color-scheme: light;
+
+  --app-bg:         #eef2f1;
+  --surface:        #fbfcfc;
+  --surface-raised: #ffffff;
+  --surface-sunken: #e8edeb;
+  --surface-hover:  #e6ecea;
+  --surface-active: #dde5e2;
+
+  --text-strong:  #28332f;
+  --text:         #515f59;
+  --text-muted:   #78867f;
+  --text-subtle:  #9aa6a0;
+  --text-inverse: #ffffff;
+
+  --border:        #dde4e1;
+  --border-strong: #ccd6d2;
+  --divider:       #e6ecea;
+
+  --primary:          #2f6f8f;
+  --primary-hover:    #275d78;
+  --primary-active:   #214d63;
+  --primary-contrast: #ffffff;
+  --primary-soft:     #e2eef2;
+  --on-primary-soft:  #214d63;
+
+  --success: #2e7d62; --success-soft: #e6f1ec; --on-success-soft: #235e4a;
+  --warning: #a06a2a; --warning-soft: #f4ece0; --on-warning-soft: #7d5320;
+  --danger:  #b14b40; --danger-soft:  #f5e8e6; --on-danger-soft:  #8c3a31;
+  --info:    #3a7186; --info-soft:    #e6eef2; --on-info-soft:    #2c5868;
+
+  --focus-ring:        #5b97b3;
+  --focus-ring-shadow: 0 0 0 3px rgba(47, 111, 143, 0.22);
+
+  --shadow-sm: 0 1px 2px rgba(40, 58, 52, 0.05);
+  --shadow-md: 0 6px 18px rgba(40, 58, 52, 0.07);
+  --shadow-lg: 0 16px 34px rgba(40, 58, 52, 0.10);
+
+  --control-h: 42px;
+  --card-pad:  22px;
+  --gutter:    22px;
+  --row-h:     46px;
+
+  /* Chrome — soft light sage sidebar, low urgency */
+  --sidebar-bg:             #e9efed;
+  --sidebar-fg:             #4a5852;
+  --sidebar-fg-strong:      #28332f;
+  --sidebar-muted:          #7f8d86;
+  --sidebar-border:         #dbe3e0;
+  --sidebar-hover:          #e0e8e5;
+  --sidebar-active-bg:      #d6e6e0;
+  --sidebar-active-fg:      #214d63;
+  --sidebar-surface:        #fbfcfc;
+  --sidebar-surface-border: #d3ddd9;
+  --sidebar-accent:         #2f6f8f;
+  --topbar-bg:              #f6f9f8;
+  --topbar-border:          #e1e8e6;
+}
+
+/* ---------------------------------------------------------- HIGH-CONTRAST */
+[data-mood='high-contrast'] {
+  color-scheme: light;
+
+  --app-bg:         #ffffff;
+  --surface:        #ffffff;
+  --surface-raised: #ffffff;
+  --surface-sunken: #f3f5f8;
+  --surface-hover:  #e9edf3;
+  --surface-active: #dbe2ec;
+
+  --text-strong:  #07090c;
+  --text:         #16191f;
+  --text-muted:   #38414d;
+  --text-subtle:  #4d5765;
+  --text-inverse: #ffffff;
+
+  --border:        #38414d;
+  --border-strong: #07090c;
+  --divider:       #919cab;
+
+  --primary:          #1b4099;
+  --primary-hover:    #172c5c;
+  --primary-active:   #0e1d3d;
+  --primary-contrast: #ffffff;
+  --primary-soft:     #d8e3fa;
+  --on-primary-soft:  #0e1d3d;
+
+  --success: #0d4f2d; --success-soft: #c8ecd7; --on-success-soft: #073518;
+  --warning: #6e4206; --warning-soft: #f9e2bd; --on-warning-soft: #432804;
+  --danger:  #7c1717; --danger-soft:  #f9d3d2; --on-danger-soft:  #4d0d0d;
+  --info:    #0f4a68; --info-soft:    #c7e4f5; --on-info-soft:    #08303f;
+
+  --focus-ring:        #07090c;
+  --focus-ring-shadow: 0 0 0 3px #ffffff, 0 0 0 6px #07090c;
+
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+
+  --control-h: 42px;
+  --card-pad:  20px;
+  --gutter:    20px;
+  --row-h:     46px;
+
+  /* Chrome — white with strong black borders */
+  --sidebar-bg:             #ffffff;
+  --sidebar-fg:             #16191f;
+  --sidebar-fg-strong:      #07090c;
+  --sidebar-muted:          #38414d;
+  --sidebar-border:         #07090c;
+  --sidebar-hover:          #e9edf3;
+  --sidebar-active-bg:      #d8e3fa;
+  --sidebar-active-fg:      #0e1d3d;
+  --sidebar-surface:        #ffffff;
+  --sidebar-surface-border: #07090c;
+  --sidebar-accent:         #1b4099;
+  --topbar-bg:              #ffffff;
+  --topbar-border:          #07090c;
+}
+
+/* ------------------------------------------------------------------- NIGHT */
+[data-mood='night'] {
+  color-scheme: dark;
+
+  --app-bg:         #0c1014;
+  --surface:        #161b22;
+  --surface-raised: #1d242c;
+  --surface-sunken: #11161b;
+  --surface-hover:  #222a33;
+  --surface-active: #2a323c;
+
+  --text-strong:  #f1f4f7;
+  --text:         #c5cdd8;
+  --text-muted:   #8b96a4;
+  --text-subtle:  #6b7686;
+  --text-inverse: #0c1014;
+
+  --border:        #2a323c;
+  --border-strong: #3a434f;
+  --divider:       #222a33;
+
+  --primary:          #5a86e8;
+  --primary-hover:    #7ba0ee;
+  --primary-active:   #97b5f2;
+  --primary-contrast: #0b1220;
+  --primary-soft:     rgba(90, 134, 232, 0.18);
+  --on-primary-soft:  #a9c1f4;
+
+  --success: #4cc185; --success-soft: rgba(31, 157, 87, 0.18);  --on-success-soft: #6fd29e;
+  --warning: #e6a84a; --warning-soft: rgba(217, 139, 21, 0.18); --on-warning-soft: #eebd77;
+  --danger:  #ef6f6a; --danger-soft:  rgba(216, 69, 63, 0.20);  --on-danger-soft:  #f29a96;
+  --info:    #58b4e0; --info-soft:    rgba(31, 143, 196, 0.18); --on-info-soft:    #8accee;
+
+  --focus-ring:        #7ba0ee;
+  --focus-ring-shadow: 0 0 0 3px rgba(123, 160, 238, 0.45);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.40);
+  --shadow-md: 0 6px 16px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 16px 36px rgba(0, 0, 0, 0.55);
+
+  --control-h: 40px;
+  --card-pad:  20px;
+  --gutter:    20px;
+  --row-h:     44px;
+
+  /* Chrome — sidebar darker than content panels */
+  --sidebar-bg:             #0a0d12;
+  --sidebar-fg:             #c5cdd8;
+  --sidebar-fg-strong:      #f1f4f7;
+  --sidebar-muted:          #8b96a4;
+  --sidebar-border:         #1c232c;
+  --sidebar-hover:          rgba(255, 255, 255, 0.05);
+  --sidebar-active-bg:      rgba(90, 134, 232, 0.20);
+  --sidebar-active-fg:      #ffffff;
+  --sidebar-surface:        #161b22;
+  --sidebar-surface-border: #2a323c;
+  --sidebar-accent:         #7ba0ee;
+  --topbar-bg:              #10141a;
+  --topbar-border:          #1f2730;
+}

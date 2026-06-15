@@ -1,0 +1,7 @@
+/* ==========================================================================
+   Fonts — SaaS Platform
+   Manrope for a warm, modern, human SaaS voice (primary UI + headings).
+   IBM Plex Mono ONLY for technical data: IDs, SRI keys, XML, logs, code-like
+   values. Loaded from Google Fonts so webfonts ship with no binaries.
+   ========================================================================== */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700;800&display=swap');

@@ -1,0 +1,77 @@
+/* ==========================================================================
+   Base / reset — SaaS Platform
+   ========================================================================== */
+:root {
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  font-weight: var(--weight-text);
+  line-height: var(--leading-body);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-font-smoothing: antialiased;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: var(--app-bg);
+  color: var(--text);
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  appearance: none;
+}
+
+/* Tabular numerics helper for finance / tax / accounting tables. */
+.ds-tnum {
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: var(--num-tabular);
+}
+
+/* Visible, mood-aware keyboard focus for any interactive element. */
+.ds-focusable:focus-visible,
+a:focus-visible,
+button:focus-visible,
+[tabindex]:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring-shadow);
+  border-color: var(--focus-ring);
+}
+
+/* Convenience: paint the app background on a full-height shell root. */
+.ds-app {
+  min-height: 100vh;
+  background: var(--app-bg);
+  color: var(--text);
+}
+
+/* Uppercase section eyebrow used across foundation & shell. */
+.ds-eyebrow {
+  font-size: var(--text-eyebrow);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--track-eyebrow);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}

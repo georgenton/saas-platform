@@ -1,0 +1,18 @@
+{
+  "_note": "Environment + one backend error example for the shell's degraded states.",
+  "environment": {
+    "name": "local",
+    "isDev": true,
+    "apiBaseUrl": "http://127.0.0.1:3000/api",
+    "label": "Local / dev environment"
+  },
+  "backendError": {
+    "_endpoint": "GET /api/auth/me",
+    "status": 503,
+    "code": "service_unavailable",
+    "title": "Backend no disponible",
+    "message": "No pudimos conectar con la API de la plataforma. Reintenta en unos segundos.",
+    "correlationId": "req_3f7c1a9e",
+    "retryable": true
+  }
+}

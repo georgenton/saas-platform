@@ -1,0 +1,67 @@
+/* ==========================================================================
+   Palette primitives — SaaS Platform
+   Mood-independent raw ramps. Never reference these directly in product code;
+   use the semantic mood tokens in moods.css. Cool, trustworthy neutrals with a
+   single confident azure primary and restrained status hues.
+   ========================================================================== */
+:root {
+  /* --- Neutral (cool gray, faint blue undertone — corporate & calm) -------- */
+  --n-0:   #ffffff;
+  --n-25:  #fbfcfd;
+  --n-50:  #f6f8fa;
+  --n-100: #eef1f4;
+  --n-150: #e4e8ed;
+  --n-200: #d6dbe2;
+  --n-300: #b9c1cb;
+  --n-400: #919cab;
+  --n-500: #6b7686;
+  --n-600: #4d5765;
+  --n-700: #38414d;
+  --n-800: #252c35;
+  --n-900: #161b21;
+  --n-950: #0c1014;
+
+  /* --- Primary — confident flat azure (no gradients) ----------------------- */
+  --blue-50:  #eef3fd;
+  --blue-100: #d8e3fa;
+  --blue-200: #b3c8f4;
+  --blue-300: #82a4ec;
+  --blue-400: #5a86e8;
+  --blue-500: #2a63d6;  /* base primary */
+  --blue-600: #1f4fbd;
+  --blue-700: #1b4099;
+  --blue-800: #1a3676;
+  --blue-900: #172c5c;
+
+  /* --- Success — green (kept clearly apart from the azure primary) --------- */
+  --green-50:  #e9f7ef;
+  --green-100: #c8ecd7;
+  --green-500: #1f9d57;
+  --green-600: #15834a;
+  --green-700: #11663a;
+  --green-300: #74c89a;
+
+  /* --- Warning — amber ----------------------------------------------------- */
+  --amber-50:  #fdf3e3;
+  --amber-100: #f9e2bd;
+  --amber-500: #d98b15;
+  --amber-600: #b06d09;
+  --amber-700: #8a5408;
+  --amber-300: #eab866;
+
+  /* --- Danger — red -------------------------------------------------------- */
+  --red-50:  #fdecec;
+  --red-100: #f9d3d2;
+  --red-500: #d8453f;
+  --red-600: #be2f2c;
+  --red-700: #991f1f;
+  --red-300: #ef938f;
+
+  /* --- Info — sky (a secondary accent used for status only) ---------------- */
+  --sky-50:  #e8f4fb;
+  --sky-100: #c7e4f5;
+  --sky-500: #1f8fc4;
+  --sky-600: #1574a3;
+  --sky-700: #135c81;
+  --sky-300: #74c2e6;
+}

@@ -727,6 +727,232 @@
   color: #236944;
 }
 
+.shell {
+  background: var(--app-bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  letter-spacing: var(--track-normal);
+}
+
+.backdrop {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--primary-soft) 38%, transparent) 0%, transparent 44%),
+    var(--app-bg);
+}
+
+.page {
+  max-width: 1280px;
+}
+
+.heroText h1,
+.sectionHeading h2,
+.sectionHeading h3 {
+  color: var(--text-strong);
+  font-family: var(--font-sans);
+  letter-spacing: var(--track-normal);
+}
+
+.heroText h1 {
+  font-size: clamp(2.15rem, 4vw, 3.65rem);
+  line-height: 1.05;
+  max-width: 18ch;
+}
+
+.heroText p,
+.metric span,
+.muted {
+  color: var(--text-muted);
+}
+
+.eyebrow,
+.label {
+  color: var(--primary);
+  letter-spacing: 0.08em;
+}
+
+.heroMeta,
+.tokenCard,
+.panel,
+.adminPanel {
+  backdrop-filter: none;
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+}
+
+.metric {
+  border-bottom-color: var(--divider);
+}
+
+.metric strong,
+.field span {
+  color: var(--text-strong);
+}
+
+.field textarea,
+.field input,
+.selectField {
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+}
+
+.field textarea:focus,
+.field input:focus,
+.selectField:focus {
+  border-color: var(--focus-ring);
+  box-shadow: var(--focus-ring-shadow);
+}
+
+.primaryButton,
+.secondaryButton,
+.dangerButton,
+.ghostButton {
+  border-radius: var(--radius-sm);
+}
+
+.primaryButton {
+  background: var(--primary);
+  box-shadow: var(--shadow-sm);
+  color: var(--primary-contrast);
+}
+
+.primaryButton:hover {
+  background: var(--primary-hover);
+}
+
+.secondaryButton {
+  background: var(--primary-soft);
+  color: var(--on-primary-soft);
+}
+
+.ghostButton {
+  background: var(--surface-sunken);
+  color: var(--text);
+}
+
+.errorBanner {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.successBanner {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.moodPanel {
+  display: grid;
+  gap: 12px;
+}
+
+.moodPanel > div:first-child {
+  display: grid;
+  gap: 4px;
+}
+
+.moodPanel span {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
+
+.moodPanel strong {
+  color: var(--text-strong);
+}
+
+.moodSelector {
+  display: grid;
+  gap: 8px;
+}
+
+.moodButton {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-start;
+  min-height: 38px;
+  padding: 8px 10px;
+  transition:
+    background var(--transition-base),
+    border-color var(--transition-base),
+    color var(--transition-base);
+}
+
+.moodButton:hover {
+  background: var(--surface-hover);
+}
+
+.moodButtonActive {
+  background: var(--primary-soft);
+  border-color: var(--primary);
+  color: var(--on-primary-soft);
+  font-weight: 700;
+}
+
+.moodSwatch {
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-xs);
+  display: inline-block;
+  height: 18px;
+  position: relative;
+  width: 18px;
+}
+
+.moodSwatch::after {
+  background: var(--primary);
+  border-radius: 999px;
+  bottom: 3px;
+  content: '';
+  height: 5px;
+  position: absolute;
+  right: 3px;
+  width: 5px;
+}
+
+.moodSwatch[data-preview-mood='focus'] {
+  background: #e7ebf1;
+  border-color: #bcc4d0;
+}
+
+.moodSwatch[data-preview-mood='focus']::after {
+  background: #1f4fbd;
+}
+
+.moodSwatch[data-preview-mood='calm'] {
+  background: #eef2f1;
+  border-color: #ccd6d2;
+}
+
+.moodSwatch[data-preview-mood='calm']::after {
+  background: #2f6f8f;
+}
+
+.moodSwatch[data-preview-mood='high-contrast'] {
+  background: #ffffff;
+  border-color: #07090c;
+}
+
+.moodSwatch[data-preview-mood='high-contrast']::after {
+  background: #1b4099;
+}
+
+.moodSwatch[data-preview-mood='night'] {
+  background: #11161b;
+  border-color: #3a434f;
+}
+
+.moodSwatch[data-preview-mood='night']::after {
+  background: #5a86e8;
+}
+
 @media (max-width: 1080px) {
   .hero,
   .contentGrid,

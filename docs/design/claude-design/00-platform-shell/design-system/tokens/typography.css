@@ -1,0 +1,44 @@
+/* ==========================================================================
+   Typography — SaaS Platform
+   One disciplined family (IBM Plex Sans) for an executive, legible interface;
+   IBM Plex Mono for tabular numerics, IDs and fiscal references. Headings lean
+   on weight and tight tracking rather than a second display face.
+   ========================================================================== */
+:root {
+  /* --- Families ----------------------------------------------------------- */
+  --font-sans: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', 'SFMono-Regular', 'Menlo', monospace;
+
+  /* --- Weights (Manrope carries weight well; UI leans 500–800) ------------- */
+  --weight-regular:  400;
+  --weight-text:     500;  /* body default — Manrope reads warm at 500 */
+  --weight-medium:   600;
+  --weight-semibold: 700;
+  --weight-bold:     800;
+
+  /* --- Type scale (rem · 16px base) --------------------------------------- */
+  --text-display: 2rem;      /* 32px — page title (operational, not marketing) */
+  --text-h1:      1.5rem;    /* 24px */
+  --text-h2:      1.25rem;   /* 20px */
+  --text-h3:      1.0625rem; /* 17px */
+  --text-body:    0.9375rem; /* 15px — default UI/body */
+  --text-sm:      0.875rem;  /* 14px */
+  --text-xs:      0.8125rem; /* 13px — captions, table meta */
+  --text-2xs:     0.75rem;   /* 12px — labels, badges (floor for UI) */
+  --text-eyebrow: 0.6875rem; /* 11px — uppercase section eyebrows only */
+
+  /* --- Tracking ----------------------------------------------------------- */
+  --track-tight:   -0.02em;  /* large headings */
+  --track-snug:    -0.01em;  /* h2 / h3 */
+  --track-normal:   0; /* @kind other */
+  --track-eyebrow:  0.08em;  /* uppercase labels */
+
+  /* --- Line heights ------------------------------------------------------- */
+  --leading-tight: 1.2;
+  --leading-snug:  1.35;
+  --leading-body:  1.55;
+  --leading-relaxed: 1.7;
+
+  /* --- Numeric helper (tabular figures for finance/tax tables) ------------ */
+  --num-tabular: 'tnum' 1, 'lnum' 1; /* @kind other */
+}

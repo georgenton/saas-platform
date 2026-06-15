@@ -949,6 +949,36 @@ const LazyPsychologyClinicsSection = lazy(() =>
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:3000/api';
 const TOKEN_STORAGE_KEY = 'saas-platform.web.token';
+const PLATFORM_MOOD_STORAGE_KEY = 'saas-platform.web.platformMood';
+const PLATFORM_MOODS = [
+  {
+    key: 'comfort',
+    label: 'Comfort',
+    summary: 'Profesional y amigable',
+  },
+  {
+    key: 'focus',
+    label: 'Focus',
+    summary: 'Denso para operacion',
+  },
+  {
+    key: 'calm',
+    label: 'Calm',
+    summary: 'Suave para jornadas largas',
+  },
+  {
+    key: 'high-contrast',
+    label: 'Alto contraste',
+    summary: 'Accesibilidad primero',
+  },
+  {
+    key: 'night',
+    label: 'Night',
+    summary: 'Baja luz',
+  },
+] as const;
+
+type PlatformMoodKey = (typeof PLATFORM_MOODS)[number]['key'];
 
 type GrowthDrilldownTarget =
   | {
@@ -1155,6 +1185,20 @@ function flowLabel(flow: AuthenticatedSessionResponse['sessionState']['recommend
     default:
       return flow;
   }
+}
+
+function isPlatformMoodKey(value: string): value is PlatformMoodKey {
+  return PLATFORM_MOODS.some((mood) => mood.key === value);
+}
+
+function readStoredPlatformMood(): PlatformMoodKey {
+  if (typeof window === 'undefined') {
+    return 'comfort';
+  }
+
+  const storedMood = window.localStorage.getItem(PLATFORM_MOOD_STORAGE_KEY);
+
+  return storedMood && isPlatformMoodKey(storedMood) ? storedMood : 'comfort';
 }
 
 function formatMoney(priceInCents: number, currency: string): string {
@@ -2217,6 +2261,9 @@ async function loadOptionalInvoicingSettings(token: string, tenantSlug: string):
 }
 
 export function App() {
+  const [platformMood, setPlatformMood] = useState<PlatformMoodKey>(
+    readStoredPlatformMood,
+  );
   const [deepLinkedInvitationId, setDeepLinkedInvitationId] = useState<string | null>(
     null,
   );
@@ -9283,6 +9330,10 @@ export function App() {
     setToken(savedToken);
     setTokenInput(savedToken);
   }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem(PLATFORM_MOOD_STORAGE_KEY, platformMood);
+  }, [platformMood]);
 
   useEffect(() => {
     if (selectedGrowthAlert) {
@@ -26246,7 +26297,7 @@ export function App() {
   }
 
   return (
-    <div className={styles.shell}>
+    <div className={styles.shell} data-mood={platformMood}>
       <div className={styles.backdrop} />
 
       <main className={styles.page}>
@@ -26278,6 +26329,40 @@ export function App() {
             <div className={styles.metric}>
               <span>Flow recomendado</span>
               <strong>{session ? flowLabel(session.sessionState.recommendedFlow) : 'Sin sesion'}</strong>
+            </div>
+            <div className={styles.moodPanel}>
+              <div>
+                <span>Modo visual</span>
+                <strong>
+                  {PLATFORM_MOODS.find((mood) => mood.key === platformMood)?.label}
+                </strong>
+              </div>
+              <div
+                aria-label="Elegir mood de interfaz"
+                className={styles.moodSelector}
+                role="radiogroup"
+              >
+                {PLATFORM_MOODS.map((mood) => (
+                  <button
+                    aria-checked={platformMood === mood.key}
+                    aria-label={`${mood.label}: ${mood.summary}`}
+                    className={`${styles.moodButton} ${
+                      platformMood === mood.key ? styles.moodButtonActive : ''
+                    }`}
+                    key={mood.key}
+                    onClick={() => setPlatformMood(mood.key)}
+                    role="radio"
+                    title={mood.summary}
+                    type="button"
+                  >
+                    <span
+                      className={styles.moodSwatch}
+                      data-preview-mood={mood.key}
+                    />
+                    <span>{mood.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </section>

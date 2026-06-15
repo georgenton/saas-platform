@@ -1,0 +1,11 @@
+{
+  "_note": "Frontend-only UX layer — no backend endpoint. Mood selection lives in local UI state (localStorage) until backend persistence ships (future backlog). Each mood reskins the WHOLE shell via [data-mood] tokens, including a dedicated --sidebar-*/--topbar-* chrome layer.",
+  "selectedMood": "comfort",
+  "moods": [
+    { "key": "comfort", "label": "Comfort", "description": "Balanced, premium and friendly. The default.", "chrome": "deep-ink sidebar, white top bar" },
+    { "key": "focus", "label": "Focus", "description": "Denser surfaces and stronger hierarchy for deep operational work.", "chrome": "charcoal sidebar, grayer field, tighter rows" },
+    { "key": "calm", "label": "Calm", "description": "Softer contrast for long or sensitive sessions (clinical, tax, accounting).", "chrome": "light sage sidebar, gentle teal accent" },
+    { "key": "high-contrast", "label": "High contrast", "description": "Accessibility-first contrast, strong borders and visible focus.", "chrome": "white sidebar, strong black borders, no shadows" },
+    { "key": "night", "label": "Night", "description": "Low-glare dark shell, not a flat inversion.", "chrome": "full dark shell, sidebar darker than panels" }
+  ]
+}

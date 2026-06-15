@@ -1,0 +1,18 @@
+{
+  "_endpoint": "GET /api/tenancy/tenants/{slug}/entitlements",
+  "_note": "Resolved entitlements that gate product access. Used to compute accessState in products.json.",
+  "tenantSlug": "acme-logistica",
+  "entitlements": [
+    { "key": "invoicing", "enabled": true },
+    { "key": "invoicing.electronic", "enabled": true },
+    { "key": "ecommerce", "enabled": true },
+    { "key": "growth", "enabled": true },
+    { "key": "growth.whatsapp", "enabled": true },
+    { "key": "tax-compliance-ec", "enabled": true },
+    { "key": "ai-console", "enabled": true },
+    { "key": "accounting", "enabled": false, "reason": "plan" },
+    { "key": "medical", "enabled": false, "reason": "not_added" },
+    { "key": "psychology", "enabled": false, "reason": "disabled" },
+    { "key": "parties", "enabled": true }
+  ]
+}

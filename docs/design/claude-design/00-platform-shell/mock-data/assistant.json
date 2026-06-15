@@ -1,0 +1,10 @@
+{
+  "_note": "Frontend-only AI copilot presence. No autonomous execution. The assistant suggests, explains and prepares review — every action needs human approval and maps to an existing product surface/endpoint. No new AI endpoints are implied here beyond what the AI Console already exposes (suggestion / approval / guarded-execution).",
+  "greeting": "Hola José — preparé algunas cosas para tu revisión.",
+  "disclaimer": "El asistente sugiere y explica. No envía, firma ni declara nada sin tu aprobación.",
+  "suggestions": [
+    { "icon": "invoicing", "tone": "info", "title": "3 facturas listas para autorizar", "body": "Revisa el lote de junio antes de enviarlo al SRI.", "action": "Revisar lote" },
+    { "icon": "tax", "tone": "warning", "title": "IVA de junio: faltan 2 evidencias", "body": "Te muestro qué comprobantes faltan antes de declarar.", "action": "Ver evidencias" },
+    { "icon": "growth", "tone": "neutral", "title": "3 conversaciones sin responder", "body": "Tengo borradores de respuesta listos para tu aprobación.", "action": "Abrir borradores" }
+  ]
+}

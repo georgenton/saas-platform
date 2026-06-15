@@ -1,0 +1,13 @@
+{
+  "_endpoint": "GET /api/tenancy/tenants/{slug}/feature-flags",
+  "_note": "Tenant-scoped feature flags. Frontend reads these to toggle UI affordances.",
+  "tenantSlug": "acme-logistica",
+  "flags": {
+    "ai.suggestion_runs": true,
+    "ai.guarded_execution": false,
+    "growth.operational_alerts": true,
+    "invoicing.remote_sandbox": false,
+    "shell.mood_selector": true,
+    "shell.product_marketplace": true
+  }
+}

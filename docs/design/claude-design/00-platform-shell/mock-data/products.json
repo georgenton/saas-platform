@@ -1,0 +1,18 @@
+{
+  "_endpoint": "GET /api/tenancy/tenants/{slug}/products",
+  "_note": "Per-tenant product access. accessState drives the shell nav. One of: enabled | available | blocked_by_plan | disabled | permission_limited.",
+  "tenantSlug": "acme-logistica",
+  "products": [
+    { "key": "dashboard", "name": "Dashboard", "group": "Core", "accessState": "enabled", "route": "/dashboard" },
+    { "key": "invoicing", "name": "Invoicing", "group": "Finance", "accessState": "enabled", "route": "/invoicing", "badge": 12, "note": "Ecuador electronic invoicing" },
+    { "key": "ecommerce", "name": "Ecommerce", "group": "Commerce", "accessState": "enabled", "route": "/ecommerce" },
+    { "key": "growth", "name": "Growth", "group": "Commerce", "accessState": "enabled", "route": "/growth", "note": "WhatsApp & CRM" },
+    { "key": "tax-compliance-ec", "name": "Tax Compliance EC", "group": "Finance", "accessState": "permission_limited", "route": "/tax-compliance-ec", "note": "View only — needs tax.manage" },
+    { "key": "ai-console", "name": "AI Console", "group": "Platform", "accessState": "permission_limited", "route": "/ai-console", "note": "Suggestions visible; approvals restricted" },
+    { "key": "accounting", "name": "Accounting", "group": "Finance", "accessState": "blocked_by_plan", "route": "/accounting", "requiresPlan": "scale", "note": "Available on Scale" },
+    { "key": "medical", "name": "Medical Clinics", "group": "Clinics", "accessState": "available", "route": "/medical", "addonPrice": "$39 / mo" },
+    { "key": "psychology", "name": "Psychology Clinics", "group": "Clinics", "accessState": "disabled", "route": "/psychology", "note": "Not enabled for this tenant" },
+    { "key": "parties", "name": "Parties", "group": "Platform", "accessState": "enabled", "route": "/parties", "note": "Fiscal directory" },
+    { "key": "settings", "name": "Settings", "group": "Platform", "accessState": "enabled", "route": "/settings" }
+  ]
+}

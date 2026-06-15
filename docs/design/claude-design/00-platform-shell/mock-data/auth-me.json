@@ -1,0 +1,39 @@
+{
+  "_endpoint": "GET /api/auth/me",
+  "_note": "Current authenticated user, active tenancy, membership and permissions. Mock — replace with a real fetch.",
+  "user": {
+    "id": "usr_8f2a91",
+    "name": "José Quizá Manchuro",
+    "email": "jose@acme-logistica.ec",
+    "avatarUrl": null,
+    "locale": "es-EC"
+  },
+  "currentTenancy": {
+    "tenantId": "ten_acme",
+    "slug": "acme-logistica",
+    "name": "Acme Logística S.A.",
+    "role": "owner",
+    "ruc": "1790012345001",
+    "environment": "production"
+  },
+  "memberships": [
+    { "tenantId": "ten_acme", "slug": "acme-logistica", "name": "Acme Logística S.A.", "role": "owner" },
+    { "tenantId": "ten_andes", "slug": "andes-salud", "name": "Andes Salud", "role": "operator" }
+  ],
+  "permissions": [
+    "platform.products.view",
+    "tenant.settings.manage",
+    "tenant.invitations.manage",
+    "invoicing.view",
+    "invoicing.manage",
+    "ecommerce.view",
+    "ecommerce.manage",
+    "growth.view",
+    "tax-compliance-ec.view",
+    "ai.suggestions.view"
+  ],
+  "sessionState": {
+    "recommendedFlow": "workspace",
+    "pendingInvitations": 0
+  }
+}

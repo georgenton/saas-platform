@@ -1,0 +1,15 @@
+{
+  "_endpoint": "GET /api/platform/products",
+  "_note": "Global product catalog (platform-wide). The marketplace/add-product shell renders from this, intersected with the tenant's entitlements.",
+  "products": [
+    { "key": "invoicing", "name": "Invoicing", "group": "Finance", "summary": "Ecuador electronic invoicing — factura, NC/ND, guía, retención.", "tagline": "SRI-ready documents" },
+    { "key": "tax-compliance-ec", "name": "Tax Compliance EC", "group": "Finance", "summary": "VAT, income tax & withholding readiness with accountant handoff.", "tagline": "Prepare, explain, hand off" },
+    { "key": "accounting", "name": "Accounting", "group": "Finance", "summary": "Chart of accounts, journals, ledgers and closeout.", "tagline": "Formal books", "requiresPlan": "scale" },
+    { "key": "ecommerce", "name": "Ecommerce", "group": "Commerce", "summary": "Catalog, storefront, orders and post-sale operations.", "tagline": "Operator-assisted commerce" },
+    { "key": "growth", "name": "Growth", "group": "Commerce", "summary": "WhatsApp conversations, lead capture and lightweight CRM.", "tagline": "Conversations & funnels" },
+    { "key": "ai-console", "name": "AI Console", "group": "Platform", "summary": "Suggestion, approval and guarded-execution surfaces.", "tagline": "Suggest · approve · guard" },
+    { "key": "medical", "name": "Medical Clinics", "group": "Clinics", "summary": "Patients, appointments and clinical encounter packets.", "tagline": "Operational MVP", "addonPrice": "$39 / mo" },
+    { "key": "psychology", "name": "Psychology Clinics", "group": "Clinics", "summary": "Therapists, sessions and review-first note drafts.", "tagline": "Review-first", "addonPrice": "$29 / mo" },
+    { "key": "parties", "name": "Parties", "group": "Platform", "summary": "Shared fiscal directory for customers, suppliers and leads.", "tagline": "One directory" }
+  ]
+}

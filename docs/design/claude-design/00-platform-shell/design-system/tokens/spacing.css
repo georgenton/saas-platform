@@ -1,0 +1,38 @@
+/* ==========================================================================
+   Spacing, radii & motion — SaaS Platform
+   Predictable 4px-based spacing. Restrained corporate radii: 8px is the ceiling
+   for cards; pills are reserved for chips, dots and toggles. Elevation/shadows
+   are mood-owned (see moods.css) so they adapt per comfort mode.
+   ========================================================================== */
+:root {
+  /* --- Spacing scale (4px base) ------------------------------------------- */
+  --space-0:  0;
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-7:  32px;
+  --space-8:  40px;
+  --space-9:  48px;
+  --space-10: 64px;
+
+  /* --- Radii (corporate restraint — 8px ceiling for cards) ---------------- */
+  --radius-xs:   4px;   /* inputs, chips, nav items */
+  --radius-sm:   6px;   /* buttons, small controls */
+  --radius-md:   8px;   /* cards, panels, modals (the ceiling) */
+  --radius-lg:   10px;  /* large framed tools only */
+  --radius-pill: 999px; /* dots, avatars, toggles, status chips when round */
+
+  /* --- Hairline border width --------------------------------------------- */
+  --border-w: 1px;
+
+  /* --- Motion ------------------------------------------------------------- */
+  --ease:      cubic-bezier(0.4, 0, 0.2, 1); /* @kind other */
+  --ease-out:  cubic-bezier(0.16, 1, 0.3, 1); /* @kind other */
+  --dur-fast:  120ms; /* @kind other */
+  --dur:       180ms; /* @kind other */
+  --dur-slow:  240ms; /* @kind other */
+  --transition-base: color var(--dur) var(--ease), background-color var(--dur) var(--ease), border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease); /* @kind other */
+}

@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.107.70
+
+### Patch Changes
+
+- 29cb647: Add tslib to the API runtime dependencies so the Railway Docker image can start the bundled Nest application after Prisma migrations.
+
 ## 0.107.69
 
 ### Patch Changes

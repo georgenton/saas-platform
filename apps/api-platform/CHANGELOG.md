@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.107.69
+
+### Patch Changes
+
+- 4ef4cad: Add Railway and Vercel deployment foundation, including an API health endpoint, Docker OpenAPI assets, deployment configs, and the post-deploy frontend integration runbook.
+
 ## 0.107.68
 
 ### Patch Changes

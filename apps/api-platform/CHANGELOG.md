@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.107.74
+
+### Patch Changes
+
+- e1d5885: Add the Product Command Center frontend slice and preserve the Claude Design handoff artifacts for integration review.
+
 ## 0.107.73
 
 ### Patch Changes

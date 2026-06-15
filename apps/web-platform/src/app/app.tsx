@@ -4746,6 +4746,62 @@ export function App() {
       ),
     [enabledProductKeys, productCatalog],
   );
+  const platformShellNavItems = useMemo(
+    () => [
+      {
+        href: '#platform-access',
+        label: 'Acceso',
+        meta: session ? flowLabel(session.sessionState.recommendedFlow) : 'Sin sesion',
+        state: session ? 'Listo' : 'Pendiente',
+      },
+      {
+        href: '#tenant-workspace',
+        label: 'Workspace',
+        meta: currentTenancy?.tenant.slug ?? 'Sin tenant',
+        state: currentTenancy ? 'Activo' : 'Pendiente',
+      },
+      {
+        href: '#tenant-admin',
+        label: 'Tenant admin',
+        meta: canManageInvitations ? 'Invitaciones' : 'Solo lectura',
+        state: canManageInvitations ? 'Operable' : 'Limitado',
+      },
+      {
+        href: '#growth-console',
+        label: 'Growth',
+        meta: enabledProductKeys.has('growth') ? 'Producto activo' : 'No habilitado',
+        state: canReadGrowthConversations ? 'Operable' : 'Limitado',
+      },
+      {
+        href: '#ai-console',
+        label: 'AI Console',
+        meta: 'Sugerencias y aprobaciones',
+        state: canAccessTransversalAiConsole ? 'Operable' : 'Limitado',
+      },
+      {
+        href: '#invoicing-domain',
+        label: 'Facturacion',
+        meta: enabledProductKeys.has('invoicing') ? 'Producto activo' : 'No habilitado',
+        state: enabledProductKeys.has('invoicing') ? 'Activo' : 'Disponible',
+      },
+      {
+        href: '#tax-compliance-ec',
+        label: 'Impuestos EC',
+        meta: enabledProductKeys.has('tax-compliance-ec')
+          ? 'Producto activo'
+          : 'Depende de evidencia',
+        state: enabledProductKeys.has('tax-compliance-ec') ? 'Activo' : 'Disponible',
+      },
+    ],
+    [
+      canAccessTransversalAiConsole,
+      canManageInvitations,
+      canReadGrowthConversations,
+      currentTenancy,
+      enabledProductKeys,
+      session,
+    ],
+  );
   const invoicingEnabled = enabledProductKeys.has('invoicing');
   const accountingEnabled = enabledProductKeys.has('accounting');
   const growthProductEnabled = enabledProductKeys.has('growth');
@@ -26298,37 +26354,49 @@ export function App() {
 
   return (
     <div className={styles.shell} data-mood={platformMood}>
-      <div className={styles.backdrop} />
+      <aside className={styles.sidebar} aria-label="Navegacion principal">
+        <div className={styles.sidebarBrand}>
+          <span className={styles.brandMark}>SP</span>
+          <div>
+            <strong>SaaS Platform</strong>
+            <small>Multi-product workspace</small>
+          </div>
+        </div>
+
+        <nav className={styles.sidebarNav}>
+          {platformShellNavItems.map((item) => (
+            <a className={styles.sidebarNavItem} href={item.href} key={item.href}>
+              <span>
+                <strong>{item.label}</strong>
+                <small>{item.meta}</small>
+              </span>
+              <em>{item.state}</em>
+            </a>
+          ))}
+        </nav>
+
+        <div className={styles.sidebarFooter}>
+          <span>API</span>
+          <strong>{API_BASE_URL}</strong>
+        </div>
+      </aside>
 
       <main className={styles.page}>
-        <section className={styles.hero}>
-          <div className={styles.heroText}>
-            <span className={styles.eyebrow}>SaaS Platform / Web Onboarding</span>
-            <h1>Primer shell React para sesion, invitaciones y workspace bootstrap</h1>
+        <header className={styles.topbar}>
+          <div className={styles.topbarIdentity}>
+            <span className={styles.eyebrow}>Workspace operativo</span>
+            <h1>
+              {currentTenancy
+                ? currentTenancy.tenant.name
+                : 'Consola multi-producto'}
+            </h1>
             <p>{sessionHeadline}</p>
           </div>
 
-          <div className={styles.heroMeta}>
-            <div className={styles.metric}>
-              <span>API</span>
-              <strong>{API_BASE_URL}</strong>
-            </div>
-            <div className={styles.metric}>
-              <span>Plan actual</span>
-              <strong>
-                {currentPlan
-                  ? `${currentPlan.name} · ${formatMoney(
-                      currentPlan.priceInCents,
-                      currentPlan.currency,
-                    )}/${currentPlan.billingCycle}`
-                  : session?.currentTenancy
-                    ? 'Sin plan resuelto'
-                    : 'Sin workspace'}
-              </strong>
-            </div>
-            <div className={styles.metric}>
-              <span>Flow recomendado</span>
-              <strong>{session ? flowLabel(session.sessionState.recommendedFlow) : 'Sin sesion'}</strong>
+          <div className={styles.topbarActions}>
+            <div className={styles.tenantBadge}>
+              <span>Tenant</span>
+              <strong>{currentTenancy?.tenant.slug ?? 'sin tenant'}</strong>
             </div>
             <div className={styles.moodPanel}>
               <div>
@@ -26365,9 +26433,39 @@ export function App() {
               </div>
             </div>
           </div>
+        </header>
+
+        <section className={styles.shellOverview} aria-label="Estado del shell">
+          <div className={styles.metric}>
+            <span>Plan actual</span>
+            <strong>
+              {currentPlan
+                ? `${currentPlan.name} · ${formatMoney(
+                    currentPlan.priceInCents,
+                    currentPlan.currency,
+                  )}/${currentPlan.billingCycle}`
+                : session?.currentTenancy
+                  ? 'Sin plan resuelto'
+                  : 'Sin workspace'}
+            </strong>
+          </div>
+          <div className={styles.metric}>
+            <span>Productos activos</span>
+            <strong>{enabledProducts.length}</strong>
+          </div>
+          <div className={styles.metric}>
+            <span>Productos visibles</span>
+            <strong>{productCatalog.length || enabledProducts.length}</strong>
+          </div>
+          <div className={styles.metric}>
+            <span>Estado de sesion</span>
+            <strong>
+              {session ? flowLabel(session.sessionState.recommendedFlow) : 'Sin sesion'}
+            </strong>
+          </div>
         </section>
 
-        <section className={styles.tokenCard}>
+        <section className={styles.tokenCard} id="platform-access">
           <div className={styles.sectionHeading}>
             <div>
               <span className={styles.label}>Acceso temporal</span>
@@ -26403,7 +26501,7 @@ export function App() {
           {actionMessage ? <p className={styles.successBanner}>{actionMessage}</p> : null}
         </section>
 
-        <section className={styles.contentGrid}>
+        <section className={styles.contentGrid} id="tenant-workspace">
           <article className={styles.panel}>
             <div className={styles.sectionHeading}>
               <div>
@@ -27880,7 +27978,7 @@ export function App() {
           />
         </Suspense>
 
-        <section className={styles.adminPanel}>
+        <section className={styles.adminPanel} id="tenant-admin">
           <div className={styles.sectionHeading}>
             <div>
               <span className={styles.label}>Tenant admin surface</span>
@@ -28043,7 +28141,7 @@ export function App() {
           )}
         </section>
 
-        <section className={styles.adminPanel}>
+        <section className={styles.adminPanel} id="growth-console">
           <div className={styles.sectionHeading}>
             <div>
               <span className={styles.label}>Growth & Conversations platform</span>
@@ -40293,7 +40391,7 @@ export function App() {
           )}
         </section>
 
-        <section className={styles.adminPanel}>
+        <section className={styles.adminPanel} id="ai-console">
           <div className={styles.sectionHeading}>
             <div>
               <span className={styles.label}>AI Operations Console</span>
@@ -41498,7 +41596,7 @@ export function App() {
           )}
         </section>
 
-        <section className={styles.adminPanel}>
+        <section className={styles.adminPanel} id="invoicing-domain">
           <div className={styles.sectionHeading}>
             <div>
               <span className={styles.label}>Invoicing product domain</span>
@@ -45342,7 +45440,7 @@ export function App() {
           )}
         </section>
 
-        <section className={styles.adminPanel}>
+        <section className={styles.adminPanel} id="tax-compliance-ec">
           <div className={styles.sectionHeading}>
             <div>
               <span className={styles.label}>Tax Compliance EC</span>

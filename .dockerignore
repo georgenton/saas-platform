@@ -10,3 +10,8 @@ tmp
 .env.*
 README.md
 docs
+!docs
+docs/*
+!docs/api
+docs/api/*
+!docs/api/openapi.json

@@ -1,0 +1,15 @@
+{
+  "_endpoint": "GET /api/tenancy/tenants/{slug}/products",
+  "_note": "Per-tenant product access. accessState drives the product status cards. One of: enabled | permission_limited | blocked_by_plan | available | disabled. domain groups the cards operationally (not alphabetically). Keep disabled/blocked products VISIBLE (guardrail).",
+  "tenantSlug": "acme-logistica",
+  "products": [
+    { "key": "invoicing", "name": "Electronic Invoicing EC", "domain": "finance", "accessState": "enabled", "route": "/invoicing" },
+    { "key": "tax-compliance-ec", "name": "Tax Compliance EC", "domain": "finance", "accessState": "permission_limited", "route": "/tax-compliance-ec", "missingPermission": "tax.manage" },
+    { "key": "accounting", "name": "Full Accounting", "domain": "finance", "accessState": "blocked_by_plan", "route": "/accounting", "requiresPlan": "scale" },
+    { "key": "growth", "name": "Growth", "domain": "commerce", "accessState": "enabled", "route": "/growth" },
+    { "key": "ecommerce", "name": "Ecommerce", "domain": "commerce", "accessState": "enabled", "route": "/ecommerce" },
+    { "key": "ai-console", "name": "AI Console", "domain": "ai", "accessState": "permission_limited", "route": "/ai-console", "missingPermission": "ai.approve" },
+    { "key": "medical", "name": "Medical Clinics", "domain": "clinics", "accessState": "available", "route": "/medical", "addonPrice": "$39 / mes" },
+    { "key": "psychology", "name": "Psychology Clinics", "domain": "clinics", "accessState": "disabled", "route": "/psychology", "addonPrice": "$29 / mes" }
+  ]
+}

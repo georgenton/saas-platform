@@ -1,0 +1,93 @@
+{
+  "_endpoint": "GET /api/tenancy/tenants/{slug}/command-center  (PROPOSED future BFF aggregate — does NOT exist yet)",
+  "_note": "This is a PROPOSED future backend contract, not an assumed existing endpoint — do not call it in this slice. The Command Center is COMPOSED today from existing endpoints: /tenant + /subscription + /products + /entitlements + /plans, with per-product readiness[] and evidence{} from each product's own summary surface (e.g. GET /api/invoicing/tenants/{slug}/summary, GET /api/tax-compliance-ec/tenants/{slug}/period-status, GET /api/growth/tenants/{slug}/inbox-summary). This file documents the shape a single read-only aggregate SHOULD return so the post-login screen can avoid an N-call fan-out once a backend team builds it. CONTRACT TO HARDEN: the exact readiness fields per product are owned by each product domain — the shapes below are the design's expectation, not a frozen contract. readiness[].tone ∈ success|warning|neutral.",
+  "tenantSlug": "acme-logistica",
+  "accessOverview": {
+    "total": 8,
+    "counts": [
+      { "state": "enabled", "label": "Activos", "value": 3 },
+      { "state": "permission_limited", "label": "Permiso limitado", "value": 2 },
+      { "state": "blocked_by_plan", "label": "Requiere plan", "value": 1 },
+      { "state": "available", "label": "Disponibles", "value": 1 },
+      { "state": "disabled", "label": "No habilitados", "value": 1 }
+    ]
+  },
+  "domains": [
+    { "key": "finance", "name": "Finanzas y Cumplimiento" },
+    { "key": "commerce", "name": "Crecimiento y Comercio" },
+    { "key": "ai", "name": "IA y Automatización" },
+    { "key": "clinics", "name": "Clínicas" }
+  ],
+  "products": [
+    {
+      "key": "invoicing", "domain": "finance", "accessState": "enabled",
+      "purpose": "Emisión electrónica SRI: factura, NC/ND, guía y retención.",
+      "readiness": [
+        { "label": "Emisor", "value": "Habilitado", "tone": "success" },
+        { "label": "Modo SRI", "value": "Producción", "tone": "success" },
+        { "label": "Por autorizar", "value": "7", "tone": "warning" }
+      ],
+      "evidence": { "label": "Factura 001-001-000142 autorizada", "source": "SRI · ambiente producción", "when": "hace 12 min", "mono": "001-001-000142" }
+    },
+    {
+      "key": "tax-compliance-ec", "domain": "finance", "accessState": "permission_limited",
+      "purpose": "Prepara IVA, renta y retenciones; explica y entrega al contador.",
+      "readiness": [
+        { "label": "Período", "value": "IVA junio", "tone": "neutral" },
+        { "label": "Evidencias", "value": "8 / 10", "tone": "warning" },
+        { "label": "Revisión contador", "value": "Pendiente", "tone": "warning" }
+      ],
+      "evidence": { "label": "2 evidencias por revisar", "source": "Período fiscal junio 2026", "when": "hace 2 h" },
+      "blocker": { "tone": "warning", "text": "Solo lectura — necesitas el permiso tax.manage para editar declaraciones." }
+    },
+    {
+      "key": "accounting", "domain": "finance", "accessState": "blocked_by_plan", "requiresPlan": "scale",
+      "purpose": "Libros formales, conciliación y cierre con límite del contador.",
+      "includes": ["Cierre contable mensual", "Conciliación bancaria", "Límite y handoff al contador"],
+      "blocker": { "tone": "info", "text": "Incluido en el plan Scale. Tu plan actual es Growth." }
+    },
+    {
+      "key": "growth", "domain": "commerce", "accessState": "enabled",
+      "purpose": "Conversaciones de WhatsApp, captación y CRM ligero.",
+      "readiness": [
+        { "label": "WhatsApp", "value": "Conectado", "tone": "success" },
+        { "label": "Conversaciones abiertas", "value": "3", "tone": "warning" },
+        { "label": "Casos sin asignar", "value": "1", "tone": "neutral" }
+      ],
+      "evidence": { "label": "3 conversaciones esperan respuesta", "source": "WhatsApp Business", "when": "hace 26 min" }
+    },
+    {
+      "key": "ecommerce", "domain": "commerce", "accessState": "enabled",
+      "purpose": "Catálogo, tienda, pedidos y operación post-venta.",
+      "readiness": [
+        { "label": "Tienda", "value": "Publicada", "tone": "success" },
+        { "label": "Pedidos por procesar", "value": "5", "tone": "warning" },
+        { "label": "Handoff a facturación", "value": "Activo", "tone": "success" }
+      ],
+      "evidence": { "label": "5 pedidos listos para facturar", "source": "Handoff a Invoicing", "when": "hace 40 min" }
+    },
+    {
+      "key": "ai-console", "domain": "ai", "accessState": "permission_limited",
+      "purpose": "Sugerir, aprobar y ejecutar con guardas. Nunca actúa solo.",
+      "readiness": [
+        { "label": "Aprobaciones pendientes", "value": "2", "tone": "warning" },
+        { "label": "Ejecución protegida", "value": "Activa", "tone": "success" },
+        { "label": "Asistente", "value": "Listo", "tone": "success" }
+      ],
+      "evidence": { "label": "Sugerencia preparada para revisión", "source": "invoice-document-assistant", "when": "hace 1 h" },
+      "blocker": { "tone": "warning", "text": "Puedes ver sugerencias; aprobar y ejecutar está restringido para tu rol." }
+    },
+    {
+      "key": "medical", "domain": "clinics", "accessState": "available", "addonPrice": "$39 / mes",
+      "purpose": "Pacientes, citas y paquetes de encuentro clínico.",
+      "includes": ["Pacientes y citas", "Paquetes de encuentro clínico", "Agenda y expedientes"],
+      "blocker": { "tone": "primary", "text": "Disponible como add-on. Se activa como módulo independiente." }
+    },
+    {
+      "key": "psychology", "domain": "clinics", "accessState": "disabled", "addonPrice": "$29 / mes",
+      "purpose": "Terapeutas, sesiones y notas con revisión previa.",
+      "includes": ["Terapeutas y sesiones", "Notas con revisión previa", "Agenda y expedientes"],
+      "blocker": { "tone": "neutral", "text": "No habilitado para esta empresa. Visible para que sepas que existe." }
+    }
+  ]
+}

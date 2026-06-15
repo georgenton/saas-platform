@@ -1,0 +1,5 @@
+{
+  "_endpoint": "GET /api/auth/me",
+  "_note": "Authenticated user. Drives the greeting and the user block in the sidebar.",
+  "user": { "name": "José Quizá Manchuro", "email": "jose@acme-logistica.ec", "role": "owner" }
+}

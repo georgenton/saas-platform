@@ -1,0 +1,13 @@
+{
+  "_endpoint": "GET /api/tenancy/tenants/{slug}/subscription",
+  "_note": "Active subscription & plan for the tenant. Display data only — no billing/checkout endpoints are implied. 'Gestionar plan' is a future-backlog flow.",
+  "tenantSlug": "acme-logistica",
+  "subscription": {
+    "planKey": "growth",
+    "planName": "Growth",
+    "status": "active",
+    "priceDisplay": "$49 / mes",
+    "renewsAt": "2026-07-14",
+    "seats": { "used": 6, "included": 10 }
+  }
+}

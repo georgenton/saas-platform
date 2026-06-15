@@ -45,6 +45,8 @@ COPY --from=build /workspace/dist/apps/api-platform ./
 COPY --from=build /workspace/docs ./docs
 COPY --from=build /workspace/vendor ./vendor
 
+RUN pnpm exec prisma generate --schema ./prisma/schema.prisma
+
 EXPOSE 3000
 
 CMD ["sh", "-c", "pnpm exec prisma migrate deploy --schema ./prisma/schema.prisma && node main.js"]

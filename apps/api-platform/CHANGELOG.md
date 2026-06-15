@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.107.72
+
+### Patch Changes
+
+- 5cfc844: Declare the API bundle runtime externals as production dependencies so the Railway Docker image can start the packaged Nest application.
+
 ## 0.107.71
 
 ### Patch Changes

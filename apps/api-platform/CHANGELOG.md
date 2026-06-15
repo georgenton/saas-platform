@@ -1,5 +1,11 @@
 # api-platform
 
+## 0.107.71
+
+### Patch Changes
+
+- 2aa2b5f: Generate Prisma Client in the Railway Docker runtime image so the bundled API can resolve the production client after installing dependencies.
+
 ## 0.107.70
 
 ### Patch Changes

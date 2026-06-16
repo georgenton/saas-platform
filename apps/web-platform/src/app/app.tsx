@@ -4798,24 +4798,49 @@ export function App() {
   const invoicingWorkspaceModelInput = useMemo(
     () => ({
       customers,
+      electronicSandboxReadiness,
+      electronicSignatureMaterialInspection,
       electronicSubmissionSettings,
       formatMoney,
       humanizeKey,
       invoiceNumberingSettings,
       invoices,
       issuerProfile,
+      selectedInvoice: selectedInvoiceSummary,
     }),
     [
       customers,
+      electronicSandboxReadiness,
+      electronicSignatureMaterialInspection,
       electronicSubmissionSettings,
       invoiceNumberingSettings,
       invoices,
       issuerProfile,
+      selectedInvoiceSummary,
     ],
   );
   const invoicingWorkspaceModel = useInvoicingWorkspaceModel(
     invoicingWorkspaceModelInput,
   );
+  const handleInvoicingWorkspacePrimaryAction = (
+    actionKey:
+      | 'configure-issuer'
+      | 'review-signature'
+      | 'review-pending'
+      | 'create-invoice',
+  ) => {
+    const sectionIdByActionKey = {
+      'configure-issuer': 'invoicing-issuer-profile',
+      'review-signature': 'invoicing-signature-settings',
+      'review-pending': 'invoicing-invoice-detail',
+      'create-invoice': 'invoicing-create-invoice',
+    } as const;
+
+    const targetId = sectionIdByActionKey[actionKey];
+    const target = document.getElementById(targetId);
+
+    target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
   const leadingOperationalAlerts = useMemo(
     () => whatsappSummary?.operationalAlerts.slice(0, 4) ?? [],
     [whatsappSummary],
@@ -41460,7 +41485,10 @@ export function App() {
                 <p className={styles.successBanner}>{invoicingActionMessage}</p>
               ) : null}
 
-              <InvoicingWorkspaceSummary model={invoicingWorkspaceModel} />
+              <InvoicingWorkspaceSummary
+                model={invoicingWorkspaceModel}
+                onPrimaryAction={handleInvoicingWorkspacePrimaryAction}
+              />
 
               {invoicingReport ? (
                 <div className={styles.stack}>
@@ -42081,7 +42109,7 @@ export function App() {
 
               <div className={styles.twoColumn}>
                 <div className={styles.stack}>
-                  <div className={styles.detailCard}>
+                  <div className={styles.detailCard} id="invoicing-issuer-profile">
                     <div className={styles.sectionHeading}>
                       <div>
                         <span className={styles.label}>Electronic issuer</span>
@@ -42337,7 +42365,7 @@ export function App() {
                     </form>
                   </div>
 
-                  <div className={styles.detailCard}>
+                  <div className={styles.detailCard} id="invoicing-signature-settings">
                     <div className={styles.sectionHeading}>
                       <div>
                         <span className={styles.label}>Electronic signature</span>
@@ -43284,7 +43312,7 @@ export function App() {
                     )}
                   </div>
 
-                  <div className={styles.detailCard}>
+                  <div className={styles.detailCard} id="invoicing-create-invoice">
                     <div className={styles.sectionHeading}>
                       <div>
                         <span className={styles.label}>Create invoice</span>
@@ -43517,7 +43545,7 @@ export function App() {
                     )}
                   </div>
 
-                  <div className={styles.detailCard}>
+                  <div className={styles.detailCard} id="invoicing-invoice-detail">
                     <div className={styles.sectionHeading}>
                       <div>
                         <span className={styles.label}>Invoice detail</span>

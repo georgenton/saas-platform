@@ -56,10 +56,14 @@ The first integrated slice extracts only the top operational summary into
 
 Current feature files:
 
-- `model.ts`: metrics, readiness signals and next-action contract.
-- `adapters.ts`: maps existing `app.tsx` state into the feature model.
-- `invoicing-workspace.tsx`: reusable summary component rendered at the top of
-  the existing Invoicing domain screen.
+- `model.ts`: hero, readiness ribbon, metrics, next-action contract and
+  lifecycle stage preview for the current workspace shell.
+- `adapters.ts`: maps existing `app.tsx` state into the feature model and now
+  derives readiness/blockers from issuer, signature, gateway, numbering and
+  electronic sandbox signals.
+- `invoicing-workspace.tsx`: reusable workspace shell rendered at the top of
+  the existing Invoicing domain screen; currently includes `StatusHero`,
+  `ReadinessRibbon`, and `Stepper`.
 - `queries.ts`: TanStack Query key taxonomy plus the extracted read-side
   workspace query for customers, tax rates, invoices, report summary, drafting
   assist, issuer profile, submission settings, numbering and electronic
@@ -69,6 +73,13 @@ Current feature files:
 The existing screen still owns forms, invoice list/detail, XML/RIDE previews,
 payments and SRI submission actions. Claude Design should treat those as the
 next UI scope, not as already extracted components.
+
+The current design source-of-truth for the next UI integration phase is:
+
+- `docs/design/claude-design/02-invoicing-workspace/`
+
+That slice has already been reviewed and is being integrated incrementally. New
+design requests should build on it instead of redefining the workspace shell.
 
 ## Design Slice 02 Scope
 
@@ -113,3 +124,5 @@ Recommended Claude Design request:
 - Do not imply SRI authorization before the backend status says so.
 - Signature/certificate settings should show inspection results and blockers
   before submit actions.
+- The hero should keep a single primary action and use progressive disclosure
+  for dense SRI configuration.

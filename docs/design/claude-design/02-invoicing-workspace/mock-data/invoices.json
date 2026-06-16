@@ -1,0 +1,150 @@
+{
+  "_endpoint": "GET /api/invoicing/tenants/{slug}/invoices",
+  "items": [
+    {
+      "id": "inv_0148",
+      "number": "001-001-000148",
+      "customer": "Comercial Andina Cía. Ltda.",
+      "customerRuc": "0992345678001",
+      "issuedAt": "16 jun 2026",
+      "status": "draft",
+      "electronic": "none",
+      "totals": {
+        "subtotalInCents": 240000,
+        "ivaInCents": 28800,
+        "totalInCents": 268800
+      },
+      "currency": "USD",
+      "items": 4,
+      "accessKey": null,
+      "authorizationNumber": null,
+      "authorizedAt": null,
+      "rejection": null
+    },
+    {
+      "id": "inv_0147",
+      "number": "001-001-000147",
+      "customer": "Distribuidora El Sol S.A.",
+      "customerRuc": "1791234567001",
+      "issuedAt": "16 jun 2026",
+      "status": "draft",
+      "electronic": "none",
+      "totals": {
+        "subtotalInCents": 85000,
+        "ivaInCents": 10200,
+        "totalInCents": 95200
+      },
+      "currency": "USD",
+      "items": 2,
+      "accessKey": null,
+      "authorizationNumber": null,
+      "authorizedAt": null,
+      "rejection": null
+    },
+    {
+      "id": "inv_0146",
+      "number": "001-001-000146",
+      "customer": "Talleres Pichincha",
+      "customerRuc": "1722334455001",
+      "issuedAt": "16 jun 2026",
+      "status": "issued",
+      "electronic": "generated",
+      "totals": {
+        "subtotalInCents": 140000,
+        "ivaInCents": 16800,
+        "totalInCents": 156800
+      },
+      "currency": "USD",
+      "items": 3,
+      "accessKey": "1606202601179001234500110010000146...",
+      "authorizationNumber": null,
+      "authorizedAt": null,
+      "rejection": null
+    },
+    {
+      "id": "inv_0145",
+      "number": "001-001-000145",
+      "customer": "Importadora Costa Verde",
+      "customerRuc": "0990012345001",
+      "issuedAt": "16 jun 2026",
+      "status": "issued",
+      "electronic": "submitted",
+      "totals": {
+        "subtotalInCents": 450000,
+        "ivaInCents": 54000,
+        "totalInCents": 504000
+      },
+      "currency": "USD",
+      "items": 6,
+      "accessKey": "1606202601179001234500110010000145129384756",
+      "authorizationNumber": null,
+      "authorizedAt": null,
+      "rejection": null
+    },
+    {
+      "id": "inv_0144",
+      "number": "001-001-000144",
+      "customer": "Ferretería Los Andes",
+      "customerRuc": "1712233445001",
+      "issuedAt": "15 jun 2026",
+      "status": "issued",
+      "electronic": "rejected",
+      "totals": {
+        "subtotalInCents": 70000,
+        "ivaInCents": 8400,
+        "totalInCents": 78400
+      },
+      "currency": "USD",
+      "items": 1,
+      "accessKey": "1506202601179001234500110010000144558372910",
+      "authorizationNumber": null,
+      "authorizedAt": null,
+      "rejection": {
+        "code": "43",
+        "message": "El RUC del comprador no es válido para el régimen.",
+        "field": "identificacionComprador",
+        "detail": "Verifica el RUC 1712233445001 con la Parte y vuelve a generar el documento."
+      }
+    },
+    {
+      "id": "inv_0143",
+      "number": "001-001-000143",
+      "customer": "Hotel Quitumbe",
+      "customerRuc": "1790567890001",
+      "issuedAt": "15 jun 2026",
+      "status": "issued",
+      "electronic": "authorized",
+      "totals": {
+        "subtotalInCents": 840000,
+        "ivaInCents": 100800,
+        "totalInCents": 940800
+      },
+      "currency": "USD",
+      "items": 8,
+      "accessKey": "1506202601179001234500110010000143847261093",
+      "authorizationNumber": "1506202601179001234500110010000143847261093",
+      "authorizedAt": "15 jun 2026 · 14:32",
+      "rejection": null
+    },
+    {
+      "id": "inv_0142",
+      "number": "001-001-000142",
+      "customer": "Supermercados Mi Tienda",
+      "customerRuc": "0991122334001",
+      "issuedAt": "14 jun 2026",
+      "status": "issued",
+      "electronic": "authorized",
+      "totals": {
+        "subtotalInCents": 1176786,
+        "ivaInCents": 141214,
+        "totalInCents": 1318000
+      },
+      "currency": "USD",
+      "items": 11,
+      "accessKey": "1406202601179001234500110010000142193847562",
+      "authorizationNumber": "1406202601179001234500110010000142193847562",
+      "authorizedAt": "14 jun 2026 · 09:11",
+      "rejection": null
+    }
+  ]
+}

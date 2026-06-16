@@ -105,12 +105,14 @@ is central for Ecuador and feeds Tax Compliance, Accounting and Ecommerce.
 
 Current split:
 
-- `features/invoicing/model.ts`: frontend workspace summary contract for
-  metrics, readiness and next actions.
+- `features/invoicing/model.ts`: frontend workspace contract for hero,
+  readiness ribbon, metrics, next actions, and lifecycle stepper preview.
 - `features/invoicing/adapters.ts`: converts current `app.tsx` source data into
-  the presentational Invoicing foundation model.
-- `features/invoicing/invoicing-workspace.tsx`: extracted summary component for
-  the top of the existing Invoicing domain screen.
+  the presentational Invoicing foundation model, including derived readiness
+  and electronic stage mapping.
+- `features/invoicing/invoicing-workspace.tsx`: extracted workspace structure
+  for the top of the existing Invoicing domain screen, now including
+  `StatusHero`, `ReadinessRibbon`, and `Stepper`.
 - `features/invoicing/queries.ts`: stable TanStack Query key taxonomy for the
   Invoicing workspace plus issuer profile, electronic submission, numbering,
   invoices and report summary reads.
@@ -120,6 +122,13 @@ Current split:
 The read-side workspace load now lives in the feature query layer. Write forms,
 invoice detail, XML/RIDE, payments and electronic submission actions still live
 in `app.tsx`; move them in smaller subsequent slices.
+
+The current design source for the next integration phases lives in:
+
+- `docs/design/claude-design/02-invoicing-workspace/`
+
+That slice should continue to be integrated incrementally, preserving existing
+backend contracts and avoiding direct prototype pastes into app source.
 
 ## Design System
 
@@ -171,10 +180,12 @@ new manual `useEffect` loading flows.
 ## Next Slices
 
 1. Extract the next Invoicing surface from `app.tsx`, starting with invoice
-   list/detail or settings/actions.
-2. Ask Claude Design for `02-invoicing-workspace` using the handoff contract and
-   current extracted summary model.
-3. Implement `/tenancy/tenants/:tenantSlug/command-center` in the API when the
+   list/detail as its own feature workspace module.
+2. Extract SRI settings/actions from `app.tsx` into dedicated Invoicing
+   components that reuse the derived readiness model.
+3. Use the Claude Design `02-invoicing-workspace` slice as the design source
+   for queue/detail/mobile integration.
+4. Implement `/tenancy/tenants/:tenantSlug/command-center` in the API when the
    backend is ready, then switch `useCommandCenterPlatformData` to the BFF.
-4. Continue replacing legacy inline controls with shared design-system
+5. Continue replacing legacy inline controls with shared design-system
    primitives as each product surface moves out of `app.tsx`.

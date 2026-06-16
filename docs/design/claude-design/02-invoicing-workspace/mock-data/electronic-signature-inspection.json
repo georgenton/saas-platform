@@ -1,0 +1,9 @@
+{
+  "_endpoint": "GET /api/invoicing/tenants/{slug}/electronic-signature/inspection",
+  "status": "valid",
+  "subject": "ACME LOGISTICA S.A.",
+  "issuer": "Security Data C.A.",
+  "validUntil": "2026-11-08",
+  "daysToExpiry": 145,
+  "inspected": true
+}

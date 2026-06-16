@@ -111,9 +111,14 @@ Current split:
   the presentational Invoicing foundation model, including derived readiness
   and electronic stage mapping.
 - `features/invoicing/invoicing-workspace.tsx`: extracted workspace structure
-  for the top of the existing Invoicing domain screen, now including
-  `StatusHero`, `ReadinessRibbon`, `Stepper`, and the first extracted
-  `Queue + DetailPanel` operations shell.
+  for the top of the existing Invoicing domain screen. It now acts as a barrel
+  over smaller internal modules:
+  - `workspace-summary.tsx`
+  - `workspace-shared.tsx`
+  - `workspace-operations.tsx`
+  - `workspace-electronic.tsx`
+  - `workspace-documents.tsx`
+  - `workspace-commercial.tsx`
 - `features/invoicing/queries.ts`: stable TanStack Query key taxonomy for the
   Invoicing workspace plus issuer profile, electronic submission, numbering,
   invoices and report summary reads.
@@ -121,10 +126,15 @@ Current split:
   that keeps model creation outside the app composer.
 
 The read-side workspace load now lives in the feature query layer. The invoice
-queue plus the first operational detail shell also now live in the feature
-surface. Write forms, deeper invoice detail sections, XML/RIDE, payments and
-electronic submission actions still live in `app.tsx`; move them in smaller
-subsequent slices.
+queue, the first operational detail shell, the SRI authorization control
+panel, technical trace, and document preview/RIDE panel now live in the
+feature surface. Payments, invoice items, and notification/email delivery also
+now live in the feature surface. The top summary has already been refined
+toward the Claude slice hierarchy: a single dominant status hero, compact
+readiness ribbon, calmer KPI row, and a clearer "next operational focus" card.
+What remains is less about extracting more UI from `app.tsx` and more about
+splitting the Invoicing feature internally into smaller files while aligning
+progressive-disclosure behavior with the design slice.
 
 The current design source for the next integration phases lives in:
 
@@ -182,13 +192,15 @@ new manual `useEffect` loading flows.
 
 ## Next Slices
 
-1. Extract the next deeper Invoicing detail sections from `app.tsx`,
-   especially electronic-status controls, XML/RIDE previews, and technical trace.
-2. Extract SRI settings/actions from `app.tsx` into dedicated Invoicing
-   components that reuse the derived readiness model.
-3. Use the Claude Design `02-invoicing-workspace` slice as the design source
-   for queue/detail/mobile integration.
-4. Implement `/tenancy/tenants/:tenantSlug/command-center` in the API when the
+1. Refine the extracted SRI settings/actions into a true progressive-disclosure
+   panel so dense Ecuador configuration appears only when relevant.
+2. Continue aligning queue/detail/mobile behavior with the Claude Design
+   `02-invoicing-workspace` slice without pasting the prototype into app code.
+3. Use `docs/frontend-handoff/03-invoicing-sri-progressive-disclosure.md` as
+   the next design handoff for the Ecuador SRI control area.
+4. Extract any remaining invoice-side write-heavy panels from `app.tsx` only if
+   they still prove too coupled after the current modular split.
+5. Implement `/tenancy/tenants/:tenantSlug/command-center` in the API when the
    backend is ready, then switch `useCommandCenterPlatformData` to the BFF.
-5. Continue replacing legacy inline controls with shared design-system
+6. Continue replacing legacy inline controls with shared design-system
    primitives as each product surface moves out of `app.tsx`.

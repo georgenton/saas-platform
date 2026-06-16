@@ -9,11 +9,17 @@ import {
   useMemo,
   useState,
 } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import styles from './app.module.css';
 import { CommandCenter } from '../features/command-center/command-center';
 import { useCommandCenterPlatformData } from '../features/command-center/queries';
 import { useCommandCenterModel } from '../features/command-center/use-command-center-model';
 import { InvoicingWorkspaceSummary } from '../features/invoicing/invoicing-workspace';
+import {
+  invoicingQueryKeys,
+  type InvoicingWorkspaceQueryData,
+  useInvoicingWorkspaceQuery,
+} from '../features/invoicing/queries';
 import { useInvoicingWorkspaceModel } from '../features/invoicing/use-invoicing-workspace-model';
 import { PlatformShell } from '../shared/layout/platform-shell';
 import {
@@ -450,29 +456,18 @@ import {
   fetchWhatsappOperationalMonitorRuns,
   fetchGrowthOperationalCases,
   fetchGrowthConversationWorkbench,
-  fetchElectronicSandboxReadiness,
-  fetchElectronicSubmissionSettings,
-  fetchElectronicSignatureMaterialInspection,
-  fetchElectronicSignatureSettings,
   fetchInvitationForInvitee,
   fetchInvoiceDetail,
-  fetchInvoiceDocumentDraftingAssist,
   fetchInvoiceDocument,
   fetchInvoiceElectronicArtifacts,
   fetchInvoiceDocumentHtml,
   fetchInvoiceElectronicRide,
   fetchInvoiceElectronicRideHtml,
   fetchInvoiceElectronicXmlPreview,
-  fetchInvoiceNumberingSettings,
-  fetchInvoicingReportSummary,
-  fetchIssuerProfile,
   requestEcuadorTaxAccountantReview,
   fetchSession,
   fetchWhatsappOutboundReportingSummary,
   getTenantInvitation,
-  listCustomers,
-  listInvoices,
-  listTaxRates,
   manageAccountingChartMapping,
   prepareTenantAiSuggestionRun,
   requestTenantAiSuggestionRunApproval,
@@ -2198,44 +2193,8 @@ function findPendingInvitation(
   );
 }
 
-async function loadOptionalInvoicingSettings(token: string, tenantSlug: string): Promise<{
-  electronicSandboxReadiness: ElectronicSandboxReadinessResponse | null;
-  electronicSignatureMaterialInspection: ElectronicSignatureMaterialInspectionResponse | null;
-  electronicSubmissionSettings: ElectronicSubmissionSettingsResponse | null;
-  electronicSignatureSettings: ElectronicSignatureSettingsResponse | null;
-  issuerProfile: IssuerProfileResponse | null;
-  invoiceNumberingSettings: InvoiceNumberingSettingsResponse | null;
-}> {
-  const [
-    electronicSandboxReadiness,
-    electronicSignatureMaterialInspection,
-    electronicSubmissionSettings,
-    electronicSignatureSettings,
-    issuerProfile,
-    invoiceNumberingSettings,
-  ] =
-    await Promise.all([
-      fetchElectronicSandboxReadiness(token, tenantSlug).catch(() => null),
-      fetchElectronicSignatureMaterialInspection(token, tenantSlug).catch(
-        () => null,
-      ),
-      fetchElectronicSubmissionSettings(token, tenantSlug).catch(() => null),
-      fetchElectronicSignatureSettings(token, tenantSlug).catch(() => null),
-      fetchIssuerProfile(token, tenantSlug).catch(() => null),
-      fetchInvoiceNumberingSettings(token, tenantSlug).catch(() => null),
-    ]);
-
-  return {
-    electronicSandboxReadiness,
-    electronicSignatureMaterialInspection,
-    electronicSubmissionSettings,
-    electronicSignatureSettings,
-    issuerProfile,
-    invoiceNumberingSettings,
-  };
-}
-
 export function App() {
+  const queryClient = useQueryClient();
   const [platformMood, setPlatformMood] = useState<PlatformMoodKey>(
     readStoredPlatformMood,
   );
@@ -2250,24 +2209,6 @@ export function App() {
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [sessionLoading, setSessionLoading] = useState(false);
 
-  const [customers, setCustomers] = useState<CustomerResponse[]>([]);
-  const [taxRates, setTaxRates] = useState<TaxRateResponse[]>([]);
-  const [invoices, setInvoices] = useState<InvoiceSummaryResponse[]>([]);
-  const [electronicSubmissionSettings, setElectronicSubmissionSettings] =
-    useState<ElectronicSubmissionSettingsResponse | null>(null);
-  const [electronicSandboxReadiness, setElectronicSandboxReadiness] =
-    useState<ElectronicSandboxReadinessResponse | null>(null);
-  const [
-    electronicSignatureMaterialInspection,
-    setElectronicSignatureMaterialInspection,
-  ] = useState<ElectronicSignatureMaterialInspectionResponse | null>(null);
-  const [electronicSignatureSettings, setElectronicSignatureSettings] =
-    useState<ElectronicSignatureSettingsResponse | null>(null);
-  const [issuerProfile, setIssuerProfile] = useState<IssuerProfileResponse | null>(
-    null,
-  );
-  const [invoiceNumberingSettings, setInvoiceNumberingSettings] =
-    useState<InvoiceNumberingSettingsResponse | null>(null);
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
   const [selectedInvoiceDetail, setSelectedInvoiceDetail] =
     useState<InvoiceDetailResponse | null>(null);
@@ -2280,8 +2221,6 @@ export function App() {
   const [selectedInvoiceXmlPreview, setSelectedInvoiceXmlPreview] = useState<
     string | null
   >(null);
-  const [invoicingReport, setInvoicingReport] =
-    useState<InvoicingReportSummaryResponse | null>(null);
   const [taxCompliancePeriod, setTaxCompliancePeriod] = useState('2026-06');
   const [taxComplianceYear, setTaxComplianceYear] = useState('2026');
   const [taxComplianceWorkspace, setTaxComplianceWorkspace] =
@@ -3121,8 +3060,6 @@ export function App() {
   );
   const [taxComplianceActionMessage, setTaxComplianceActionMessage] =
     useState<string | null>(null);
-  const [invoiceDocumentDraftingAssist, setInvoiceDocumentDraftingAssist] =
-    useState<InvoiceDocumentDraftingAssistResponse | null>(null);
   const [invoiceAssistantAiEnvelope, setInvoiceAssistantAiEnvelope] =
     useState<AiSuggestionEnvelopeResponse | null>(null);
   const [invoiceAssistantAiToolAccess, setInvoiceAssistantAiToolAccess] =
@@ -3137,7 +3074,6 @@ export function App() {
     useState<AiSuggestionRunResponse[]>([]);
   const [selectedInvoiceAiSuggestionRunDetail, setSelectedInvoiceAiSuggestionRunDetail] =
     useState<AiSuggestionRunDetailResponse | null>(null);
-  const [invoicingLoading, setInvoicingLoading] = useState(false);
   const [invoiceDetailLoading, setInvoiceDetailLoading] = useState(false);
   const [invoicingError, setInvoicingError] = useState<string | null>(null);
   const [invoicingActionMessage, setInvoicingActionMessage] = useState<
@@ -4473,20 +4409,6 @@ export function App() {
   const [issuerMatrixAddress, setIssuerMatrixAddress] = useState('');
   const [issuerEstablishmentAddress, setIssuerEstablishmentAddress] =
     useState('');
-  const extractedCertificateTaxId = useMemo(() => {
-    const value =
-      electronicSignatureMaterialInspection?.inspection.extractedTaxId?.trim() ??
-      '';
-
-    return value || null;
-  }, [electronicSignatureMaterialInspection]);
-  const issuerTaxIdMatchesCertificate = useMemo(() => {
-    if (!extractedCertificateTaxId || !issuerTaxId.trim()) {
-      return null;
-    }
-
-    return extractedCertificateTaxId === issuerTaxId.trim();
-  }, [extractedCertificateTaxId, issuerTaxId]);
   const [signatureProvider, setSignatureProvider] = useState<
     'stub_local' | 'xades_pkcs12'
   >('stub_local');
@@ -4784,6 +4706,50 @@ export function App() {
   const accountingEnabled = enabledProductKeys.has('accounting');
   const growthProductEnabled = enabledProductKeys.has('growth');
   const growthWorkspaceAvailable = canReadGrowthConversations;
+  const currentTenantSlug = currentTenancy?.tenant.slug ?? null;
+  const invoicingWorkspaceQuery = useInvoicingWorkspaceQuery(
+    token,
+    currentTenantSlug,
+    invoicingEnabled,
+  );
+  const customers = invoicingWorkspaceQuery.data?.customers ?? [];
+  const taxRates = invoicingWorkspaceQuery.data?.taxRates ?? [];
+  const invoices = invoicingWorkspaceQuery.data?.invoices ?? [];
+  const invoicingReport = invoicingWorkspaceQuery.data?.invoicingReport ?? null;
+  const invoiceDocumentDraftingAssist =
+    invoicingWorkspaceQuery.data?.invoiceDocumentDraftingAssist ?? null;
+  const electronicSandboxReadiness =
+    invoicingWorkspaceQuery.data?.electronicSandboxReadiness ?? null;
+  const electronicSignatureMaterialInspection =
+    invoicingWorkspaceQuery.data?.electronicSignatureMaterialInspection ?? null;
+  const electronicSubmissionSettings =
+    invoicingWorkspaceQuery.data?.electronicSubmissionSettings ?? null;
+  const electronicSignatureSettings =
+    invoicingWorkspaceQuery.data?.electronicSignatureSettings ?? null;
+  const issuerProfile = invoicingWorkspaceQuery.data?.issuerProfile ?? null;
+  const invoiceNumberingSettings =
+    invoicingWorkspaceQuery.data?.invoiceNumberingSettings ?? null;
+  const extractedCertificateTaxId = useMemo(() => {
+    const value =
+      electronicSignatureMaterialInspection?.inspection.extractedTaxId?.trim() ??
+      '';
+
+    return value || null;
+  }, [electronicSignatureMaterialInspection]);
+  const issuerTaxIdMatchesCertificate = useMemo(() => {
+    if (!extractedCertificateTaxId || !issuerTaxId.trim()) {
+      return null;
+    }
+
+    return extractedCertificateTaxId === issuerTaxId.trim();
+  }, [extractedCertificateTaxId, issuerTaxId]);
+  const invoicingLoading = Boolean(token && currentTenancy && invoicingEnabled) &&
+    (invoicingWorkspaceQuery.isLoading || invoicingWorkspaceQuery.isFetching);
+  const invoicingQueryError =
+    invoicingWorkspaceQuery.error instanceof Error
+      ? invoicingWorkspaceQuery.error.message
+      : null;
+  const effectiveInvoicingError = invoicingError ?? invoicingQueryError;
   const currentTenantGrowthAccessible = Boolean(
     currentTenancy?.permissionKeys.includes('growth.conversations.read'),
   );
@@ -9587,17 +9553,6 @@ export function App() {
 
   useEffect(() => {
     if (!token || !currentTenancy || !invoicingEnabled) {
-      setCustomers([]);
-      setTaxRates([]);
-      setInvoices([]);
-      setElectronicSandboxReadiness(null);
-      setElectronicSignatureMaterialInspection(null);
-      setElectronicSubmissionSettings(null);
-      setElectronicSignatureSettings(null);
-      setIssuerProfile(null);
-      setInvoiceNumberingSettings(null);
-      setInvoicingReport(null);
-      setInvoiceDocumentDraftingAssist(null);
       clearAiAgentWorkspaceSupportBundle('invoice-document-assistant');
       setSelectedInvoiceId(null);
       setSelectedInvoiceDetail(null);
@@ -9609,66 +9564,23 @@ export function App() {
     }
 
     const tenantSlug = currentTenancy.tenant.slug;
-    const invoiceId = selectedInvoiceId;
     let cancelled = false;
 
-    async function loadInvoicingWorkspace() {
-      setInvoicingLoading(true);
-      setInvoicingError(null);
-
+    async function loadInvoiceAiSupportBundle() {
       try {
-        const [
-          nextCustomers,
-          nextTaxRates,
-          nextInvoices,
-          nextReport,
-          nextSettings,
-          nextDraftingAssist,
-          nextAiSupportBundle,
-        ] =
-          await Promise.all([
-          listCustomers(token, tenantSlug),
-          listTaxRates(token, tenantSlug),
-          listInvoices(token, tenantSlug),
-          fetchInvoicingReportSummary(token, tenantSlug),
-          loadOptionalInvoicingSettings(token, tenantSlug),
-          fetchInvoiceDocumentDraftingAssist(token, tenantSlug).catch(() => null),
-          fetchAiAgentWorkspaceSupportBundle(
-            'invoice-document-assistant',
-            tenantSlug,
-          ),
-        ]);
+        const nextAiSupportBundle = await fetchAiAgentWorkspaceSupportBundle(
+          'invoice-document-assistant',
+          tenantSlug,
+        );
 
         if (cancelled) {
           return;
         }
 
         startTransition(() => {
-          setCustomers(nextCustomers);
-          setTaxRates(nextTaxRates);
-          setInvoices(nextInvoices);
-          setElectronicSandboxReadiness(
-            nextSettings.electronicSandboxReadiness,
-          );
-          setElectronicSignatureMaterialInspection(
-            nextSettings.electronicSignatureMaterialInspection,
-          );
-          setElectronicSubmissionSettings(
-            nextSettings.electronicSubmissionSettings,
-          );
-          setElectronicSignatureSettings(nextSettings.electronicSignatureSettings);
-          setIssuerProfile(nextSettings.issuerProfile);
-          setInvoiceNumberingSettings(nextSettings.invoiceNumberingSettings);
-          setInvoicingReport(nextReport);
-          setInvoiceDocumentDraftingAssist(nextDraftingAssist);
           applyAiAgentWorkspaceSupportBundle(
             'invoice-document-assistant',
             nextAiSupportBundle,
-          );
-          setSelectedInvoiceId((currentSelection) =>
-            nextInvoices.some((invoice) => invoice.id === currentSelection)
-              ? currentSelection
-              : nextInvoices[0]?.id ?? null,
           );
         });
       } catch (error) {
@@ -9676,39 +9588,33 @@ export function App() {
           return;
         }
 
-        setCustomers([]);
-        setElectronicSandboxReadiness(null);
-        setElectronicSignatureMaterialInspection(null);
-        setElectronicSignatureSettings(null);
-        setIssuerProfile(null);
-        setInvoiceNumberingSettings(null);
-        setInvoicingReport(null);
-        setInvoiceDocumentDraftingAssist(null);
         clearAiAgentWorkspaceSupportBundle('invoice-document-assistant');
-        setInvoices([]);
-        setSelectedInvoiceId(null);
-        setSelectedInvoiceDetail(null);
-        setSelectedInvoiceDocument(null);
-        setSelectedInvoiceArtifacts(null);
-        setSelectedInvoiceRide(null);
         setInvoicingError(
           error instanceof Error
             ? error.message
-            : 'No se pudo cargar el workspace de invoicing.',
+            : 'No se pudo cargar el soporte AI de invoicing.',
         );
-      } finally {
-        if (!cancelled) {
-          setInvoicingLoading(false);
-        }
       }
     }
 
-    void loadInvoicingWorkspace();
+    void loadInvoiceAiSupportBundle();
 
     return () => {
       cancelled = true;
     };
   }, [currentTenancy, invoicingEnabled, token]);
+
+  useEffect(() => {
+    if (!token || !currentTenancy || !invoicingEnabled) {
+      return;
+    }
+
+    setSelectedInvoiceId((currentSelection) =>
+      invoices.some((invoice) => invoice.id === currentSelection)
+        ? currentSelection
+        : invoices[0]?.id ?? null,
+    );
+  }, [currentTenancy, invoices, invoicingEnabled, token]);
 
   useEffect(() => {
     if (!token || !currentTenancy || !invoicingEnabled) {
@@ -20245,26 +20151,11 @@ export function App() {
     }
 
     const tenantSlug = currentTenancy.tenant.slug;
-    setInvoicingLoading(true);
     setInvoicingError(null);
 
     try {
-      const [
-        nextTaxRates,
-        nextCustomers,
-        nextInvoices,
-        nextReport,
-        nextSettings,
-        nextDraftingAssist,
-        nextAiSupportBundle,
-      ] =
-        await Promise.all([
-        listTaxRates(token, tenantSlug),
-        listCustomers(token, tenantSlug),
-        listInvoices(token, tenantSlug),
-        fetchInvoicingReportSummary(token, tenantSlug),
-        loadOptionalInvoicingSettings(token, tenantSlug),
-        fetchInvoiceDocumentDraftingAssist(token, tenantSlug).catch(() => null),
+      const [workspaceResult, nextAiSupportBundle] = await Promise.all([
+        invoicingWorkspaceQuery.refetch(),
         fetchAiAgentWorkspaceSupportBundle(
           'invoice-document-assistant',
           tenantSlug,
@@ -20272,23 +20163,11 @@ export function App() {
       ]);
 
       startTransition(() => {
-        setTaxRates(nextTaxRates);
-        setCustomers(nextCustomers);
-        setInvoices(nextInvoices);
-        setElectronicSandboxReadiness(nextSettings.electronicSandboxReadiness);
-        setElectronicSignatureMaterialInspection(
-          nextSettings.electronicSignatureMaterialInspection,
-        );
-        setElectronicSubmissionSettings(nextSettings.electronicSubmissionSettings);
-        setElectronicSignatureSettings(nextSettings.electronicSignatureSettings);
-        setIssuerProfile(nextSettings.issuerProfile);
-        setInvoiceNumberingSettings(nextSettings.invoiceNumberingSettings);
-        setInvoicingReport(nextReport);
-        setInvoiceDocumentDraftingAssist(nextDraftingAssist);
         applyAiAgentWorkspaceSupportBundle(
           'invoice-document-assistant',
           nextAiSupportBundle,
         );
+        const nextInvoices = workspaceResult.data?.invoices ?? [];
         const preferredInvoiceId = options?.selectInvoiceId;
         if (
           preferredInvoiceId &&
@@ -20310,9 +20189,38 @@ export function App() {
           ? error.message
           : 'No se pudo refrescar el workspace de invoicing.',
       );
-    } finally {
-      setInvoicingLoading(false);
     }
+  }
+
+  function patchInvoicingWorkspaceInvoiceSummary(
+    nextInvoice: InvoiceDetailResponse,
+  ) {
+    if (!token || !currentTenantSlug) {
+      return;
+    }
+
+    queryClient.setQueryData<InvoicingWorkspaceQueryData | undefined>(
+      invoicingQueryKeys.workspace(token, currentTenantSlug),
+      (current) => {
+        if (!current) {
+          return current;
+        }
+
+        return {
+          ...current,
+          invoices: current.invoices.map((entry) =>
+            entry.id === nextInvoice.id
+              ? {
+                  ...entry,
+                  status: nextInvoice.status,
+                  updatedAt: nextInvoice.updatedAt,
+                  settlement: nextInvoice.settlement,
+                }
+              : entry,
+          ),
+        };
+      },
+    );
   }
 
   async function refreshTaxComplianceWorkspace() {
@@ -24782,18 +24690,7 @@ export function App() {
         }
         if (result.invoice) {
           setSelectedInvoiceDetail(result.invoice);
-          setInvoices((current) =>
-            current.map((entry) =>
-              entry.id === result.invoice?.id
-                ? {
-                    ...entry,
-                    status: result.invoice.status,
-                    updatedAt: result.invoice.updatedAt,
-                    settlement: result.invoice.settlement,
-                  }
-                : entry,
-            ),
-          );
+          patchInvoicingWorkspaceInvoiceSummary(result.invoice);
         }
       });
 
@@ -24855,18 +24752,7 @@ export function App() {
         }
         if (result.invoice) {
           setSelectedInvoiceDetail(result.invoice);
-          setInvoices((current) =>
-            current.map((entry) =>
-              entry.id === result.invoice?.id
-                ? {
-                    ...entry,
-                    status: result.invoice.status,
-                    updatedAt: result.invoice.updatedAt,
-                    settlement: result.invoice.settlement,
-                  }
-                : entry,
-            ),
-          );
+          patchInvoicingWorkspaceInvoiceSummary(result.invoice);
         }
       });
 
@@ -41567,7 +41453,9 @@ export function App() {
             </div>
           ) : (
             <div className={styles.stack}>
-              {invoicingError ? <p className={styles.errorBanner}>{invoicingError}</p> : null}
+              {effectiveInvoicingError ? (
+                <p className={styles.errorBanner}>{effectiveInvoicingError}</p>
+              ) : null}
               {invoicingActionMessage ? (
                 <p className={styles.successBanner}>{invoicingActionMessage}</p>
               ) : null}

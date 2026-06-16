@@ -112,14 +112,14 @@ Current split:
 - `features/invoicing/invoicing-workspace.tsx`: extracted summary component for
   the top of the existing Invoicing domain screen.
 - `features/invoicing/queries.ts`: stable TanStack Query key taxonomy for the
-  next migration of issuer profile, electronic submission, numbering, invoices
-  and report summary reads.
+  Invoicing workspace plus issuer profile, electronic submission, numbering,
+  invoices and report summary reads.
 - `features/invoicing/use-invoicing-workspace-model.ts`: memoized feature hook
   that keeps model creation outside the app composer.
 
-The first slice intentionally leaves write forms, invoice detail, XML/RIDE,
-payments and electronic submission actions in `app.tsx`; move them in smaller
-subsequent slices.
+The read-side workspace load now lives in the feature query layer. Write forms,
+invoice detail, XML/RIDE, payments and electronic submission actions still live
+in `app.tsx`; move them in smaller subsequent slices.
 
 ## Design System
 
@@ -146,8 +146,9 @@ Initial migrated surfaces:
 
 - platform catalog: plans + products
 - tenant enabled products
-- Invoicing query keys are defined, but existing reads still run through the
-  legacy `app.tsx` refresh flow until the next migration slice.
+- Invoicing workspace read-side data: customers, tax rates, invoices, report
+  summary, drafting assist, issuer profile, submission settings, numbering and
+  electronic readiness.
 
 Keep local `useState` for form drafts, selected UI rows, temporary action
 messages, and staged user input. Prefer query hooks for API reads before adding
@@ -169,7 +170,8 @@ new manual `useEffect` loading flows.
 
 ## Next Slices
 
-1. Move Invoicing read-side data loading to feature TanStack Query hooks.
+1. Extract the next Invoicing surface from `app.tsx`, starting with invoice
+   list/detail or settings/actions.
 2. Ask Claude Design for `02-invoicing-workspace` using the handoff contract and
    current extracted summary model.
 3. Implement `/tenancy/tenants/:tenantSlug/command-center` in the API when the

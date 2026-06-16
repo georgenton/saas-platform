@@ -1410,6 +1410,121 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.invoicingSRIStatusTriad {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.invoicingSRIStatusTile {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  padding: 16px 18px;
+}
+
+.invoicingSRIStatusTile strong {
+  color: var(--text-strong);
+}
+
+.invoicingSRIStatusTile small {
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.invoicingSRIStageCard {
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  padding: 16px 18px;
+}
+
+.invoicingSRIStageHeader {
+  display: grid;
+  gap: 4px;
+}
+
+.invoicingSRIStageStepper {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.invoicingSRIStageStepper small {
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.invoicingSRICopyGrid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.invoicingSRICopyCard {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  padding: 16px 18px;
+}
+
+.invoicingSRICopyValue {
+  color: var(--text-strong);
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.invoicingSRINextStepCard {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 90%, var(--primary-soft) 10%) 0%, var(--surface-sunken) 100%);
+  border: 1px solid color-mix(in srgb, var(--border) 74%, var(--primary) 26%);
+  border-left: 3px solid var(--primary);
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  padding: 16px 18px;
+}
+
+.invoicingSRINextStepHeader {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.invoicingSRINextStepTitle {
+  color: var(--text-strong);
+  line-height: 1.3;
+}
+
+.invoicingSRINextStepDescription {
+  color: var(--text);
+  line-height: 1.55;
+  margin: 0;
+}
+
+.invoicingSRIDisclosureDivider {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+}
+
+.invoicingSRIDisclosureDivider::after {
+  background: var(--divider);
+  content: '';
+  flex: 1;
+  height: 1px;
+}
+
 .invoicingSRIActionCue {
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 90%, var(--primary-soft) 10%) 0%, var(--surface-sunken) 100%);
@@ -1461,6 +1576,29 @@
   line-height: 1.45;
 }
 
+.invoicingSRICompactMetaRow {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.invoicingSRIDisclosureButtonSecondary {
+  background: var(--surface-sunken);
+  border: 1px dashed var(--border-strong);
+  border-radius: 8px;
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  padding: 14px 18px;
+}
+
+.invoicingSRIDisclosureButtonSecondary:hover {
+  transform: translateY(-1px);
+}
+
 .invoicingSRIFormCard {
   background: var(--surface-sunken);
   border: 1px solid var(--border);
@@ -1468,6 +1606,18 @@
   display: grid;
   gap: 14px;
   padding: 18px;
+}
+
+.invoicingSRIInterventionPanel {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-sunken) 84%, var(--primary-soft) 16%) 0%, var(--surface-sunken) 100%);
+  border-color: color-mix(in srgb, var(--border) 72%, var(--primary) 28%);
+}
+
+.invoicingSRIFallbackPanel {
+  background: color-mix(in srgb, var(--surface-sunken) 92%, var(--warning-soft) 8%);
+  border-style: dashed;
+  border-color: var(--border-strong);
 }
 
 .invoicingSRISectionIntro {
@@ -1483,6 +1633,74 @@
   color: var(--text);
   line-height: 1.55;
   margin: 0;
+}
+
+.invoicingSRIInterventionAlert {
+  background: var(--danger-soft);
+  border: 1px solid color-mix(in srgb, var(--danger) 44%, var(--border) 56%);
+  border-radius: 8px;
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px;
+}
+
+.invoicingSRIInterventionAlert strong {
+  color: var(--text-strong);
+}
+
+.invoicingSRIInterventionAlert p {
+  color: var(--text);
+  line-height: 1.55;
+  margin: 0;
+}
+
+.invoicingSRIFallbackTagRow {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.invoicingSRITraceSummaryCard {
+  background: var(--surface-sunken);
+  border-style: solid;
+  box-shadow: none;
+}
+
+.invoicingSRITraceEventCard {
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+}
+
+.invoicingSRITraceMessage {
+  color: var(--text);
+  line-height: 1.55;
+  margin: 0;
+}
+
+.invoicingSRITraceDetails {
+  display: grid;
+  gap: 8px;
+}
+
+.invoicingSRITraceDetails summary {
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.invoicingSRITraceNestedCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px;
 }
 
 .operatorBrief {
@@ -1874,7 +2092,9 @@
   .invoiceKpiGrid,
   .invoicingReadinessRibbon,
   .invoicingWorkspaceLayout,
+  .invoicingSRIStatusTriad,
   .invoicingSRIOverview,
+  .invoicingSRICopyGrid,
   .invoicingSRICompactRow,
   .identityBlock,
   .sessionStateGrid,
@@ -1922,7 +2142,9 @@
   .invoiceKpiGrid,
   .invoicingReadinessRibbon,
   .invoicingWorkspaceLayout,
+  .invoicingSRIStatusTriad,
   .invoicingSRIOverview,
+  .invoicingSRICopyGrid,
   .invoicingSRICompactRow,
   .selectorGrid,
   .identityBlock,
@@ -1948,6 +2170,11 @@
   }
 
   .invoicingHeroHeader {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .invoicingSRINextStepHeader {
     align-items: stretch;
     flex-direction: column;
   }

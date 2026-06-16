@@ -80,7 +80,13 @@ export function InvoicingElectronicStatusPanel({
     selectedInvoiceDetail.electronicStatus === 'submitted' ||
       selectedInvoiceDetail.electronicStatus === 'rejected',
   );
-  const [showFallbackBridge, setShowFallbackBridge] = useState(false);
+  const [showFallbackBridge, setShowFallbackBridge] = useState(
+    Boolean(presignedInvoiceXml.trim()) ||
+      Boolean(
+        selectedInvoiceDocumentSupport &&
+          !selectedInvoiceDocumentSupport.submitSupported,
+      ),
+  );
 
   const electronicStageTone =
     selectedInvoiceDetail.electronicStatus === 'authorized'
@@ -107,6 +113,17 @@ export function InvoicingElectronicStatusPanel({
   const fallbackSummary = presignedInvoiceXml.trim()
     ? 'Hay un XML prefirmado listo para pruebas reales de sandbox.'
     : 'Ruta reservada para pruebas avanzadas con firma externa.';
+  const nextStep = buildNextStep({
+    canSubmitElectronicDocument,
+    invoiceAccessKey,
+    onCheckAuthorization,
+    onLoadXmlPreview,
+    onSubmitElectronicDocument,
+    onToggleFallback: () => setShowFallbackBridge(true),
+    onToggleManualControl: () => setShowManualControl(true),
+    selectedInvoiceDetail,
+    selectedInvoiceDocumentSupport,
+  });
 
   return (
     <div className={styles.detailCard}>
@@ -121,45 +138,65 @@ export function InvoicingElectronicStatusPanel({
             : selectedInvoiceDetail.electronicStatus === 'rejected'
               ? 'Rechazada'
               : selectedInvoiceDetail.electronicStatus === 'submitted'
-                ? 'En el SRI'
+                ? 'Enviado'
                 : selectedInvoiceDetail.electronicStatus === 'pending_submission'
                   ? 'Pendiente'
                   : 'Borrador'}
         </StatusPill>
       </div>
 
-      <div className={styles.invoicingSRIOverview}>
-        <div className={styles.commercialCard}>
-          <span className={styles.muted}>Documento</span>
-          <strong>{humanizeDocumentStatus(selectedInvoiceDetail.status)}</strong>
-          <small>Condición operativa interna</small>
-        </div>
-        <div className={styles.commercialCard}>
-          <span className={styles.muted}>Estado SRI</span>
-          <strong>
-            {humanizeElectronicStatus(selectedInvoiceDetail.electronicStatus)}
-          </strong>
-          <small>Condición legal del comprobante</small>
-        </div>
-        <div className={styles.commercialCard}>
-          <span className={styles.muted}>Clave de acceso</span>
-          <strong>{invoiceAccessKey.trim() ? 'Lista' : 'Derivable'}</strong>
-          <small>
-            {invoiceAccessKey.trim()
-              ? 'Se enviará la clave indicada'
-              : 'El backend puede componerla'}
+      <StatusTriad
+        accessKeyReady={Boolean(invoiceAccessKey.trim())}
+        documentStatus={selectedInvoiceDetail.status}
+        electronicStatus={selectedInvoiceDetail.electronicStatus}
+      />
+
+      <div className={styles.invoicingSRIStageCard}>
+        <div className={styles.invoicingSRIStageHeader}>
+          <span className={styles.label}>Lifecycle</span>
+          <small className={styles.muted}>
+            No se marca como autorizado hasta confirmación real del backend.
           </small>
         </div>
+        <SRIStageStepper status={selectedInvoiceDetail.electronicStatus} />
       </div>
 
-      <div className={styles.invoicingSRIActionCue}>
-        <strong>{primaryGuidance(selectedInvoiceDetail.electronicStatus)}</strong>
-        <p>
-          {secondaryGuidance(
-            selectedInvoiceDetail.electronicStatus,
-            canSubmitElectronicDocument,
-          )}
+      {selectedInvoiceDetail.electronicStatus === 'authorized' &&
+      invoiceAccessKey.trim() ? (
+        <div className={styles.invoicingSRICopyGrid}>
+          <CopyValueCard
+            label="Clave de acceso"
+            value={invoiceAccessKey}
+          />
+          <CopyValueCard
+            label="No. autorización"
+            value={invoiceAuthorizationNumber.trim() || 'Sin número registrado'}
+          />
+        </div>
+      ) : null}
+
+      <div className={styles.invoicingSRINextStepCard}>
+        <div className={styles.invoicingSRINextStepHeader}>
+          <span className={styles.label}>Siguiente paso recomendado</span>
+          <StatusPill tone={nextStep.tone}>{nextStep.pill}</StatusPill>
+        </div>
+        <strong className={styles.invoicingSRINextStepTitle}>
+          {nextStep.title}
+        </strong>
+        <p className={styles.invoicingSRINextStepDescription}>
+          {nextStep.description}
         </p>
+        <div className={styles.inlineActionRow}>
+          {nextStep.primaryAction}
+          {nextStep.secondaryAction}
+        </div>
+        {nextStep.footnote ? (
+          <small className={styles.muted}>{nextStep.footnote}</small>
+        ) : null}
+      </div>
+
+      <div className={styles.invoicingSRIDisclosureDivider}>
+        <span className={styles.label}>Controles avanzados</span>
       </div>
 
       <div className={styles.invoicingSRICompactRow}>
@@ -179,13 +216,21 @@ export function InvoicingElectronicStatusPanel({
               Legal: {humanizeElectronicStatus(selectedInvoiceDetail.electronicStatus)}
             </small>
           </div>
+          <div className={styles.invoicingSRICompactMetaRow}>
+            <small className={styles.muted}>
+              {showManualControl
+                ? 'Detalle visible para intervención activa.'
+                : 'Oculto por defecto hasta que realmente haga falta.'}
+            </small>
+            <StatusPill>{showManualControl ? 'Abierto' : 'Cerrado'}</StatusPill>
+          </div>
           <div className={styles.inlineActionRow}>
             <button
               className={styles.secondaryButton}
               onClick={() => setShowManualControl((value) => !value)}
               type="button"
             >
-              {showManualControl ? 'Ocultar detalle SRI' : 'Ver detalle SRI'}
+              {showManualControl ? 'Ocultar detalle SRI' : 'Abrir detalle SRI'}
             </button>
             <button
               className={styles.ghostButton}
@@ -211,13 +256,21 @@ export function InvoicingElectronicStatusPanel({
               Úsalo cuando necesites probar sandbox con firma externa real.
             </small>
           </div>
+          <div className={styles.invoicingSRICompactMetaRow}>
+            <small className={styles.muted}>
+              {showFallbackBridge
+                ? 'Ruta avanzada visible solo por decisión explícita.'
+                : 'Permanece secundaria mientras el carril normal esté disponible.'}
+            </small>
+            <StatusPill>{showFallbackBridge ? 'Abierto' : 'Cerrado'}</StatusPill>
+          </div>
           <div className={styles.inlineActionRow}>
             <button
-              className={styles.ghostButton}
+              className={styles.invoicingSRIDisclosureButtonSecondary}
               onClick={() => setShowFallbackBridge((value) => !value)}
               type="button"
             >
-              {showFallbackBridge ? 'Ocultar fallback' : 'Ver fallback técnico'}
+              {showFallbackBridge ? 'Ocultar fallback' : 'Abrir fallback técnico'}
             </button>
           </div>
         </div>
@@ -232,7 +285,7 @@ export function InvoicingElectronicStatusPanel({
 
       {showManualControl ? (
         <form
-          className={styles.invoicingSRIFormCard}
+          className={`${styles.invoicingSRIFormCard} ${styles.invoicingSRIInterventionPanel}`}
           onSubmit={(event) => {
             event.preventDefault();
             onUpdateElectronicStatus();
@@ -255,6 +308,18 @@ export function InvoicingElectronicStatusPanel({
               estado legal que regresó desde el SRI.
             </p>
           </div>
+
+          {selectedInvoiceDetail.electronicStatus === 'rejected' &&
+          selectedInvoiceDetail.electronicStatusMessage ? (
+            <div className={styles.invoicingSRIInterventionAlert}>
+              <span className={styles.label}>Observación activa</span>
+              <strong>
+                El SRI devolvió este comprobante y conviene documentar la causa
+                antes de regenerar.
+              </strong>
+              <p>{selectedInvoiceDetail.electronicStatusMessage}</p>
+            </div>
+          ) : null}
 
           <div className={styles.invoiceInlineGrid}>
             <label className={styles.field}>
@@ -344,7 +409,7 @@ export function InvoicingElectronicStatusPanel({
 
       {showFallbackBridge ? (
         <form
-          className={styles.invoicingSRIFormCard}
+          className={`${styles.invoicingSRIFormCard} ${styles.invoicingSRIFallbackPanel}`}
           onSubmit={(event) => {
             event.preventDefault();
             onSubmitPresignedInvoiceElectronicDocument();
@@ -355,7 +420,7 @@ export function InvoicingElectronicStatusPanel({
               <span className={styles.label}>External signed XML</span>
               <h3>Puente para sandbox real</h3>
             </div>
-            <StatusPill>Fallback</StatusPill>
+            <StatusPill tone="warning">Avanzado</StatusPill>
           </div>
 
           <div className={styles.invoicingSRISectionIntro}>
@@ -364,6 +429,14 @@ export function InvoicingElectronicStatusPanel({
               mientras la firma XAdES nativa del producto sigue en evolución. No
               es la ruta principal del operador.
             </p>
+          </div>
+
+          <div className={styles.invoicingSRIFallbackTagRow}>
+            <StatusPill>Secundario</StatusPill>
+            <small className={styles.muted}>
+              Úsalo solo cuando el carril principal no aplique o cuando estés
+              validando sandbox con una firma externa real.
+            </small>
           </div>
 
           <label className={styles.field}>
@@ -388,7 +461,7 @@ export function InvoicingElectronicStatusPanel({
 
           <div className={styles.inlineActionRow}>
             <button
-              className={styles.primaryButton}
+              className={styles.secondaryButton}
               disabled={
                 actionLoading === 'submit-invoice-electronic-document' ||
                 selectedInvoiceDetail.status === 'draft' ||
@@ -416,7 +489,7 @@ export function InvoicingElectronicStatusPanel({
                 : 'Consultar autorizacion (stub)'}
             </button>
             <button
-              className={styles.primaryButton}
+              className={styles.invoicingSRIDisclosureButtonSecondary}
               disabled={
                 actionLoading === 'submit-presigned-invoice-electronic-document' ||
                 selectedInvoiceDetail.status === 'draft' ||
@@ -465,7 +538,9 @@ export function InvoicingTechnicalTracePanel({
         </StatusPill>
       </div>
 
-      <div className={styles.invoicingSRICompactCard}>
+      <div
+        className={`${styles.invoicingSRICompactCard} ${styles.invoicingSRITraceSummaryCard}`}
+      >
         <p>
           Este bloque conserva evidencia técnica para soporte y diagnóstico, pero
           no debería competir visualmente con la operación diaria.
@@ -476,7 +551,7 @@ export function InvoicingTechnicalTracePanel({
             onClick={() => setShowTrace((value) => !value)}
             type="button"
           >
-            {showTrace ? 'Ocultar historial técnico' : 'Ver historial técnico'}
+            {showTrace ? 'Ocultar historial técnico' : 'Abrir historial técnico'}
           </button>
         </div>
       </div>
@@ -484,23 +559,31 @@ export function InvoicingTechnicalTracePanel({
       {showTrace ? (
         <div className={styles.stack}>
           {selectedInvoiceDetail.electronicEvents.map((event) => (
-            <div className={styles.detailCard} key={event.id}>
-              <span className={styles.muted}>
-                {event.eventType === 'submission'
-                  ? 'Envio'
-                  : 'Consulta de autorizacion'}
-              </span>
+            <div
+              className={styles.invoicingSRITraceEventCard}
+              key={event.id}
+            >
+              <div className={styles.invoiceCardHeader}>
+                <span className={styles.muted}>
+                  {event.eventType === 'submission'
+                    ? 'Envio'
+                    : 'Consulta de autorizacion'}
+                </span>
+                <StatusPill tone={providerStatusTone(event.providerStatus)}>
+                  {event.providerStatus}
+                </StatusPill>
+              </div>
               <strong>
-                {event.provider} / {event.providerStatus}
+                {event.provider}
+                {event.endpoint ? ` · ${event.endpoint}` : ''}
               </strong>
               <small>{formatDate(event.occurredAt)}</small>
-              <small>{event.message}</small>
+              <p className={styles.invoicingSRITraceMessage}>{event.message}</p>
               {event.sriDiagnostics?.summary ? (
                 <small>Diagnostico SRI: {event.sriDiagnostics.summary}</small>
               ) : null}
               <small>
                 {event.soapAction ? `SOAP ${event.soapAction}` : 'Sin SOAP action'}
-                {event.endpoint ? ` · ${event.endpoint}` : ''}
               </small>
               {event.submissionReference ? (
                 <small>Ref: {event.submissionReference}</small>
@@ -509,12 +592,12 @@ export function InvoicingTechnicalTracePanel({
                 <small>Autorizacion: {event.authorizationNumber}</small>
               ) : null}
               {event.sriDiagnostics?.messages.length ? (
-                <details>
+                <details className={styles.invoicingSRITraceDetails}>
                   <summary>Mensajes estructurados SRI</summary>
                   <div className={styles.stack}>
                     {event.sriDiagnostics.messages.map((message, index) => (
                       <div
-                        className={styles.detailCard}
+                        className={styles.invoicingSRITraceNestedCard}
                         key={`${event.id}-sri-message-${index}`}
                       >
                         <small>
@@ -536,13 +619,13 @@ export function InvoicingTechnicalTracePanel({
                 </details>
               ) : null}
               {event.requestPayload ? (
-                <details>
+                <details className={styles.invoicingSRITraceDetails}>
                   <summary>Request payload</summary>
                   <pre className={styles.codeBlock}>{event.requestPayload}</pre>
                 </details>
               ) : null}
               {event.responsePayload ? (
-                <details>
+                <details className={styles.invoicingSRITraceDetails}>
                   <summary>Response payload</summary>
                   <pre className={styles.codeBlock}>{event.responsePayload}</pre>
                 </details>
@@ -553,6 +636,393 @@ export function InvoicingTechnicalTracePanel({
       ) : null}
     </div>
   );
+}
+
+type BuildNextStepInput = {
+  canSubmitElectronicDocument: boolean;
+  invoiceAccessKey: string;
+  onCheckAuthorization: () => void;
+  onLoadXmlPreview: () => void;
+  onSubmitElectronicDocument: () => void;
+  onToggleFallback: () => void;
+  onToggleManualControl: () => void;
+  selectedInvoiceDetail: InvoiceDetailResponse;
+  selectedInvoiceDocumentSupport:
+    | ElectronicSandboxReadinessResponse['documentSupport'][number]
+    | null;
+};
+
+function buildNextStep({
+  canSubmitElectronicDocument,
+  invoiceAccessKey,
+  onCheckAuthorization,
+  onLoadXmlPreview,
+  onSubmitElectronicDocument,
+  onToggleFallback,
+  onToggleManualControl,
+  selectedInvoiceDetail,
+  selectedInvoiceDocumentSupport,
+}: BuildNextStepInput) {
+  const unsupported = selectedInvoiceDocumentSupport?.submitSupported === false;
+  const status = selectedInvoiceDetail.electronicStatus;
+  const readinessBlocked = !canSubmitElectronicDocument;
+
+  if (unsupported) {
+    return {
+      description:
+        selectedInvoiceDocumentSupport?.detail ??
+        'Este documento todavía necesita una ruta alternativa de operación.',
+      footnote: 'El camino normal queda bloqueado mientras el soporte siga incompleto.',
+      pill: 'Compatibilidad',
+      primaryAction: (
+        <button
+          className={styles.secondaryButton}
+          onClick={onToggleFallback}
+          type="button"
+        >
+          Ver fallback técnico
+        </button>
+      ),
+      secondaryAction: (
+        <button
+          className={styles.ghostButton}
+          onClick={onLoadXmlPreview}
+          type="button"
+        >
+          Ver XML preliminar
+        </button>
+      ),
+      title: 'Este tipo de comprobante aún no sigue la ruta automática del SRI.',
+      tone: 'warning' as const,
+    };
+  }
+
+  if (readinessBlocked) {
+    return {
+      description:
+        'Hay un bloqueo activo en el carril electrónico. Conviene resolverlo antes de firmar, enviar o conciliar el comprobante.',
+      footnote:
+        'El documento se mantiene seguro; solo pausamos las acciones que podrían generar una falsa sensación de autorización.',
+      pill: 'Bloqueado',
+      primaryAction: (
+        <button
+          className={styles.primaryButton}
+          onClick={onToggleManualControl}
+          type="button"
+        >
+          Revisar intervención
+        </button>
+      ),
+      secondaryAction: (
+        <button
+          className={styles.ghostButton}
+          onClick={onLoadXmlPreview}
+          type="button"
+        >
+          Ver XML preliminar
+        </button>
+      ),
+      title: 'Primero resolvamos el bloqueo del readiness SRI.',
+      tone: 'danger' as const,
+    };
+  }
+
+  if (status === 'submitted') {
+    return {
+      description:
+        'El SRI ya recibió el comprobante. El siguiente paso correcto es consultar la autorización; todavía no debe tratarse como un documento autorizado.',
+      footnote: selectedInvoiceDetail.submittedAt
+        ? `Último envío registrado: ${selectedInvoiceDetail.submittedAt}. Esto no implica autorización.`
+        : 'El envío está registrado, pero aún no hay confirmación de autorización.',
+      pill: 'En seguimiento',
+      primaryAction: (
+        <button
+          className={styles.primaryButton}
+          onClick={onCheckAuthorization}
+          type="button"
+        >
+          Consultar autorización
+        </button>
+      ),
+      secondaryAction: (
+        <button
+          className={styles.ghostButton}
+          onClick={onToggleManualControl}
+          type="button"
+        >
+          Revisar intervención
+        </button>
+      ),
+      title: 'El SRI está procesando este comprobante.',
+      tone: 'warning' as const,
+    };
+  }
+
+  if (status === 'authorized') {
+    return {
+      description:
+        'El comprobante ya es legalmente válido. Mantén visibles la clave de acceso y el número de autorización para soporte, contabilidad y tributación.',
+      footnote: invoiceAccessKey.trim()
+        ? 'Puedes copiar los datos de autorización desde este mismo panel.'
+        : null,
+      pill: 'Autorizado',
+      primaryAction: (
+        <button
+          className={styles.secondaryButton}
+          onClick={onLoadXmlPreview}
+          type="button"
+        >
+          Ver XML autorizado
+        </button>
+      ),
+      secondaryAction: (
+        <button
+          className={styles.ghostButton}
+          onClick={onToggleManualControl}
+          type="button"
+        >
+          Ver detalle SRI
+        </button>
+      ),
+      title: 'El comprobante ya fue autorizado por el SRI.',
+      tone: 'success' as const,
+    };
+  }
+
+  if (status === 'rejected') {
+    return {
+      description:
+        'Conviene revisar la observación del SRI, corregir la causa documentada y recién después regenerar el artefacto correcto.',
+      footnote:
+        selectedInvoiceDetail.electronicStatusMessage ??
+        'La devolución del SRI debe quedar documentada antes de cualquier nuevo intento.',
+      pill: 'Rechazado',
+      primaryAction: (
+        <button
+          className={styles.primaryButton}
+          onClick={onToggleManualControl}
+          type="button"
+        >
+          Revisar observación
+        </button>
+      ),
+      secondaryAction: (
+        <button
+          className={styles.ghostButton}
+          onClick={onLoadXmlPreview}
+          type="button"
+        >
+          Ver XML preliminar
+        </button>
+      ),
+      title: 'El SRI devolvió este comprobante.',
+      tone: 'danger' as const,
+    };
+  }
+
+  return {
+    description:
+      'La firma, el gateway y la numeración ya permiten avanzar. El siguiente paso operativo es firmar y enviar el comprobante al SRI.',
+    footnote: invoiceAccessKey.trim()
+      ? 'La clave de acceso ya está preparada para el envío.'
+      : 'La clave de acceso puede derivarse desde el backend al momento de operar.',
+    pill: 'Listo para enviar',
+    primaryAction: (
+      <button
+        className={styles.primaryButton}
+        onClick={onSubmitElectronicDocument}
+        type="button"
+      >
+        Firmar y enviar al SRI
+      </button>
+    ),
+    secondaryAction: (
+      <button
+        className={styles.ghostButton}
+        onClick={onLoadXmlPreview}
+        type="button"
+      >
+        Ver XML preliminar
+      </button>
+    ),
+    title: 'Tu siguiente paso es iniciar el envío al SRI.',
+    tone: 'default' as const,
+  };
+}
+
+function StatusTriad({
+  accessKeyReady,
+  documentStatus,
+  electronicStatus,
+}: {
+  accessKeyReady: boolean;
+  documentStatus: string;
+  electronicStatus: string | null;
+}) {
+  const items = [
+    {
+      key: 'document',
+      label: 'Documento',
+      value: humanizeDocumentStatus(documentStatus),
+      detail: 'Condición operativa interna',
+      tone: 'default' as const,
+    },
+    {
+      key: 'sri',
+      label: 'Estado SRI',
+      value: humanizeElectronicStatus(electronicStatus),
+      detail: 'Condición legal del comprobante',
+      tone: statusPillTone(electronicStatus),
+    },
+    {
+      key: 'access-key',
+      label: 'Clave de acceso',
+      value: accessKeyReady ? 'Lista' : 'Derivable',
+      detail: accessKeyReady
+        ? 'Disponible para evidencia y soporte'
+        : 'El backend puede componerla',
+      tone: accessKeyReady ? 'success' : 'default',
+    },
+  ];
+
+  return (
+    <div className={styles.invoicingSRIStatusTriad}>
+      {items.map((item) => (
+        <div className={styles.invoicingSRIStatusTile} key={item.key}>
+          <span className={styles.muted}>{item.label}</span>
+          <div className={styles.invoiceCardHeader}>
+            <strong>{item.value}</strong>
+            <StatusPill tone={item.tone}>{item.label}</StatusPill>
+          </div>
+          <small>{item.detail}</small>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SRIStageStepper({ status }: { status: string | null }) {
+  const currentStage = sriStageIndex(status);
+
+  return (
+    <div className={styles.invoicingSRIStageStepper}>
+      {['Preparado', 'Enviado al SRI', 'Autorizado'].map((label, index) => {
+        const isRejected = status === 'rejected' && index === 1;
+        const isDone = index < currentStage;
+        const isCurrent = index === currentStage;
+        const toneClass = isRejected
+          ? styles.invoicingStepperNodeDanger
+          : isDone
+            ? styles.invoicingStepperNodeSuccess
+            : isCurrent
+              ? styles.invoicingStepperNodeWarning
+              : styles.invoicingStepperNodeNeutral;
+
+        return (
+          <div className={styles.invoicingStepperStep} key={label}>
+            <span
+              className={`${styles.invoicingStepperNode} ${toneClass}`.trim()}
+            >
+              {isRejected ? '!' : index + 1}
+            </span>
+            <small>{isRejected ? 'Rechazado' : label}</small>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function CopyValueCard({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  async function handleCopy() {
+    if (!value || value === 'Sin número registrado') {
+      return;
+    }
+
+    if (typeof navigator === 'undefined' || !navigator.clipboard) {
+      return;
+    }
+
+    await navigator.clipboard.writeText(value);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1600);
+  }
+
+  return (
+    <div className={styles.invoicingSRICopyCard}>
+      <span className={styles.muted}>{label}</span>
+      <strong className={styles.invoicingSRICopyValue}>{value}</strong>
+      <button
+        className={styles.ghostButton}
+        disabled={!value || value === 'Sin número registrado'}
+        onClick={() => {
+          void handleCopy();
+        }}
+        type="button"
+      >
+        {copied ? 'Copiado' : 'Copiar'}
+      </button>
+    </div>
+  );
+}
+
+function sriStageIndex(status: string | null) {
+  switch (status) {
+    case 'authorized':
+      return 2;
+    case 'submitted':
+    case 'rejected':
+      return 1;
+    default:
+      return 0;
+  }
+}
+
+function statusPillTone(status: string | null) {
+  switch (status) {
+    case 'authorized':
+      return 'success' as const;
+    case 'submitted':
+      return 'warning' as const;
+    case 'rejected':
+      return 'danger' as const;
+    default:
+      return 'default' as const;
+  }
+}
+
+function providerStatusTone(status: string) {
+  if (
+    status.toLowerCase().includes('autoriz') ||
+    status.toLowerCase().includes('ok')
+  ) {
+    return 'success' as const;
+  }
+
+  if (
+    status.toLowerCase().includes('rechaz') ||
+    status.toLowerCase().includes('error') ||
+    status.toLowerCase().includes('no autorizado')
+  ) {
+    return 'danger' as const;
+  }
+
+  if (
+    status.toLowerCase().includes('pend') ||
+    status.toLowerCase().includes('proc')
+  ) {
+    return 'warning' as const;
+  }
+
+  return 'default' as const;
 }
 
 function humanizeElectronicStatus(status: string | null) {
@@ -584,42 +1054,5 @@ function humanizeDocumentStatus(status: string) {
       return 'Anulada';
     default:
       return status;
-  }
-}
-
-function primaryGuidance(electronicStatus: string | null) {
-  switch (electronicStatus) {
-    case 'submitted':
-      return 'Tu siguiente decisión es consultar la autorización del SRI.';
-    case 'authorized':
-      return 'El comprobante ya está listo para handoff tributario y contable.';
-    case 'rejected':
-      return 'Conviene corregir observaciones antes de regenerar el envío.';
-    case 'pending_submission':
-      return 'El siguiente paso operativo es firmar y enviar el comprobante.';
-    default:
-      return 'Primero confirma el estado documental antes de avanzar con SRI.';
-  }
-}
-
-function secondaryGuidance(
-  electronicStatus: string | null,
-  canSubmitElectronicDocument: boolean,
-) {
-  if (!canSubmitElectronicDocument) {
-    return 'Hay un bloqueo activo en el carril electrónico. Conviene resolverlo antes de intentar enviar o conciliar.';
-  }
-
-  switch (electronicStatus) {
-    case 'submitted':
-      return 'El documento ya fue entregado al SRI. Desde aquí solo deberías consultar autorización o registrar una respuesta manual validada.';
-    case 'authorized':
-      return 'Mantén visibles la clave de acceso y el número de autorización para soporte, contabilidad y fiscalidad.';
-    case 'rejected':
-      return 'Usa el mensaje SRI para documentar la devolución y luego regenera el artefacto correcto.';
-    case 'pending_submission':
-      return 'Puedes revisar el XML preliminar, validar clave de acceso y luego iniciar el envío.';
-    default:
-      return 'Este panel separa claramente la condición interna del documento de su condición legal frente al SRI.';
   }
 }

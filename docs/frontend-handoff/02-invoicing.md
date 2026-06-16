@@ -60,7 +60,10 @@ Current feature files:
 - `adapters.ts`: maps existing `app.tsx` state into the feature model.
 - `invoicing-workspace.tsx`: reusable summary component rendered at the top of
   the existing Invoicing domain screen.
-- `queries.ts`: TanStack Query key taxonomy for the next read-side migration.
+- `queries.ts`: TanStack Query key taxonomy plus the extracted read-side
+  workspace query for customers, tax rates, invoices, report summary, drafting
+  assist, issuer profile, submission settings, numbering and electronic
+  readiness.
 - `use-invoicing-workspace-model.ts`: memoized model hook.
 
 The existing screen still owns forms, invoice list/detail, XML/RIDE previews,

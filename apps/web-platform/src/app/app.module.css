@@ -2246,7 +2246,577 @@
     top: auto;
   }
 
-  .planSpotlightHeader {
+.planSpotlightHeader {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+.accessGateway {
+  background:
+    radial-gradient(circle at top right, color-mix(in srgb, var(--primary) 10%, transparent), transparent 36%),
+    var(--app-bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 28px;
+}
+
+.accessGatewayShell {
+  display: grid;
+  gap: 18px;
+  margin: 0 auto;
+  max-width: 1320px;
+}
+
+.accessGatewayMoodDock {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.accessGatewayMoodDock > span {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.accessGatewayGrid {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow-sm);
+  display: grid;
+  grid-template-columns: minmax(320px, 1fr) minmax(0, 1fr);
+  min-height: calc(100vh - 116px);
+  overflow: hidden;
+}
+
+.accessBrandPanel {
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--sidebar-border);
+  color: var(--sidebar-fg);
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  justify-content: space-between;
+  padding: 40px 36px;
+}
+
+.accessBrandLockup {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+}
+
+.accessBrandLockup strong {
+  color: var(--sidebar-fg-strong);
+  display: block;
+}
+
+.accessBrandLockup small {
+  color: var(--sidebar-muted);
+  display: block;
+  font-size: 0.8rem;
+}
+
+.accessBrandMark {
+  align-items: center;
+  background: var(--sidebar-active-bg);
+  border: 1px solid var(--sidebar-surface-border);
+  border-radius: 8px;
+  color: var(--sidebar-active-fg);
+  display: inline-flex;
+  font-size: 0.9rem;
+  font-weight: 800;
+  height: 42px;
+  justify-content: center;
+  width: 42px;
+}
+
+.accessBrandContent {
+  display: grid;
+  gap: 24px;
+  max-width: 460px;
+}
+
+.accessBrandContent h1 {
+  color: var(--sidebar-fg-strong);
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.02;
+  margin: 10px 0 12px;
+}
+
+.accessBrandContent p {
+  color: var(--sidebar-fg);
+  font-size: 1rem;
+  line-height: 1.65;
+  margin: 0;
+}
+
+.accessCapabilityList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.accessCapabilityChip {
+  background: color-mix(in srgb, var(--sidebar-fg-strong) 10%, transparent);
+  border: 1px solid var(--sidebar-surface-border);
+  border-radius: 999px;
+  color: var(--sidebar-fg);
+  display: inline-flex;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 8px 12px;
+}
+
+.accessBrandFooter {
+  color: var(--sidebar-muted);
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+
+.accessActionPane {
+  display: grid;
+  gap: 18px;
+  padding: 32px 28px;
+}
+
+.accessActionPaneHeader {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.accessActionPaneHeader strong {
+  color: var(--text-strong);
+  font-size: 0.9rem;
+}
+
+.accessCard {
+  align-self: center;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow-sm);
+  display: grid;
+  gap: 18px;
+  margin: 0 auto;
+  max-width: 480px;
+  padding: 28px;
+  width: 100%;
+}
+
+.accessCardHeader {
+  display: grid;
+  gap: 8px;
+}
+
+.accessCardHeader h2 {
+  color: var(--text-strong);
+  font-size: 1.7rem;
+  line-height: 1.15;
+  margin: 0;
+}
+
+.accessCardHeader p {
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.accessPrimaryActionBlock {
+  display: grid;
+  gap: 10px;
+}
+
+.accessPrimaryActionBlock p {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.accessFutureMethods {
+  display: grid;
+  gap: 12px;
+}
+
+.accessFutureMethodsDivider {
+  align-items: center;
+  color: var(--text-subtle);
+  display: flex;
+  font-size: 0.72rem;
+  font-weight: 800;
+  gap: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.accessFutureMethodsDivider::before,
+.accessFutureMethodsDivider::after {
+  background: var(--divider);
+  content: '';
+  flex: 1;
+  height: 1px;
+}
+
+.accessFutureMethodList {
+  display: grid;
+  gap: 8px;
+}
+
+.accessFutureMethod {
+  background: var(--surface-sunken);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+  opacity: 0.78;
+  padding: 11px 12px;
+}
+
+.accessAdvancedPanel {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 0;
+  overflow: hidden;
+  transition:
+    background var(--transition-base),
+    border-color var(--transition-base);
+}
+
+.accessAdvancedPanelOpen {
+  background: var(--surface-sunken);
+  border-color: var(--border-strong);
+}
+
+.accessAdvancedToggle {
+  align-items: center;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 12px 14px;
+  text-align: left;
+}
+
+.accessAdvancedToggle span {
+  display: grid;
+  gap: 2px;
+}
+
+.accessAdvancedToggle strong {
+  color: var(--text-strong);
+  font-size: 0.92rem;
+}
+
+.accessAdvancedToggle small,
+.accessAdvancedToggle em {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-style: normal;
+}
+
+.accessAdvancedBody {
+  display: grid;
+  gap: 12px;
+  padding: 0 14px 14px;
+}
+
+.accessAdvancedActions {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.accessAdvancedActions span {
+  color: var(--text-subtle);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.accessCheckingBlock {
+  align-items: center;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  min-height: 110px;
+}
+
+.accessCheckingBlock strong {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.accessSpinner {
+  animation: accessSpin 0.8s linear infinite;
+  border: 3px solid var(--border-strong);
+  border-radius: 999px;
+  border-top-color: var(--primary);
+  height: 28px;
+  width: 28px;
+}
+
+@keyframes accessSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.accessDetailList {
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 0;
+  margin: 0;
+  overflow: hidden;
+}
+
+.accessDetailList div {
+  align-items: baseline;
+  border-bottom: 1px solid var(--divider);
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 11px 14px;
+}
+
+.accessDetailList div:last-child {
+  border-bottom: none;
+}
+
+.accessDetailList dt {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.accessDetailList dd {
+  color: var(--text-strong);
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin: 0;
+  text-align: right;
+}
+
+.accessCardActionStack {
+  display: grid;
+  gap: 10px;
+}
+
+.accessWorkspaceList {
+  display: grid;
+  gap: 10px;
+}
+
+.accessWorkspaceButton {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  padding: 14px;
+  text-align: left;
+  transition:
+    border-color var(--transition-base),
+    background var(--transition-base);
+}
+
+.accessWorkspaceButton:hover {
+  background: var(--surface-hover);
+  border-color: var(--border-strong);
+}
+
+.accessWorkspaceButton span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.accessWorkspaceButton strong {
+  color: var(--text-strong);
+  font-size: 0.92rem;
+  overflow-wrap: anywhere;
+}
+
+.accessWorkspaceButton small {
+  color: var(--text-muted);
+  font-size: 0.76rem;
+}
+
+.accessWorkspaceButton em {
+  color: var(--primary);
+  font-size: 0.76rem;
+  font-style: normal;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.accessNoTenantBox {
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+}
+
+.accessNoTenantBox strong {
+  color: var(--text-strong);
+  font-family: var(--font-mono);
+}
+
+.accessNoTenantBox span {
+  color: var(--text-muted);
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+
+.accessMoodButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.accessMoodButton {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text);
+  cursor: pointer;
+  display: inline-flex;
+  gap: 8px;
+  min-height: 34px;
+  padding: 0 12px;
+}
+
+.accessMoodButtonActive {
+  background: var(--primary-soft);
+  border-color: var(--primary);
+  color: var(--on-primary-soft);
+}
+
+.accessMoodSwatch {
+  background: var(--app-bg);
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  display: inline-flex;
+  height: 14px;
+  position: relative;
+  width: 14px;
+}
+
+.accessMoodSwatch::after {
+  background: var(--primary);
+  border-radius: 999px;
+  content: '';
+  height: 5px;
+  position: absolute;
+  right: 1px;
+  top: 1px;
+  width: 5px;
+}
+
+.accessMoodSwatch[data-preview-mood='focus'] {
+  background: #131927;
+  border-color: #2e3d61;
+}
+
+.accessMoodSwatch[data-preview-mood='focus']::after {
+  background: #81a8ff;
+}
+
+.accessMoodSwatch[data-preview-mood='calm'] {
+  background: #edf7f3;
+  border-color: #bfdccc;
+}
+
+.accessMoodSwatch[data-preview-mood='calm']::after {
+  background: #3b8d73;
+}
+
+.accessMoodSwatch[data-preview-mood='high-contrast'] {
+  background: #fff;
+  border-color: #111;
+}
+
+.accessMoodSwatch[data-preview-mood='high-contrast']::after {
+  background: #111;
+}
+
+.accessMoodSwatch[data-preview-mood='night'] {
+  background: #060812;
+  border-color: #2a3146;
+}
+
+.accessMoodSwatch[data-preview-mood='night']::after {
+  background: #6f8cff;
+}
+
+@media (max-width: 980px) {
+  .accessGateway {
+    padding: 18px;
+  }
+
+  .accessGatewayGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .accessBrandPanel {
+    border-right: none;
+    border-bottom: 1px solid var(--sidebar-border);
+    gap: 20px;
+    padding: 24px 20px;
+  }
+
+  .accessActionPane {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 640px) {
+  .accessGatewayMoodDock {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .accessActionPaneHeader {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .accessCard {
+    padding: 20px;
+  }
+
+  .accessWorkspaceButton {
+    grid-template-columns: 1fr;
+  }
+
+  .accessWorkspaceButton em {
+    justify-self: start;
+  }
+
+  .accessAdvancedActions {
     align-items: stretch;
     flex-direction: column;
   }

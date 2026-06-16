@@ -11,6 +11,11 @@ import {
 } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import styles from './app.module.css';
+import { AccessGateway } from '../features/access/access-gateway';
+import type {
+  AccessGatewayModel,
+  AccessPhase,
+} from '../features/access/model';
 import { CommandCenter } from '../features/command-center/command-center';
 import { useCommandCenterPlatformData } from '../features/command-center/queries';
 import { useCommandCenterModel } from '../features/command-center/use-command-center-model';
@@ -1180,6 +1185,23 @@ function readStoredPlatformMood(): PlatformMoodKey {
   return storedMood && isPlatformMoodKey(storedMood) ? storedMood : 'comfort';
 }
 
+function looksLikeAccessTokenError(message: string | null): boolean {
+  if (!message) {
+    return false;
+  }
+
+  const normalized = message.toLowerCase();
+
+  return (
+    normalized.includes('401') ||
+    normalized.includes('unauthorized') ||
+    normalized.includes('jwt') ||
+    normalized.includes('bearer') ||
+    normalized.includes('token') ||
+    normalized.includes('forbidden')
+  );
+}
+
 function formatMoney(priceInCents: number, currency: string): string {
   return new Intl.NumberFormat('es-EC', {
     style: 'currency',
@@ -2210,6 +2232,7 @@ export function App() {
   const [deepLinkedInvitationId, setDeepLinkedInvitationId] = useState<string | null>(
     null,
   );
+  const [accessAdvancedOpen, setAccessAdvancedOpen] = useState(false);
   const [tokenInput, setTokenInput] = useState('');
   const [token, setToken] = useState('');
   const [session, setSession] = useState<AuthenticatedSessionResponse | null>(
@@ -4573,7 +4596,7 @@ export function App() {
     productCatalog,
     tenantEnabledProducts,
   } = useCommandCenterPlatformData(
-    token,
+    currentTenancy ? token : '',
     currentTenancy?.tenant.slug ?? null,
   );
   const canManageInvitations = Boolean(
@@ -4610,6 +4633,101 @@ export function App() {
   const selectedPendingInvitation = findPendingInvitation(
     session,
     selectedPendingInvitationId,
+  );
+  const accessPhase = useMemo<AccessPhase>(() => {
+    if (currentTenancy) {
+      return 'ready';
+    }
+
+    if (sessionLoading && !session) {
+      return 'checking';
+    }
+
+    if (!session) {
+      if (sessionError) {
+        return looksLikeAccessTokenError(sessionError)
+          ? 'invalid-token'
+          : 'backend-unavailable';
+      }
+
+      return 'gateway';
+    }
+
+    if (session.pendingInvitations.length > 0) {
+      return 'invitation';
+    }
+
+    if (session.tenancies.length > 0) {
+      return 'workspace-select';
+    }
+
+    return 'no-tenant';
+  }, [currentTenancy, session, sessionError, sessionLoading]);
+  const accessInvitationModel = useMemo(() => {
+    const pending = pendingInvitationDetail ?? selectedPendingInvitation;
+
+    if (!pending) {
+      return null;
+    }
+
+    if ('canAccept' in pending) {
+      return {
+        canAccept: pending.canAccept,
+        email: pending.invitation.email,
+        expiresAtLabel: formatDate(pending.invitation.expiresAt),
+        invitationId: pending.invitation.id,
+        invitedByLabel: pending.invitation.invitedByUserId,
+        roleLabel: pending.invitation.roleKey,
+        statusLabel: pending.invitation.status,
+        tenantName: pending.tenant.name,
+      };
+    }
+
+    return {
+      canAccept: true,
+      email: pending.invitation.email,
+      expiresAtLabel: formatDate(pending.invitation.expiresAt),
+      invitationId: pending.invitation.id,
+      invitedByLabel: pending.invitation.invitedByUserId,
+      roleLabel: pending.invitation.roleKey,
+      statusLabel: pending.invitation.status,
+      tenantName: pending.tenant.name,
+    };
+  }, [pendingInvitationDetail, selectedPendingInvitation]);
+  const accessWorkspaceOptions = useMemo(
+    () =>
+      session?.tenancies.map((tenancy) => ({
+        permissionCount: tenancy.permissionKeys.length,
+        roleLabel: tenancy.roleKeys.join(', ') || 'sin rol',
+        slug: tenancy.tenant.slug,
+        title: tenancy.tenant.name,
+      })) ?? [],
+    [session],
+  );
+  const accessGatewayModel = useMemo<AccessGatewayModel>(
+    () => ({
+      advancedOpen: accessAdvancedOpen,
+      capabilities: ['SaaS Platform'],
+      currentUserEmail: session?.email ?? null,
+      hasStoredToken: Boolean(token),
+      invitation: accessInvitationModel,
+      mood: platformMood,
+      phase: accessPhase,
+      sessionError,
+      tokenInput,
+      workspaceOptions: accessWorkspaceOptions,
+    }),
+    [
+      accessAdvancedOpen,
+      accessInvitationModel,
+      accessPhase,
+      accessWorkspaceOptions,
+      platformMood,
+      session?.email,
+      sessionError,
+      token,
+      tokenInput,
+    ],
   );
 
   const sessionHeadline = useMemo(() => {
@@ -9470,6 +9588,12 @@ export function App() {
   useEffect(() => {
     window.localStorage.setItem(PLATFORM_MOOD_STORAGE_KEY, platformMood);
   }, [platformMood]);
+
+  useEffect(() => {
+    if (accessPhase === 'invalid-token') {
+      setAccessAdvancedOpen(true);
+    }
+  }, [accessPhase]);
 
   useEffect(() => {
     if (selectedGrowthAlert) {
@@ -24862,10 +24986,12 @@ export function App() {
     }
   }
 
-  async function handleTokenSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
+  function applyTokenBootstrap() {
     const nextToken = tokenInput.trim();
+    if (!nextToken) {
+      return;
+    }
+
     window.localStorage.setItem(TOKEN_STORAGE_KEY, nextToken);
     setActionMessage(null);
     setGrowthActionMessage(null);
@@ -24875,8 +25001,24 @@ export function App() {
     setToken(nextToken);
   }
 
+  async function handleTokenSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    applyTokenBootstrap();
+  }
+
+  function handleAccessContinue() {
+    if (token) {
+      void refreshSession();
+      return;
+    }
+
+    setAccessAdvancedOpen(true);
+    setSessionError(null);
+  }
+
   function handleTokenReset() {
     window.localStorage.removeItem(TOKEN_STORAGE_KEY);
+    setAccessAdvancedOpen(false);
     setToken('');
     setTokenInput('');
     setSession(null);
@@ -26243,6 +26385,37 @@ export function App() {
     } finally {
       setActionLoading(null);
     }
+  }
+
+  if (!currentTenancy) {
+    return (
+      <AccessGateway
+        acceptInvitationBusy={Boolean(
+          selectedPendingInvitationId &&
+            actionLoading === `accept:${selectedPendingInvitationId}`,
+        )}
+        model={accessGatewayModel}
+        onAcceptInvitation={(invitationId) => {
+          void handleAcceptInvitation(invitationId);
+        }}
+        onAdvancedOpenChange={setAccessAdvancedOpen}
+        onContinue={handleAccessContinue}
+        onMoodChange={setPlatformMood}
+        onResetSession={handleTokenReset}
+        onSelectWorkspace={(tenantSlug) => {
+          void handleSelectTenancy(tenantSlug);
+        }}
+        onTokenInputChange={setTokenInput}
+        onUseToken={applyTokenBootstrap}
+        selectingWorkspaceSlug={
+          actionLoading?.startsWith('select:')
+            ? actionLoading.slice('select:'.length)
+            : null
+        }
+        sessionBusy={sessionLoading}
+        tokenBusy={sessionLoading}
+      />
+    );
   }
 
   return (

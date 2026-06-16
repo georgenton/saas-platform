@@ -1,4 +1,5 @@
 import styles from '../../app/app.module.css';
+import { Banner, Button, ButtonLink, Card, StatusPill } from '../../shared/design-system';
 import {
   COMMAND_CENTER_ACCESS_LABELS,
   COMMAND_CENTER_DOMAINS,
@@ -32,12 +33,8 @@ function ProductStatusCard({ product }: { product: CommandCenterProduct }) {
   const primaryIsLink = isOperational;
 
   return (
-    <article
-      className={`${styles.productStatusCard} ${
-        isOperational
-          ? styles.productStatusCardActive
-          : styles.productStatusCardInactive
-      }`}
+    <Card
+      variant={isOperational ? 'product-active' : 'product-inactive'}
     >
       <div className={styles.productStatusHeader}>
         <span className={styles.productIconTile}>
@@ -95,21 +92,21 @@ function ProductStatusCard({ product }: { product: CommandCenterProduct }) {
 
       <div className={styles.productActionRow}>
         {primaryIsLink ? (
-          <a className={styles.primaryButton} href={product.href}>
+          <ButtonLink href={product.href}>
             {product.primaryAction}
-          </a>
+          </ButtonLink>
         ) : (
-          <button className={styles.secondaryButton} disabled type="button">
+          <Button disabled variant="secondary">
             {product.primaryAction}
-          </button>
+          </Button>
         )}
         {product.secondaryAction ? (
-          <button className={styles.ghostButton} disabled type="button">
+          <Button disabled variant="ghost">
             {product.secondaryAction}
-          </button>
+          </Button>
         ) : null}
       </div>
-    </article>
+    </Card>
   );
 }
 
@@ -146,14 +143,14 @@ export function CommandCenter({
           </p>
         </div>
         {hasCurrentTenancy ? (
-          <span className={styles.statusPill}>Tenant activo</span>
+          <StatusPill>Tenant activo</StatusPill>
         ) : (
-          <span className={styles.statusPillWarning}>Sin tenant</span>
+          <StatusPill tone="warning">Sin tenant</StatusPill>
         )}
       </div>
 
       <div className={styles.commandSummaryRail}>
-        <article className={styles.commandSummaryCard}>
+        <Card>
           <span className={styles.label}>Tenant</span>
           <h3>{tenantName}</h3>
           <dl>
@@ -170,9 +167,9 @@ export function CommandCenter({
               <dd>{tenantMemberCount} workspace(s)</dd>
             </div>
           </dl>
-        </article>
+        </Card>
 
-        <article className={styles.commandSummaryCard}>
+        <Card>
           <span className={styles.label}>Subscription</span>
           <h3>{currentPlanLabel}</h3>
           <dl>
@@ -189,9 +186,9 @@ export function CommandCenter({
               <dd>{maxUsersLabel}</dd>
             </div>
           </dl>
-        </article>
+        </Card>
 
-        <article className={styles.commandSummaryCard}>
+        <Card>
           <span className={styles.label}>Product access</span>
           <h3>{products.length} modulos visibles</h3>
           <div className={styles.accessLegend}>
@@ -205,18 +202,18 @@ export function CommandCenter({
               ),
             )}
           </div>
-        </article>
+        </Card>
       </div>
 
       {!hasSession ? (
-        <div className={styles.commandBanner}>
+        <Banner>
           Conecta un Bearer token para transformar esta vista en un Command
           Center del tenant real.
-        </div>
+        </Banner>
       ) : null}
-      {catalogError ? <p className={styles.errorBanner}>{catalogError}</p> : null}
+      {catalogError ? <Banner tone="error">{catalogError}</Banner> : null}
       {catalogLoading ? (
-        <div className={styles.commandBanner}>Cargando catalogo y productos...</div>
+        <Banner>Cargando catalogo y productos...</Banner>
       ) : null}
 
       <div className={styles.commandDomains}>
@@ -237,9 +234,9 @@ export function CommandCenter({
                   <h3>{domain.name}</h3>
                   <p>{domain.summary}</p>
                 </div>
-                <span className={styles.statusPill}>
+                <StatusPill>
                   {activeCount} activos · {domainProducts.length} total
-                </span>
+                </StatusPill>
               </div>
 
               <div className={styles.productStatusGrid}>

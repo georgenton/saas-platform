@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react';
 import styles from '../../app/app.module.css';
-import {
-  PLATFORM_MOODS,
-  type PlatformMoodKey,
-  type PlatformShellMetric,
-  type PlatformShellNavItem,
+import { Metric, MoodSelector } from '../design-system';
+import type {
+  PlatformMoodKey,
+  PlatformShellMetric,
+  PlatformShellNavItem,
 } from './platform-shell.model';
 
 type PlatformShellProps = {
@@ -72,50 +72,13 @@ export function PlatformShell({
               <span>Tenant</span>
               <strong>{tenantSlug}</strong>
             </div>
-            <div className={styles.moodPanel}>
-              <div>
-                <span>Modo visual</span>
-                <strong>
-                  {PLATFORM_MOODS.find((platformMood) => platformMood.key === mood)
-                    ?.label}
-                </strong>
-              </div>
-              <div
-                aria-label="Elegir mood de interfaz"
-                className={styles.moodSelector}
-                role="radiogroup"
-              >
-                {PLATFORM_MOODS.map((platformMood) => (
-                  <button
-                    aria-checked={mood === platformMood.key}
-                    aria-label={`${platformMood.label}: ${platformMood.summary}`}
-                    className={`${styles.moodButton} ${
-                      mood === platformMood.key ? styles.moodButtonActive : ''
-                    }`}
-                    key={platformMood.key}
-                    onClick={() => onMoodChange(platformMood.key)}
-                    role="radio"
-                    title={platformMood.summary}
-                    type="button"
-                  >
-                    <span
-                      className={styles.moodSwatch}
-                      data-preview-mood={platformMood.key}
-                    />
-                    <span>{platformMood.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
+            <MoodSelector mood={mood} onMoodChange={onMoodChange} />
           </div>
         </header>
 
         <section className={styles.shellOverview} aria-label="Estado del shell">
           {metrics.map((metric) => (
-            <div className={styles.metric} key={metric.label}>
-              <span>{metric.label}</span>
-              <strong>{metric.value}</strong>
-            </div>
+            <Metric key={metric.label} label={metric.label} value={metric.value} />
           ))}
         </section>
 

@@ -36,6 +36,13 @@ apps/web-platform/src/
       platform-shell.tsx
       platform-shell.model.ts
     design-system/
+      banner.tsx
+      button.tsx
+      card.tsx
+      index.ts
+      metric.tsx
+      mood-selector.tsx
+      status-pill.tsx
     product-access/
     tenancy/
 ```
@@ -63,8 +70,27 @@ Current split:
   server state.
 - `shared/api/platform-queries.ts`: first query hooks for platform catalog and
   tenant product access.
+- `shared/design-system/*`: shared primitive components for buttons, banners,
+  cards, metrics, mood selection, and status pills. These currently wrap the
+  established CSS module classes so visual behavior remains stable while the
+  architecture becomes reusable.
 - `app/app.tsx`: still composes the data from existing endpoints and passes
   normalized props into `PlatformShell` and `CommandCenter`.
+
+## Design System
+
+Use shared primitives before adding new ad hoc markup for common controls:
+
+- `Button` / `ButtonLink`
+- `StatusPill`
+- `Metric`
+- `Banner`
+- `Card`
+- `MoodSelector`
+
+The first integrated consumers are `PlatformShell` and `CommandCenter`. Broader
+replacement inside the legacy `app.tsx` product surfaces should happen
+incrementally, feature by feature, after each surface is extracted.
 
 ## Server State
 
@@ -97,11 +123,9 @@ new manual `useEffect` loading flows.
 
 ## Next Slices
 
-1. Add shared design-system primitives: `Button`, `StatusPill`, `Metric`,
-   `Banner`, `Card`, `MoodSelector`.
-2. Move Command Center session/catalog composition into query-backed feature
+1. Move Command Center session/catalog composition into query-backed feature
    adapters.
-3. Move product-specific readiness builders out of `app.tsx` into feature data
+2. Move product-specific readiness builders out of `app.tsx` into feature data
    adapters, starting with Command Center.
-4. Introduce an optional backend aggregate contract for
+3. Introduce an optional backend aggregate contract for
    `/tenancy/tenants/:tenantSlug/command-center` once the API is ready.

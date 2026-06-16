@@ -28,8 +28,10 @@ apps/web-platform/src/
       command-center.tsx
       model.ts
   shared/
-    design-system/
     layout/
+      platform-shell.tsx
+      platform-shell.model.ts
+    design-system/
     product-access/
     tenancy/
 ```
@@ -50,8 +52,11 @@ Current split:
   and helper functions.
 - `features/command-center/command-center.tsx`: presentational sections and
   product cards.
+- `shared/layout/platform-shell.model.ts`: shell nav, metric, and mood contracts.
+- `shared/layout/platform-shell.tsx`: sidebar, topbar, mood selector, shell
+  metrics, and page composition.
 - `app/app.tsx`: still composes the data from existing endpoints and passes
-  normalized props into `CommandCenter`.
+  normalized props into `PlatformShell` and `CommandCenter`.
 
 ## Integration Rules
 
@@ -69,10 +74,9 @@ Current split:
 
 ## Next Slices
 
-1. Extract Platform Shell: sidebar, topbar, mood selector, shell metrics.
-2. Add shared design-system primitives: `Button`, `StatusPill`, `Metric`,
+1. Add shared design-system primitives: `Button`, `StatusPill`, `Metric`,
    `Banner`, `Card`, `MoodSelector`.
-3. Move product-specific readiness builders out of `app.tsx` into feature data
+2. Move product-specific readiness builders out of `app.tsx` into feature data
    adapters, starting with Command Center.
-4. Introduce an optional backend aggregate contract for
+3. Introduce an optional backend aggregate contract for
    `/tenancy/tenants/:tenantSlug/command-center` once the API is ready.

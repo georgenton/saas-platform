@@ -9700,10 +9700,10 @@ export function App() {
             },
             {
               label: 'Handoff',
-              value: tenantEcommerceInvoiceDraftHandoffWorkspace
+              value: selectedTenantEcommerceInvoiceDraftHandoffWorkspace
                 ? 'Activo'
                 : 'Pendiente',
-              tone: tenantEcommerceInvoiceDraftHandoffWorkspace
+              tone: selectedTenantEcommerceInvoiceDraftHandoffWorkspace
                 ? 'success'
                 : 'warning',
             },
@@ -9859,7 +9859,7 @@ export function App() {
     taxComplianceWorkspace,
     tenantAiOperationsSummary,
     tenantEcommerceCompletionDashboard,
-    tenantEcommerceInvoiceDraftHandoffWorkspace,
+    selectedTenantEcommerceInvoiceDraftHandoffWorkspace,
     tenantEcommerceOrderPostSaleReportingSummary,
     visibleAiMemoryAgents.length,
     whatsappSummary,

@@ -2169,6 +2169,16 @@
     flex-direction: column;
   }
 
+  .inlineActionRow {
+    align-items: stretch;
+    flex-direction: column;
+    justify-content: flex-start;
+  }
+
+  .inlineActionRow button {
+    width: 100%;
+  }
+
   .invoicingHeroHeader {
     align-items: stretch;
     flex-direction: column;
@@ -2182,6 +2192,36 @@
   .invoicingStagePreviewHeader {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .invoicingSRIStatusTile .invoiceCardHeader,
+  .invoicingSRICopyCard,
+  .invoicingSRICompactMetaRow,
+  .invoicingSRIFallbackTagRow {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .invoicingSRIStageStepper {
+    gap: 8px;
+  }
+
+  .invoicingSRIStageStepper small {
+    font-size: 0.72rem;
+  }
+
+  .invoicingSRICopyCard button {
+    width: 100%;
+  }
+
+  .invoicingSRIInterventionAlert,
+  .invoicingSRITraceEventCard,
+  .invoicingSRITraceNestedCard {
+    padding: 12px;
+  }
+
+  .invoicingSRITraceDetails summary {
+    line-height: 1.45;
   }
 
   .invoicingStepper {

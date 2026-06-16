@@ -9553,6 +9553,11 @@ export function App() {
     currentEntitlements,
     'storage_limit_gb',
   );
+  const commandCenterAiApprovalRequestCount =
+    tenantAiApprovalWorkspace.length +
+    growthAssistAiApprovalRequests.length +
+    invoiceAssistantAiApprovalRequests.length +
+    ecommerceLaunchAssistantAiApprovalRequests.length;
   const commandCenterProducts = useMemo<CommandCenterProduct[]>(() => {
     const permissionKeys = new Set(currentTenancy?.permissionKeys ?? []);
     const productCatalogKeys = new Set(productCatalog.map((product) => product.key));
@@ -9707,8 +9712,9 @@ export function App() {
           return [
             {
               label: 'Aprobaciones',
-              value: `${tenantAiApprovalRequests.length}`,
-              tone: tenantAiApprovalRequests.length > 0 ? 'warning' : 'neutral',
+              value: `${commandCenterAiApprovalRequestCount}`,
+              tone:
+                commandCenterAiApprovalRequestCount > 0 ? 'warning' : 'neutral',
             },
             {
               label: 'Guarded execution',
@@ -9777,7 +9783,7 @@ export function App() {
           };
         case 'ai-console':
           return {
-            label: `${tenantAiApprovalRequests.length} aprobaciones en memoria`,
+            label: `${commandCenterAiApprovalRequestCount} aprobaciones en memoria`,
             source: 'AI suggestion-first',
             when: tenantAiOperationsSummary
               ? formatDate(tenantAiOperationsSummary.generatedAt)
@@ -9836,6 +9842,7 @@ export function App() {
     aiEnabled,
     canAccessTransversalAiConsole,
     canReadGrowthConversations,
+    commandCenterAiApprovalRequestCount,
     currentPlan,
     currentTenancy,
     electronicSubmissionSettings,
@@ -9850,7 +9857,6 @@ export function App() {
     taxComplianceEvents.length,
     taxCompliancePeriod,
     taxComplianceWorkspace,
-    tenantAiApprovalRequests.length,
     tenantAiOperationsSummary,
     tenantEcommerceCompletionDashboard,
     tenantEcommerceInvoiceDraftHandoffWorkspace,

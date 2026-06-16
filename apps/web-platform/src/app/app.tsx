@@ -25,6 +25,10 @@ import {
   type PlatformMoodKey,
 } from '../shared/layout/platform-shell.model';
 import {
+  usePlatformCatalogQuery,
+  useTenantEnabledProductsQuery,
+} from '../shared/api/platform-queries';
+import {
   AI_AGENT_WEB_REGISTRY,
   AiAgentDedicatedActionKeyPrefixes,
   buildFallbackAiAgentHandoffContract,
@@ -476,10 +480,7 @@ import {
   getTenantInvitation,
   listCustomers,
   listInvoices,
-  listPlans,
-  listProducts,
   listTaxRates,
-  listTenantEnabledProducts,
   manageAccountingChartMapping,
   prepareTenantAiSuggestionRun,
   requestTenantAiSuggestionRunApproval,
@@ -903,8 +904,6 @@ import {
   InvitationResponse,
   IssuerProfileResponse,
   InvoiceSummaryResponse,
-  PlatformPlan,
-  PlatformProduct,
   RemissionGuideResponse,
   WithholdingResponse,
   TaxRateResponse,
@@ -2258,13 +2257,6 @@ export function App() {
   );
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [sessionLoading, setSessionLoading] = useState(false);
-  const [planCatalog, setPlanCatalog] = useState<PlatformPlan[]>([]);
-  const [productCatalog, setProductCatalog] = useState<PlatformProduct[]>([]);
-  const [tenantEnabledProducts, setTenantEnabledProducts] = useState<
-    PlatformProduct[]
-  >([]);
-  const [catalogLoading, setCatalogLoading] = useState(false);
-  const [catalogError, setCatalogError] = useState<string | null>(null);
 
   const [customers, setCustomers] = useState<CustomerResponse[]>([]);
   const [taxRates, setTaxRates] = useState<TaxRateResponse[]>([]);
@@ -4651,6 +4643,22 @@ export function App() {
   const currentTenancy = session?.currentTenancy ?? null;
   const currentEntitlements = currentTenancy?.entitlements ?? [];
   const currentSubscription = currentTenancy?.subscription ?? null;
+  const platformCatalogQuery = usePlatformCatalogQuery(token);
+  const tenantEnabledProductsQuery = useTenantEnabledProductsQuery(
+    token,
+    currentTenancy?.tenant.slug ?? null,
+  );
+  const planCatalog = platformCatalogQuery.data?.plans ?? [];
+  const productCatalog = platformCatalogQuery.data?.products ?? [];
+  const tenantEnabledProducts = tenantEnabledProductsQuery.data ?? [];
+  const catalogLoading =
+    platformCatalogQuery.isLoading || tenantEnabledProductsQuery.isLoading;
+  const catalogError =
+    platformCatalogQuery.error instanceof Error
+      ? platformCatalogQuery.error.message
+      : tenantEnabledProductsQuery.error instanceof Error
+        ? tenantEnabledProductsQuery.error.message
+        : null;
   const canManageInvitations = Boolean(
     currentTenancy?.permissionKeys.includes('tenant.invitations.manage'),
   );
@@ -9771,58 +9779,6 @@ export function App() {
 
   useEffect(() => {
     if (!token) {
-      setPlanCatalog([]);
-      setProductCatalog([]);
-      setCatalogError(null);
-      return;
-    }
-
-    let cancelled = false;
-
-    async function loadCatalog() {
-      setCatalogLoading(true);
-      setCatalogError(null);
-
-      try {
-        const [plans, products] = await Promise.all([
-          listPlans(token),
-          listProducts(token),
-        ]);
-
-        if (cancelled) {
-          return;
-        }
-
-        startTransition(() => {
-          setPlanCatalog(plans);
-          setProductCatalog(products);
-        });
-      } catch (error) {
-        if (cancelled) {
-          return;
-        }
-
-        setCatalogError(
-          error instanceof Error
-            ? error.message
-            : 'No se pudo cargar el catalogo comercial.',
-        );
-      } finally {
-        if (!cancelled) {
-          setCatalogLoading(false);
-        }
-      }
-    }
-
-    void loadCatalog();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [token]);
-
-  useEffect(() => {
-    if (!token) {
       setAiOperatingModel(null);
       setAiOperatingModelLoading(false);
       setAiOperatingModelError(null);
@@ -9869,51 +9825,6 @@ export function App() {
       cancelled = true;
     };
   }, [token]);
-
-  useEffect(() => {
-    if (!token || !currentTenancy) {
-      setTenantEnabledProducts([]);
-      return;
-    }
-
-    const tenantSlug = currentTenancy.tenant.slug;
-    const invoiceId = selectedInvoiceId;
-    let cancelled = false;
-
-    async function loadEnabledProducts() {
-      try {
-        const products = await listTenantEnabledProducts(
-          token,
-          tenantSlug,
-        );
-
-        if (cancelled) {
-          return;
-        }
-
-        startTransition(() => {
-          setTenantEnabledProducts(products);
-        });
-      } catch (error) {
-        if (cancelled) {
-          return;
-        }
-
-        setCatalogError(
-          error instanceof Error
-            ? error.message
-            : 'No se pudo resolver el acceso efectivo del tenant.',
-        );
-        setTenantEnabledProducts([]);
-      }
-    }
-
-    void loadEnabledProducts();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [currentTenancy, token]);
 
   useEffect(() => {
     if (!token || !currentTenancy || !invoicingEnabled) {

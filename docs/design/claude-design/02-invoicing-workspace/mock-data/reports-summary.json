@@ -1,0 +1,11 @@
+{
+  "_endpoint": "GET /api/invoicing/tenants/{slug}/reports/summary",
+  "currency": "USD",
+  "period": "junio 2026",
+  "pendingAuthorization": 3,
+  "authorizedThisMonth": 64,
+  "rejectedThisMonth": 1,
+  "draftCount": 2,
+  "portfolioTotalInCents": 4928640,
+  "outstandingInCents": 1184500
+}

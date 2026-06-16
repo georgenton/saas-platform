@@ -1,0 +1,7 @@
+{
+  "_endpoint": "GET /api/invoicing/tenants/{slug}/electronic-submission",
+  "gatewayConfigured": true,
+  "isActive": true,
+  "environment": "production",
+  "lastCheckedAt": "hace 8 min"
+}

@@ -14,7 +14,16 @@ import styles from './app.module.css';
 import { CommandCenter } from '../features/command-center/command-center';
 import { useCommandCenterPlatformData } from '../features/command-center/queries';
 import { useCommandCenterModel } from '../features/command-center/use-command-center-model';
-import { InvoicingWorkspaceSummary } from '../features/invoicing/invoicing-workspace';
+import {
+  InvoicingDocumentPreviewPanel,
+  InvoicingElectronicStatusPanel,
+  InvoicingInvoiceItemsPanel,
+  InvoicingNotificationsPanel,
+  InvoicingPaymentsPanel,
+  InvoicingTechnicalTracePanel,
+  InvoicingWorkspaceOperations,
+  InvoicingWorkspaceSummary,
+} from '../features/invoicing/invoicing-workspace';
 import {
   invoicingQueryKeys,
   type InvoicingWorkspaceQueryData,
@@ -4798,24 +4807,49 @@ export function App() {
   const invoicingWorkspaceModelInput = useMemo(
     () => ({
       customers,
+      electronicSandboxReadiness,
+      electronicSignatureMaterialInspection,
       electronicSubmissionSettings,
       formatMoney,
       humanizeKey,
       invoiceNumberingSettings,
       invoices,
       issuerProfile,
+      selectedInvoice: selectedInvoiceSummary,
     }),
     [
       customers,
+      electronicSandboxReadiness,
+      electronicSignatureMaterialInspection,
       electronicSubmissionSettings,
       invoiceNumberingSettings,
       invoices,
       issuerProfile,
+      selectedInvoiceSummary,
     ],
   );
   const invoicingWorkspaceModel = useInvoicingWorkspaceModel(
     invoicingWorkspaceModelInput,
   );
+  const handleInvoicingWorkspacePrimaryAction = (
+    actionKey:
+      | 'configure-issuer'
+      | 'review-signature'
+      | 'review-pending'
+      | 'create-invoice',
+  ) => {
+    const sectionIdByActionKey = {
+      'configure-issuer': 'invoicing-issuer-profile',
+      'review-signature': 'invoicing-signature-settings',
+      'review-pending': 'invoicing-invoice-detail',
+      'create-invoice': 'invoicing-create-invoice',
+    } as const;
+
+    const targetId = sectionIdByActionKey[actionKey];
+    const target = document.getElementById(targetId);
+
+    target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
   const leadingOperationalAlerts = useMemo(
     () => whatsappSummary?.operationalAlerts.slice(0, 4) ?? [],
     [whatsappSummary],
@@ -25641,9 +25675,7 @@ export function App() {
     }
   }
 
-  async function handleCreateInvoiceItem(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
+  async function handleCreateInvoiceItem() {
     if (
       !token ||
       !currentTenancy ||
@@ -25862,9 +25894,7 @@ export function App() {
     }
   }
 
-  async function handleSendInvoiceEmail(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
+  async function handleSendInvoiceEmail() {
     if (!token || !currentTenancy || !selectedInvoiceDetail) {
       return;
     }
@@ -25973,11 +26003,7 @@ export function App() {
     }
   }
 
-  async function handleUpdateInvoiceElectronicStatus(
-    event: FormEvent<HTMLFormElement>,
-  ) {
-    event.preventDefault();
-
+  async function handleUpdateInvoiceElectronicStatus() {
     if (!token || !currentTenancy || !selectedInvoiceDetail) {
       return;
     }
@@ -26134,9 +26160,7 @@ export function App() {
     }
   }
 
-  async function handleCreateInvoicePayment(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
+  async function handleCreateInvoicePayment() {
     if (!token || !currentTenancy || !selectedInvoiceDetail) {
       return;
     }
@@ -41460,7 +41484,10 @@ export function App() {
                 <p className={styles.successBanner}>{invoicingActionMessage}</p>
               ) : null}
 
-              <InvoicingWorkspaceSummary model={invoicingWorkspaceModel} />
+              <InvoicingWorkspaceSummary
+                model={invoicingWorkspaceModel}
+                onPrimaryAction={handleInvoicingWorkspacePrimaryAction}
+              />
 
               {invoicingReport ? (
                 <div className={styles.stack}>
@@ -42081,7 +42108,7 @@ export function App() {
 
               <div className={styles.twoColumn}>
                 <div className={styles.stack}>
-                  <div className={styles.detailCard}>
+                  <div className={styles.detailCard} id="invoicing-issuer-profile">
                     <div className={styles.sectionHeading}>
                       <div>
                         <span className={styles.label}>Electronic issuer</span>
@@ -42337,7 +42364,7 @@ export function App() {
                     </form>
                   </div>
 
-                  <div className={styles.detailCard}>
+                  <div className={styles.detailCard} id="invoicing-signature-settings">
                     <div className={styles.sectionHeading}>
                       <div>
                         <span className={styles.label}>Electronic signature</span>
@@ -43284,7 +43311,7 @@ export function App() {
                     )}
                   </div>
 
-                  <div className={styles.detailCard}>
+                  <div className={styles.detailCard} id="invoicing-create-invoice">
                     <div className={styles.sectionHeading}>
                       <div>
                         <span className={styles.label}>Create invoice</span>
@@ -43465,172 +43492,10 @@ export function App() {
                   </div>
                 </div>
 
-                <div className={styles.stack}>
-                  <div className={styles.detailCard}>
-                    <div className={styles.sectionHeading}>
-                      <div>
-                        <span className={styles.label}>Invoices</span>
-                        <h3>{invoices.length} facturas</h3>
-                      </div>
-                    </div>
-
-                    {invoicingLoading ? (
-                      <p className={styles.muted}>Cargando invoices...</p>
-                    ) : invoices.length === 0 ? (
-                      <div className={styles.emptyState}>
-                        <p>Este tenant todavia no tiene facturas creadas.</p>
-                      </div>
-                    ) : (
-                      <div className={styles.stack}>
-                        {invoices.map((invoice) => (
-                          <button
-                            className={`${styles.invoiceCard} ${
-                              invoice.id === selectedInvoiceSummary?.id
-                                ? styles.invoiceCardActive
-                                : ''
-                            }`}
-                            key={invoice.id}
-                            onClick={() => setSelectedInvoiceId(invoice.id)}
-                            type="button"
-                          >
-                            <div className={styles.invoiceCardHeader}>
-                              <strong>{invoice.number}</strong>
-                              <span className={styles.statusPill}>
-                                {formatInvoiceStatus(invoice.status)}
-                              </span>
-                            </div>
-                            <span>
-                              {invoice.buyerName ??
-                                customerNameById.get(invoice.customerId) ??
-                                invoice.customerId}
-                            </span>
-                            <small>
-                              {invoice.itemCount} items ·{' '}
-                              {formatMoney(
-                                invoice.totals.totalInCents,
-                                invoice.currency,
-                              )}
-                            </small>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className={styles.detailCard}>
-                    <div className={styles.sectionHeading}>
-                      <div>
-                        <span className={styles.label}>Invoice detail</span>
-                        <h3>
-                          {selectedInvoiceDetail?.number ??
-                            selectedInvoiceSummary?.number ??
-                            'Selecciona una factura'}
-                        </h3>
-                      </div>
-                    </div>
-
-                    {invoiceDetailLoading ? (
-                      <p className={styles.muted}>Cargando detalle de factura...</p>
-                    ) : selectedInvoiceDetail ? (
+                <InvoicingWorkspaceOperations
+                  detailChildren={
+                    selectedInvoiceDetail ? (
                       <>
-                        <div className={styles.invoiceDetailGrid}>
-                          <div>
-                            <span className={styles.muted}>Customer</span>
-                            <strong>
-                              {selectedInvoiceDetail.buyerName ??
-                                customerNameById.get(selectedInvoiceDetail.customerId) ??
-                                selectedInvoiceDetail.customerId}
-                            </strong>
-                            <small>
-                              {selectedInvoiceDetail.buyerIdentificationType
-                                ? `${formatBuyerIdentificationType(
-                                    selectedInvoiceDetail.buyerIdentificationType,
-                                  )}: ${selectedInvoiceDetail.buyerIdentification ?? 'Sin identificacion'}`
-                                : 'Sin identificacion Ecuador'}
-                            </small>
-                          </div>
-                          <div>
-                            <span className={styles.muted}>Issued</span>
-                            <strong>{formatDate(selectedInvoiceDetail.issuedAt)}</strong>
-                          </div>
-                          <div>
-                            <span className={styles.muted}>Due</span>
-                            <strong>{formatDate(selectedInvoiceDetail.dueAt)}</strong>
-                          </div>
-                          <div>
-                            <span className={styles.muted}>Currency</span>
-                            <strong>{selectedInvoiceDetail.currency}</strong>
-                          </div>
-                          <div>
-                            <span className={styles.muted}>Estado</span>
-                            <strong>
-                              {formatInvoiceStatus(selectedInvoiceDetail.status)}
-                            </strong>
-                          </div>
-                          <div>
-                            <span className={styles.muted}>Serie Ecuador</span>
-                            <strong>
-                              {selectedInvoiceDetail.establishmentCode &&
-                              selectedInvoiceDetail.emissionPointCode
-                                ? `${selectedInvoiceDetail.establishmentCode}-${selectedInvoiceDetail.emissionPointCode}`
-                                : 'No configurada'}
-                            </strong>
-                          </div>
-                          <div>
-                            <span className={styles.muted}>Secuencial</span>
-                            <strong>
-                              {selectedInvoiceDetail.sequenceNumber !== null
-                                ? String(selectedInvoiceDetail.sequenceNumber).padStart(
-                                    9,
-                                    '0',
-                                  )
-                                : 'Manual'}
-                            </strong>
-                          </div>
-                        </div>
-
-                        <div className={styles.actionRow}>
-                          {selectedInvoiceDetail.status === 'draft' ? (
-                            <button
-                              className={styles.secondaryButton}
-                              disabled={actionLoading === 'invoice-status:issued'}
-                              onClick={() => void handleUpdateInvoiceStatus('issued')}
-                              type="button"
-                            >
-                              {actionLoading === 'invoice-status:issued'
-                                ? 'Emitiendo...'
-                                : 'Marcar como emitida'}
-                            </button>
-                          ) : null}
-
-                          {(selectedInvoiceDetail.status === 'issued' ||
-                            selectedInvoiceDetail.status === 'partially_paid') ? (
-                            <button
-                              className={styles.primaryButton}
-                              disabled={actionLoading === 'invoice-status:paid'}
-                              onClick={() => void handleUpdateInvoiceStatus('paid')}
-                              type="button"
-                            >
-                              {actionLoading === 'invoice-status:paid'
-                                ? 'Registrando...'
-                                : 'Marcar como pagada'}
-                            </button>
-                          ) : null}
-
-                          {(selectedInvoiceDetail.status === 'draft' ||
-                            selectedInvoiceDetail.status === 'issued') ? (
-                            <button
-                              className={styles.dangerButton}
-                              disabled={actionLoading === 'invoice-status:void'}
-                              onClick={() => void handleUpdateInvoiceStatus('void')}
-                              type="button"
-                            >
-                              {actionLoading === 'invoice-status:void'
-                                ? 'Anulando...'
-                                : 'Anular factura'}
-                            </button>
-                          ) : null}
-                        </div>
 
                         {selectedInvoiceDetail.documentCode === '04' ||
                         selectedInvoiceDetail.documentCode === '05' ||
@@ -44275,224 +44140,58 @@ export function App() {
                           </div>
                         </div>
 
-                        <div className={styles.detailCard}>
-                          <div className={styles.sectionHeading}>
-                            <div>
-                              <span className={styles.label}>Electronic status</span>
-                              <h3>Autorizacion SRI</h3>
-                            </div>
-                          </div>
-
-                          <form className={styles.stack} onSubmit={handleUpdateInvoiceElectronicStatus}>
-                            <div className={styles.invoiceInlineGrid}>
-                              <label className={styles.field}>
-                                <span>Estado</span>
-                                <select
-                                  className={styles.selectField}
-                                  onChange={(event) =>
-                                    setInvoiceElectronicStatus(
-                                      event.target.value as
-                                        | 'pending_submission'
-                                        | 'submitted'
-                                        | 'authorized'
-                                        | 'rejected',
-                                    )
-                                  }
-                                  value={invoiceElectronicStatus}
-                                >
-                                  <option value="pending_submission">Pendiente de envio</option>
-                                  <option value="submitted">Enviado al SRI</option>
-                                  <option value="authorized">Autorizada</option>
-                                  <option value="rejected">Rechazada</option>
-                                </select>
-                              </label>
-                              <label className={styles.field}>
-                                <span>Fecha autorizacion</span>
-                                <input
-                                  onChange={(event) =>
-                                    setInvoiceAuthorizedAt(event.target.value)
-                                  }
-                                  type="datetime-local"
-                                  value={invoiceAuthorizedAt}
-                                />
-                              </label>
-                            </div>
-
-                            <div className={styles.invoiceInlineGrid}>
-                              <label className={styles.field}>
-                                <span>Clave de acceso</span>
-                                <input
-                                  onChange={(event) => setInvoiceAccessKey(event.target.value)}
-                                  placeholder="49 digitos"
-                                  value={invoiceAccessKey}
-                                />
-                              </label>
-                              <label className={styles.field}>
-                                <span>No. autorizacion</span>
-                                <input
-                                  onChange={(event) =>
-                                    setInvoiceAuthorizationNumber(event.target.value)
-                                  }
-                                  placeholder="Numero de autorizacion SRI"
-                                  value={invoiceAuthorizationNumber}
-                                />
-                              </label>
-                            </div>
-
-                            <label className={styles.field}>
-                              <span>Mensaje SRI</span>
-                              <textarea
-                                onChange={(event) =>
-                                  setInvoiceElectronicStatusMessage(
-                                    event.target.value,
-                                  )
-                                }
-                                placeholder="Detalle tecnico o comercial del estado electronico"
-                                value={invoiceElectronicStatusMessage}
-                              />
-                            </label>
-
-                            <button
-                              className={styles.secondaryButton}
-                              disabled={
-                                actionLoading === 'invoice-electronic-status' ||
-                                selectedInvoiceDetail.status === 'draft' ||
-                                selectedInvoiceDocumentSupport?.submitSupported ===
-                                  false
-                              }
-                              type="submit"
-                            >
-                              {actionLoading === 'invoice-electronic-status'
-                                ? 'Actualizando...'
-                                : 'Actualizar estado electronico'}
-                            </button>
-                            <button
-                              className={styles.ghostButton}
-                              disabled={actionLoading === 'load-invoice-xml-preview'}
-                              onClick={() => void handleLoadInvoiceXmlPreview()}
-                              type="button"
-                            >
-                              {actionLoading === 'load-invoice-xml-preview'
-                                ? 'Cargando XML...'
-                                : 'Ver XML preliminar'}
-                            </button>
-                            <button
-                              className={styles.primaryButton}
-                              disabled={
-                                actionLoading === 'submit-invoice-electronic-document' ||
-                                selectedInvoiceDetail.status === 'draft' ||
-                                selectedInvoiceDocumentSupport?.submitSupported ===
-                                  false
-                              }
-                              onClick={() =>
-                                void handleSubmitInvoiceElectronicDocument()
-                              }
-                              type="button"
-                            >
-                              {actionLoading === 'submit-invoice-electronic-document'
-                                ? 'Firmando y enviando...'
-                                : 'Firmar y enviar (stub)'}
-                            </button>
-                            <button
-                              className={styles.secondaryButton}
-                              disabled={
-                                actionLoading ===
-                                  'check-invoice-electronic-authorization' ||
-                                selectedInvoiceDocumentSupport?.submitSupported ===
-                                  false ||
-                                selectedInvoiceDetail.electronicStatus !==
-                                  'submitted'
-                              }
-                              onClick={() =>
-                                void handleCheckInvoiceElectronicAuthorization()
-                              }
-                              type="button"
-                            >
-                              {actionLoading ===
-                              'check-invoice-electronic-authorization'
-                                ? 'Consultando autorizacion...'
-                                : 'Consultar autorizacion (stub)'}
-                            </button>
-                            <p className={styles.muted}>
-                              Puedes dejar vacia la clave de acceso para que el backend la genere desde el perfil fiscal y la numeracion Ecuador.
-                            </p>
-                            {selectedInvoiceDocumentSupport &&
-                            !selectedInvoiceDocumentSupport.submitSupported ? (
-                              <p className={styles.muted}>
-                                {selectedInvoiceDocumentSupport.detail}
-                              </p>
-                            ) : null}
-                          </form>
-
-                          <form
-                            className={styles.stack}
-                            onSubmit={(event) => {
-                              event.preventDefault();
-                              void handleSubmitPresignedInvoiceElectronicDocument();
-                            }}
-                          >
-                            <div className={styles.sectionHeading}>
-                              <div>
-                                <span className={styles.label}>
-                                  External signed XML
-                                </span>
-                                <h3>Puente para sandbox real</h3>
-                              </div>
-                            </div>
-
-                            <label className={styles.field}>
-                              <span>Signer name</span>
-                              <input
-                                onChange={(event) =>
-                                  setPresignedInvoiceSignerName(event.target.value)
-                                }
-                                placeholder="sandbox-signer o nombre del firmador externo"
-                                value={presignedInvoiceSignerName}
-                              />
-                            </label>
-
-                            <label className={styles.field}>
-                              <span>Signed XML</span>
-                              <textarea
-                                onChange={(event) =>
-                                  setPresignedInvoiceXml(event.target.value)
-                                }
-                                placeholder="<factura ...><ds:Signature>...</ds:Signature></factura>"
-                                value={presignedInvoiceXml}
-                              />
-                            </label>
-
-                            <button
-                              className={styles.primaryButton}
-                              disabled={
-                                actionLoading ===
-                                  'submit-presigned-invoice-electronic-document' ||
-                                selectedInvoiceDetail.status === 'draft' ||
-                                selectedInvoiceDocumentSupport?.submitSupported ===
-                                  false ||
-                                !presignedInvoiceXml.trim()
-                              }
-                              type="submit"
-                            >
-                              {actionLoading ===
-                              'submit-presigned-invoice-electronic-document'
-                                ? 'Enviando XML firmado...'
-                                : 'Enviar XML prefirmado'}
-                            </button>
-
-                            <p className={styles.muted}>
-                              Este camino sirve para probar SRI sandbox con una
-                              firma real generada fuera del sistema, mientras la
-                              firma XAdES nativa del repo sigue pendiente.
-                            </p>
-                            {selectedInvoiceDocumentSupport &&
-                            !selectedInvoiceDocumentSupport.submitSupported ? (
-                              <p className={styles.muted}>
-                                {selectedInvoiceDocumentSupport.detail}
-                              </p>
-                            ) : null}
-                          </form>
-                        </div>
+                        <InvoicingElectronicStatusPanel
+                          actionLoading={actionLoading}
+                          canSubmitElectronicDocument={
+                            selectedInvoiceDocumentSupport?.submitSupported !== false
+                          }
+                          documentSupportDetail={
+                            selectedInvoiceDocumentSupport?.detail ?? null
+                          }
+                          invoiceAccessKey={invoiceAccessKey}
+                          invoiceAuthorizationNumber={invoiceAuthorizationNumber}
+                          invoiceAuthorizedAt={invoiceAuthorizedAt}
+                          invoiceElectronicStatus={invoiceElectronicStatus}
+                          invoiceElectronicStatusMessage={
+                            invoiceElectronicStatusMessage
+                          }
+                          onCheckAuthorization={() => {
+                            void handleCheckInvoiceElectronicAuthorization();
+                          }}
+                          onInvoiceAccessKeyChange={setInvoiceAccessKey}
+                          onInvoiceAuthorizationNumberChange={
+                            setInvoiceAuthorizationNumber
+                          }
+                          onInvoiceAuthorizedAtChange={setInvoiceAuthorizedAt}
+                          onInvoiceElectronicStatusChange={
+                            setInvoiceElectronicStatus
+                          }
+                          onInvoiceElectronicStatusMessageChange={
+                            setInvoiceElectronicStatusMessage
+                          }
+                          onLoadXmlPreview={() => {
+                            void handleLoadInvoiceXmlPreview();
+                          }}
+                          onPresignedInvoiceSignerNameChange={
+                            setPresignedInvoiceSignerName
+                          }
+                          onPresignedInvoiceXmlChange={setPresignedInvoiceXml}
+                          onSubmitElectronicDocument={() => {
+                            void handleSubmitInvoiceElectronicDocument();
+                          }}
+                          onSubmitPresignedInvoiceElectronicDocument={() => {
+                            void handleSubmitPresignedInvoiceElectronicDocument();
+                          }}
+                          onUpdateElectronicStatus={() => {
+                            void handleUpdateInvoiceElectronicStatus();
+                          }}
+                          presignedInvoiceSignerName={presignedInvoiceSignerName}
+                          presignedInvoiceXml={presignedInvoiceXml}
+                          selectedInvoiceDetail={selectedInvoiceDetail}
+                          selectedInvoiceDocumentSupport={
+                            selectedInvoiceDocumentSupport
+                          }
+                        />
 
                         <div className={styles.invoiceDetailGrid}>
                           <div className={styles.detailCard}>
@@ -44517,317 +44216,52 @@ export function App() {
                           </div>
                         </div>
 
-                        {selectedInvoiceDetail.electronicEvents.length > 0 ? (
-                          <div className={styles.detailCard}>
-                            <div className={styles.sectionHeading}>
-                              <div>
-                                <span className={styles.label}>Technical trace</span>
-                                <h3>Historial tecnico SRI</h3>
-                              </div>
-                            </div>
+                        <InvoicingTechnicalTracePanel
+                          formatDate={formatDate}
+                          selectedInvoiceDetail={selectedInvoiceDetail}
+                        />
 
-                            <div className={styles.stack}>
-                              {selectedInvoiceDetail.electronicEvents.map((event) => (
-                                <div className={styles.detailCard} key={event.id}>
-                                  <span className={styles.muted}>
-                                    {event.eventType === 'submission'
-                                      ? 'Envio'
-                                      : 'Consulta de autorizacion'}
-                                  </span>
-                                  <strong>
-                                    {event.provider} / {event.providerStatus}
-                                  </strong>
-                                  <small>{formatDate(event.occurredAt)}</small>
-                                  <small>{event.message}</small>
-                                  {event.sriDiagnostics?.summary ? (
-                                    <small>
-                                      Diagnostico SRI: {event.sriDiagnostics.summary}
-                                    </small>
-                                  ) : null}
-                                  <small>
-                                    {event.soapAction
-                                      ? `SOAP ${event.soapAction}`
-                                      : 'Sin SOAP action'}
-                                    {event.endpoint ? ` · ${event.endpoint}` : ''}
-                                  </small>
-                                  {event.submissionReference ? (
-                                    <small>
-                                      Ref: {event.submissionReference}
-                                    </small>
-                                  ) : null}
-                                  {event.authorizationNumber ? (
-                                    <small>
-                                      Autorizacion: {event.authorizationNumber}
-                                    </small>
-                                  ) : null}
-                                  {event.sriDiagnostics?.messages.length ? (
-                                    <details>
-                                      <summary>Mensajes estructurados SRI</summary>
-                                      <div className={styles.stack}>
-                                        {event.sriDiagnostics.messages.map(
-                                          (message, index) => (
-                                            <div
-                                              className={styles.detailCard}
-                                              key={`${event.id}-sri-message-${index}`}
-                                            >
-                                              <small>
-                                                {message.identifier
-                                                  ? `Identificador ${message.identifier}`
-                                                  : 'Mensaje SRI'}
-                                              </small>
-                                              <strong>{message.message}</strong>
-                                              {message.additionalInfo.map(
-                                                (detail, detailIndex) => (
-                                                  <small
-                                                    key={`${event.id}-sri-message-${index}-detail-${detailIndex}`}
-                                                  >
-                                                    {detail}
-                                                  </small>
-                                                ),
-                                              )}
-                                            </div>
-                                          ),
-                                        )}
-                                      </div>
-                                    </details>
-                                  ) : null}
-                                  {event.requestPayload ? (
-                                    <details>
-                                      <summary>Request payload</summary>
-                                      <pre className={styles.codeBlock}>
-                                        {event.requestPayload}
-                                      </pre>
-                                    </details>
-                                  ) : null}
-                                  {event.responsePayload ? (
-                                    <details>
-                                      <summary>Response payload</summary>
-                                      <pre className={styles.codeBlock}>
-                                        {event.responsePayload}
-                                      </pre>
-                                    </details>
-                                  ) : null}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        ) : null}
+                        <InvoicingDocumentPreviewPanel
+                          actionLoading={actionLoading}
+                          formatBuyerIdentificationType={
+                            formatBuyerIdentificationType
+                          }
+                          formatElectronicDocumentLabel={
+                            formatElectronicDocumentLabel
+                          }
+                          formatElectronicStatus={formatElectronicStatus}
+                          formatMoney={formatMoney}
+                          formatPercentage={formatPercentage}
+                          onDownloadElectronicRide={() => {
+                            void handleDownloadElectronicRide();
+                          }}
+                          onDownloadElectronicXml={() => {
+                            void handleDownloadElectronicXml();
+                          }}
+                          onOpenElectronicRide={() => {
+                            void handleOpenElectronicRide();
+                          }}
+                          onOpenPrintableInvoice={() => {
+                            void handleOpenPrintableInvoice();
+                          }}
+                          selectedInvoiceArtifacts={selectedInvoiceArtifacts}
+                          selectedInvoiceDocument={selectedInvoiceDocument}
+                          selectedInvoiceRide={selectedInvoiceRide}
+                        />
 
-                        {selectedInvoiceDocument ? (
-                          <div className={styles.documentPreview}>
-                            <div className={styles.sectionHeading}>
-                              <div>
-                                <span className={styles.label}>Document preview</span>
-                                <h3>
-                                  {formatElectronicDocumentLabel(
-                                    selectedInvoiceDocument.invoice.documentCode,
-                                  )}{' '}
-                                  {selectedInvoiceDocument.invoice.number}
-                                </h3>
-                              </div>
-                              <button
-                                className={styles.secondaryButton}
-                                disabled={actionLoading === 'open-invoice-document'}
-                                onClick={() => void handleOpenPrintableInvoice()}
-                                type="button"
-                              >
-                                {actionLoading === 'open-invoice-document'
-                                  ? 'Abriendo...'
-                                  : 'Abrir version imprimible'}
-                              </button>
-                              <button
-                                className={styles.ghostButton}
-                                disabled={actionLoading === 'open-invoice-ride'}
-                                onClick={() => void handleOpenElectronicRide()}
-                                type="button"
-                              >
-                                {actionLoading === 'open-invoice-ride'
-                                  ? 'Abriendo RIDE...'
-                                  : 'Abrir RIDE electronico'}
-                              </button>
-                            </div>
-
-                            <div className={styles.invoiceDetailGrid}>
-                              <div className={styles.detailCard}>
-                                <span className={styles.muted}>Emisor</span>
-                                <strong>{selectedInvoiceDocument.issuer.legalName}</strong>
-                                <small>
-                                  {selectedInvoiceDocument.issuer.taxId
-                                    ? `RUC ${selectedInvoiceDocument.issuer.taxId}`
-                                    : selectedInvoiceDocument.issuer.tenantSlug}
-                                </small>
-                              </div>
-                              <div className={styles.detailCard}>
-                                <span className={styles.muted}>Cliente</span>
-                                <strong>{selectedInvoiceDocument.customer.name}</strong>
-                                <small>
-                                  {selectedInvoiceDocument.customer.identificationType
-                                    ? `${formatBuyerIdentificationType(
-                                        selectedInvoiceDocument.customer.identificationType,
-                                      )}: ${
-                                        selectedInvoiceDocument.customer.identification ??
-                                        'Sin identificacion'
-                                      }`
-                                    : selectedInvoiceDocument.customer.taxId ??
-                                      selectedInvoiceDocument.customer.email ??
-                                      'Sin identificacion fiscal'}
-                                </small>
-                                <small>
-                                  {selectedInvoiceDocument.customer.billingAddress ??
-                                    'Sin direccion del comprador'}
-                                </small>
-                              </div>
-                            </div>
-
-                            <div className={styles.invoiceDetailGrid}>
-                              <div className={styles.detailCard}>
-                                <span className={styles.muted}>Ambiente</span>
-                                <strong>
-                                  {selectedInvoiceDocument.issuer.environment ??
-                                    'No configurado'}
-                                </strong>
-                                <small>
-                                  Emision:{' '}
-                                  {selectedInvoiceDocument.issuer.emissionType ??
-                                    'No configurada'}
-                                </small>
-                              </div>
-                              <div className={styles.detailCard}>
-                                <span className={styles.muted}>Estado electronico</span>
-                                <strong>
-                                  {formatElectronicStatus(
-                                    selectedInvoiceDocument.invoice.electronicStatus,
-                                  )}
-                                </strong>
-                                <small>
-                                  {selectedInvoiceDocument.invoice.authorizationNumber ??
-                                    selectedInvoiceDocument.invoice.accessKey ??
-                                    'Sin autorizacion registrada'}
-                                </small>
-                              </div>
-                              <div className={styles.detailCard}>
-                                <span className={styles.muted}>Numeracion</span>
-                                <strong>
-                                  {selectedInvoiceDocument.invoice.documentCode ??
-                                    'Sin codDoc'}{' '}
-                                  ·{' '}
-                                  {selectedInvoiceDocument.invoice.establishmentCode ??
-                                    '---'}
-                                  -
-                                  {selectedInvoiceDocument.invoice.emissionPointCode ??
-                                    '---'}
-                                </strong>
-                                <small>
-                                  Secuencial:{' '}
-                                  {selectedInvoiceDocument.invoice.sequenceNumber !==
-                                  null
-                                    ? String(
-                                        selectedInvoiceDocument.invoice.sequenceNumber,
-                                      ).padStart(9, '0')
-                                    : 'Manual'}
-                                </small>
-                              </div>
-                            </div>
-
-                            <div className={styles.stack}>
-                              {selectedInvoiceDocument.lines.map((line) => (
-                                <div className={styles.documentLineCard} key={line.id}>
-                                  <div className={styles.invoiceCardHeader}>
-                                    <strong>
-                                      #{line.position} · {line.description}
-                                    </strong>
-                                    <span className={styles.statusPill}>
-                                      {formatMoney(
-                                        line.lineTotalInCents,
-                                        selectedInvoiceDocument.invoice.currency,
-                                      )}
-                                    </span>
-                                  </div>
-                                  <small>
-                                    {line.quantity} x{' '}
-                                    {formatMoney(
-                                      line.unitPriceInCents,
-                                      selectedInvoiceDocument.invoice.currency,
-                                    )}{' '}
-                                    ={' '}
-                                    {formatMoney(
-                                      line.lineSubtotalInCents,
-                                      selectedInvoiceDocument.invoice.currency,
-                                    )}
-                                  </small>
-                                  <small>
-                                    Impuesto:{' '}
-                                    {line.taxRateName && line.taxRatePercentage !== null
-                                      ? `${line.taxRateName} (${formatPercentage(
-                                          line.taxRatePercentage,
-                                        )}%)`
-                                      : 'Sin impuesto'}
-                                  </small>
-                                  <small>
-                                    Tax line:{' '}
-                                    {formatMoney(
-                                      line.lineTaxInCents,
-                                      selectedInvoiceDocument.invoice.currency,
-                                    )}
-                                  </small>
-                                </div>
-                              ))}
-                            </div>
-
-                            {selectedInvoiceDocument.invoice.notes ? (
-                              <div className={styles.detailCard}>
-                                <span className={styles.muted}>Notas</span>
-                                <strong>{selectedInvoiceDocument.invoice.notes}</strong>
-                              </div>
-                            ) : null}
-
-                            {canSendInvoiceNotifications ? (
-                              <form
-                                className={styles.stack}
-                                onSubmit={handleSendInvoiceEmail}
-                              >
-                                <div className={styles.sectionHeading}>
-                                  <div>
-                                    <span className={styles.label}>Notifications</span>
-                                    <h3>Enviar factura por email</h3>
-                                  </div>
-                                </div>
-
-                                <label className={styles.field}>
-                                  <span>Destinatario</span>
-                                  <input
-                                    onChange={(event) =>
-                                      setInvoiceEmailRecipient(event.target.value)
-                                    }
-                                    placeholder="billing@customer.dev"
-                                    type="email"
-                                    value={invoiceEmailRecipient}
-                                  />
-                                </label>
-
-                                <label className={styles.field}>
-                                  <span>Mensaje opcional</span>
-                                  <textarea
-                                    onChange={(event) =>
-                                      setInvoiceEmailMessage(event.target.value)
-                                    }
-                                    placeholder="Te compartimos la factura del periodo."
-                                    value={invoiceEmailMessage}
-                                  />
-                                </label>
-
-                                <button
-                                  className={styles.primaryButton}
-                                  disabled={actionLoading === 'send-invoice-email'}
-                                  type="submit"
-                                >
-                                  {actionLoading === 'send-invoice-email'
-                                    ? 'Enviando...'
-                                    : 'Enviar factura'}
-                                </button>
-                              </form>
-                            ) : null}
-                          </div>
+                        {selectedInvoiceDocument && canSendInvoiceNotifications ? (
+                          <InvoicingNotificationsPanel
+                            actionLoading={actionLoading}
+                            invoiceEmailMessage={invoiceEmailMessage}
+                            invoiceEmailRecipient={invoiceEmailRecipient}
+                            onInvoiceEmailMessageChange={setInvoiceEmailMessage}
+                            onInvoiceEmailRecipientChange={
+                              setInvoiceEmailRecipient
+                            }
+                            onSendInvoiceEmail={() => {
+                              void handleSendInvoiceEmail();
+                            }}
+                          />
                         ) : null}
 
                         {selectedInvoiceXmlPreview ? (
@@ -44847,399 +44281,89 @@ export function App() {
                           </div>
                         ) : null}
 
-                        {selectedInvoiceRide ? (
-                          <div className={styles.documentPreview}>
-                            <div className={styles.sectionHeading}>
-                              <div>
-                                <span className={styles.label}>Electronic RIDE</span>
-                                <h3>{selectedInvoiceRide.ride.documentLabel}</h3>
-                              </div>
-                              <div className={styles.actionRow}>
-                                <button
-                                  className={styles.ghostButton}
-                                  disabled={actionLoading === 'download-invoice-ride'}
-                                  onClick={() => void handleDownloadElectronicRide()}
-                                  type="button"
-                                >
-                                  {actionLoading === 'download-invoice-ride'
-                                    ? 'Descargando RIDE...'
-                                    : 'Descargar RIDE'}
-                                </button>
-                                <button
-                                  className={styles.ghostButton}
-                                  disabled={
-                                    actionLoading === 'download-invoice-xml' ||
-                                    !selectedInvoiceArtifacts?.canDownloadXml
-                                  }
-                                  onClick={() => void handleDownloadElectronicXml()}
-                                  type="button"
-                                >
-                                  {actionLoading === 'download-invoice-xml'
-                                    ? 'Descargando XML...'
-                                    : 'Descargar XML'}
-                                </button>
-                              </div>
-                            </div>
+                        <InvoicingPaymentsPanel
+                          actionLoading={actionLoading}
+                          formatDate={formatDate}
+                          formatMoney={formatMoney}
+                          formatPaymentStatus={formatPaymentStatus}
+                          newPaymentAmountInCents={newPaymentAmountInCents}
+                          newPaymentMethod={newPaymentMethod}
+                          newPaymentNotes={newPaymentNotes}
+                          newPaymentPaidAt={newPaymentPaidAt}
+                          newPaymentReference={newPaymentReference}
+                          onCreateInvoicePayment={() => {
+                            void handleCreateInvoicePayment();
+                          }}
+                          onNewPaymentAmountInCentsChange={
+                            setNewPaymentAmountInCents
+                          }
+                          onNewPaymentMethodChange={setNewPaymentMethod}
+                          onNewPaymentNotesChange={setNewPaymentNotes}
+                          onNewPaymentPaidAtChange={setNewPaymentPaidAt}
+                          onNewPaymentReferenceChange={setNewPaymentReference}
+                          onPaymentReversalReasonChange={
+                            setPaymentReversalReason
+                          }
+                          onReverseInvoicePayment={(paymentId) => {
+                            void handleReverseInvoicePayment(paymentId);
+                          }}
+                          paymentReversalReason={paymentReversalReason}
+                          selectedInvoiceDetail={selectedInvoiceDetail}
+                        />
 
-                            <div className={styles.invoiceDetailGrid}>
-                              <div className={styles.detailCard}>
-                                <span className={styles.muted}>Ambiente</span>
-                                <strong>{selectedInvoiceRide.ride.environmentLabel}</strong>
-                                <small>
-                                  Emision {selectedInvoiceRide.ride.emissionTypeLabel}
-                                </small>
-                              </div>
-                              <div className={styles.detailCard}>
-                                <span className={styles.muted}>Estado RIDE</span>
-                                <strong>
-                                  {selectedInvoiceRide.ride.electronicStatusLabel}
-                                </strong>
-                                <small>
-                                  {selectedInvoiceRide.ride.canBePrintedAsAuthorized
-                                    ? 'Listo como comprobante autorizado'
-                                    : 'Aun referencial o pendiente'}
-                                </small>
-                              </div>
-                            </div>
-
-                            <div className={styles.detailCard}>
-                              <span className={styles.muted}>Clave de acceso</span>
-                              <pre className={styles.codeBlock}>
-                                {selectedInvoiceRide.ride.accessKeyChunks.length > 0
-                                  ? selectedInvoiceRide.ride.accessKeyChunks.join(
-                                      ' · ',
-                                    )
-                                  : 'No generada'}
-                              </pre>
-                            </div>
-
-                            {selectedInvoiceArtifacts ? (
-                              <div className={styles.invoiceDetailGrid}>
-                                <div className={styles.detailCard}>
-                                  <span className={styles.muted}>Archivo RIDE</span>
-                                  <strong>
-                                    {selectedInvoiceArtifacts.rideHtmlFileName}
-                                  </strong>
-                                </div>
-                                <div className={styles.detailCard}>
-                                  <span className={styles.muted}>Archivo XML</span>
-                                  <strong>
-                                    {selectedInvoiceArtifacts.xmlFileName}
-                                  </strong>
-                                </div>
-                              </div>
-                            ) : null}
-
-                            {selectedInvoiceRide.ride.additionalInfoFields.length >
-                            0 ? (
-                              <div className={styles.stack}>
-                                {selectedInvoiceRide.ride.additionalInfoFields.map(
-                                  (field) => (
-                                    <div className={styles.detailCard} key={field.label}>
-                                      <span className={styles.muted}>
-                                        {field.label}
-                                      </span>
-                                      <strong>{field.value}</strong>
-                                    </div>
-                                  ),
-                                )}
-                              </div>
-                            ) : null}
-                          </div>
-                        ) : null}
-
-                        <div className={styles.stack}>
-                          <div className={styles.sectionHeading}>
-                            <div>
-                              <span className={styles.label}>Payments</span>
-                              <h3>{selectedInvoiceDetail.payments.length} pagos</h3>
-                            </div>
-                          </div>
-
-                          {selectedInvoiceDetail.payments.length === 0 ? (
-                            <div className={styles.emptyState}>
-                              <p>Esta factura todavia no tiene pagos registrados.</p>
-                            </div>
-                          ) : (
-                            <div className={styles.stack}>
-                              {selectedInvoiceDetail.payments.map((payment) => (
-                                <div className={styles.invoiceItemCard} key={payment.id}>
-                                  <div className={styles.invoiceCardHeader}>
-                                    <strong>{payment.method}</strong>
-                                    <span className={styles.statusPill}>
-                                      {formatMoney(
-                                        payment.amountInCents,
-                                        payment.currency,
-                                      )}
-                                    </span>
-                                  </div>
-                                  <small>
-                                    Estado: {formatPaymentStatus(payment.status)}
-                                  </small>
-                                  <small>Fecha: {formatDate(payment.paidAt)}</small>
-                                  <small>
-                                    Referencia: {payment.reference ?? 'Sin referencia'}
-                                  </small>
-                                  <small>{payment.notes ?? 'Sin notas'}</small>
-                                  {payment.reversedAt ? (
-                                    <small>
-                                      Revertido: {formatDate(payment.reversedAt)}
-                                      {payment.reversalReason
-                                        ? ` · ${payment.reversalReason}`
-                                        : ''}
-                                    </small>
-                                  ) : null}
-                                  {payment.status === 'posted' ? (
-                                    <button
-                                      className={styles.secondaryButton}
-                                      disabled={
-                                        actionLoading === `reverse-payment:${payment.id}`
-                                      }
-                                      onClick={() =>
-                                        void handleReverseInvoicePayment(payment.id)
-                                      }
-                                      type="button"
-                                    >
-                                      {actionLoading === `reverse-payment:${payment.id}`
-                                        ? 'Revirtiendo...'
-                                        : 'Revertir pago'}
-                                    </button>
-                                  ) : null}
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-
-                        <label className={styles.field}>
-                          <span>Motivo de reversa</span>
-                          <input
-                            onChange={(event) =>
-                              setPaymentReversalReason(event.target.value)
-                            }
-                            placeholder="Pago duplicado, error de conciliacion, etc."
-                            value={paymentReversalReason}
-                          />
-                        </label>
-
-                        <form className={styles.stack} onSubmit={handleCreateInvoicePayment}>
-                          <div className={styles.sectionHeading}>
-                            <div>
-                              <span className={styles.label}>Register payment</span>
-                              <h3>Nuevo pago</h3>
-                            </div>
-                          </div>
-
-                          <div className={styles.invoiceInlineGrid}>
-                            <label className={styles.field}>
-                              <span>Monto (cents)</span>
-                              <input
-                                min="1"
-                                onChange={(event) =>
-                                  setNewPaymentAmountInCents(event.target.value)
-                                }
-                                placeholder="6800"
-                                type="number"
-                                value={newPaymentAmountInCents}
-                              />
-                            </label>
-                            <label className={styles.field}>
-                              <span>Metodo</span>
-                              <input
-                                onChange={(event) =>
-                                  setNewPaymentMethod(event.target.value)
-                                }
-                                placeholder="transfer"
-                                value={newPaymentMethod}
-                              />
-                            </label>
-                          </div>
-
-                          <div className={styles.invoiceInlineGrid}>
-                            <label className={styles.field}>
-                              <span>Referencia</span>
-                              <input
-                                onChange={(event) =>
-                                  setNewPaymentReference(event.target.value)
-                                }
-                                placeholder="TRX-001"
-                                value={newPaymentReference}
-                              />
-                            </label>
-                            <label className={styles.field}>
-                              <span>Fecha de pago</span>
-                              <input
-                                onChange={(event) => setNewPaymentPaidAt(event.target.value)}
-                                type="datetime-local"
-                                value={newPaymentPaidAt}
-                              />
-                            </label>
-                          </div>
-
-                          <label className={styles.field}>
-                            <span>Notas</span>
-                            <textarea
-                              onChange={(event) => setNewPaymentNotes(event.target.value)}
-                              placeholder="Pago parcial del periodo."
-                              value={newPaymentNotes}
-                            />
-                          </label>
-
-                          <button
-                            className={styles.primaryButton}
-                            disabled={
-                              selectedInvoiceDetail.status === 'draft' ||
-                              selectedInvoiceDetail.status === 'void' ||
-                              selectedInvoiceDetail.settlement.balanceDueInCents === 0 ||
-                              actionLoading === 'create-invoice-payment'
-                            }
-                            type="submit"
-                          >
-                            {actionLoading === 'create-invoice-payment'
-                              ? 'Registrando pago...'
-                              : 'Registrar pago'}
-                          </button>
-                        </form>
-
-                        <div className={styles.stack}>
-                          <div className={styles.sectionHeading}>
-                            <div>
-                              <span className={styles.label}>Invoice items</span>
-                              <h3>{selectedInvoiceDetail.items.length} lineas</h3>
-                            </div>
-                          </div>
-
-                          {selectedInvoiceDetail.items.length === 0 ? (
-                            <div className={styles.emptyState}>
-                              <p>Esta factura todavia no tiene items.</p>
-                            </div>
-                          ) : (
-                            <div className={styles.stack}>
-                              {selectedInvoiceDetail.items.map((item) => (
-                                <div className={styles.invoiceItemCard} key={item.id}>
-                                  <div className={styles.invoiceCardHeader}>
-                                    <strong>
-                                      #{item.position} · {item.description}
-                                    </strong>
-                                    <span className={styles.statusPill}>
-                                      {formatMoney(
-                                        item.lineTotalInCents,
-                                        selectedInvoiceDetail.currency,
-                                      )}
-                                    </span>
-                                  </div>
-                                  <small>
-                                    {item.quantity} x{' '}
-                                    {formatMoney(
-                                      item.unitPriceInCents,
-                                      selectedInvoiceDetail.currency,
-                                    )}
-                                  </small>
-                                  <small>
-                                    Impuesto:{' '}
-                                    {item.taxRateName && item.taxRatePercentage !== null
-                                      ? `${item.taxRateName} (${formatPercentage(
-                                          item.taxRatePercentage,
-                                        )}%)`
-                                      : 'Sin impuesto'}
-                                  </small>
-                                  <small>
-                                    Tax line:{' '}
-                                    {formatMoney(
-                                      item.lineTaxInCents,
-                                      selectedInvoiceDetail.currency,
-                                    )}
-                                  </small>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-
-                        <form className={styles.stack} onSubmit={handleCreateInvoiceItem}>
-                          <div className={styles.sectionHeading}>
-                            <div>
-                              <span className={styles.label}>Add item</span>
-                              <h3>Nueva linea</h3>
-                            </div>
-                          </div>
-
-                          <label className={styles.field}>
-                            <span>Descripcion</span>
-                            <input
-                              onChange={(event) => setNewItemDescription(event.target.value)}
-                              placeholder="Servicio mensual"
-                              value={newItemDescription}
-                            />
-                          </label>
-
-                          <div className={styles.invoiceInlineGrid}>
-                            <label className={styles.field}>
-                              <span>Quantity</span>
-                              <input
-                                min="1"
-                                onChange={(event) => setNewItemQuantity(event.target.value)}
-                                type="number"
-                                value={newItemQuantity}
-                              />
-                            </label>
-                            <label className={styles.field}>
-                              <span>Unit price (cents)</span>
-                              <input
-                                min="0"
-                                onChange={(event) =>
-                                  setNewItemUnitPriceInCents(event.target.value)
-                                }
-                                placeholder="2500"
-                                type="number"
-                                value={newItemUnitPriceInCents}
-                              />
-                            </label>
-                          </div>
-
-                          <label className={styles.field}>
-                            <span>Impuesto</span>
-                            <select
-                              className={styles.selectField}
-                              onChange={(event) => setNewItemTaxRateId(event.target.value)}
-                              value={newItemTaxRateId}
-                            >
-                              <option value="">Sin impuesto</option>
-                              {taxRates
-                                .filter((taxRate) => taxRate.isActive)
-                                .map((taxRate) => (
-                                  <option key={taxRate.id} value={taxRate.id}>
-                                    {taxRate.name} ({formatPercentage(taxRate.percentage)}%)
-                                  </option>
-                                ))}
-                            </select>
-                          </label>
-
-                          <button
-                            className={styles.primaryButton}
-                            disabled={
-                              !newItemDescription.trim() ||
-                              !newItemUnitPriceInCents.trim() ||
-                              actionLoading === 'create-invoice-item'
-                            }
-                            type="submit"
-                          >
-                            {actionLoading === 'create-invoice-item'
-                              ? 'Agregando item...'
-                              : 'Agregar item'}
-                          </button>
-                          <p className={styles.muted}>
-                            El backend calcula `lineTotalInCents`, `lineTaxInCents` y reordena la posicion automaticamente.
-                          </p>
-                        </form>
+                        <InvoicingInvoiceItemsPanel
+                          actionLoading={actionLoading}
+                          formatMoney={formatMoney}
+                          formatPercentage={formatPercentage}
+                          newItemDescription={newItemDescription}
+                          newItemQuantity={newItemQuantity}
+                          newItemTaxRateId={newItemTaxRateId}
+                          newItemUnitPriceInCents={newItemUnitPriceInCents}
+                          onCreateInvoiceItem={() => {
+                            void handleCreateInvoiceItem();
+                          }}
+                          onNewItemDescriptionChange={setNewItemDescription}
+                          onNewItemQuantityChange={setNewItemQuantity}
+                          onNewItemTaxRateIdChange={setNewItemTaxRateId}
+                          onNewItemUnitPriceInCentsChange={
+                            setNewItemUnitPriceInCents
+                          }
+                          selectedInvoiceDetail={selectedInvoiceDetail}
+                          taxRates={taxRates}
+                        />
                       </>
-                    ) : (
-                      <div className={styles.emptyState}>
-                        <p>Selecciona una factura para revisar sus items y totales.</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                    ) : null
+                  }
+                  formatBuyerIdentificationType={formatBuyerIdentificationType}
+                  formatDate={formatDate}
+                  formatElectronicStatus={formatElectronicStatus}
+                  formatInvoiceStatus={formatInvoiceStatus}
+                  formatMoney={formatMoney}
+                  invoiceDetailLoading={invoiceDetailLoading}
+                  invoicingLoading={invoicingLoading}
+                  invoices={invoices}
+                  onMarkInvoiceIssued={() => {
+                    void handleUpdateInvoiceStatus('issued');
+                  }}
+                  onMarkInvoicePaid={() => {
+                    void handleUpdateInvoiceStatus('paid');
+                  }}
+                  onMarkInvoiceVoid={() => {
+                    void handleUpdateInvoiceStatus('void');
+                  }}
+                  onSelectInvoice={setSelectedInvoiceId}
+                  resolveCustomerName={(customerId, buyerName) =>
+                    buyerName ?? customerNameById.get(customerId) ?? customerId
+                  }
+                  selectedInvoiceDetail={selectedInvoiceDetail}
+                  selectedInvoiceId={selectedInvoiceId}
+                  selectedInvoiceSummary={selectedInvoiceSummary}
+                  statusActionLoadingKey={
+                    actionLoading.startsWith('invoice-status:')
+                      ? actionLoading
+                      : null
+                  }
+                />
               </div>
             </div>
           )}

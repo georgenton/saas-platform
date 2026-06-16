@@ -35,6 +35,12 @@ apps/web-platform/src/
       model.ts
       queries.ts
       use-command-center-model.ts
+    invoicing/
+      adapters.ts
+      invoicing-workspace.tsx
+      model.ts
+      queries.ts
+      use-invoicing-workspace-model.ts
   shared/
     layout/
       platform-shell.tsx
@@ -92,6 +98,29 @@ Current split:
 - `app/app.tsx`: still composes source data from existing endpoints and passes
   normalized props into `PlatformShell` plus adapter input into Command Center.
 
+## Invoicing First Product Surface
+
+Electronic Invoicing EC is the first product surface being extracted because it
+is central for Ecuador and feeds Tax Compliance, Accounting and Ecommerce.
+
+Current split:
+
+- `features/invoicing/model.ts`: frontend workspace summary contract for
+  metrics, readiness and next actions.
+- `features/invoicing/adapters.ts`: converts current `app.tsx` source data into
+  the presentational Invoicing foundation model.
+- `features/invoicing/invoicing-workspace.tsx`: extracted summary component for
+  the top of the existing Invoicing domain screen.
+- `features/invoicing/queries.ts`: stable TanStack Query key taxonomy for the
+  next migration of issuer profile, electronic submission, numbering, invoices
+  and report summary reads.
+- `features/invoicing/use-invoicing-workspace-model.ts`: memoized feature hook
+  that keeps model creation outside the app composer.
+
+The first slice intentionally leaves write forms, invoice detail, XML/RIDE,
+payments and electronic submission actions in `app.tsx`; move them in smaller
+subsequent slices.
+
 ## Design System
 
 Use shared primitives before adding new ad hoc markup for common controls:
@@ -117,6 +146,8 @@ Initial migrated surfaces:
 
 - platform catalog: plans + products
 - tenant enabled products
+- Invoicing query keys are defined, but existing reads still run through the
+  legacy `app.tsx` refresh flow until the next migration slice.
 
 Keep local `useState` for form drafts, selected UI rows, temporary action
 messages, and staged user input. Prefer query hooks for API reads before adding
@@ -138,9 +169,10 @@ new manual `useEffect` loading flows.
 
 ## Next Slices
 
-1. Extract the next product surface from legacy `app.tsx`, starting with the
-   highest-value frontend workflow selected for Claude Design polish.
-2. Implement `/tenancy/tenants/:tenantSlug/command-center` in the API when the
+1. Move Invoicing read-side data loading to feature TanStack Query hooks.
+2. Ask Claude Design for `02-invoicing-workspace` using the handoff contract and
+   current extracted summary model.
+3. Implement `/tenancy/tenants/:tenantSlug/command-center` in the API when the
    backend is ready, then switch `useCommandCenterPlatformData` to the BFF.
-3. Continue replacing legacy inline controls with shared design-system
+4. Continue replacing legacy inline controls with shared design-system
    primitives as each product surface moves out of `app.tsx`.

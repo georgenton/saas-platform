@@ -13,6 +13,8 @@ import styles from './app.module.css';
 import { CommandCenter } from '../features/command-center/command-center';
 import { useCommandCenterPlatformData } from '../features/command-center/queries';
 import { useCommandCenterModel } from '../features/command-center/use-command-center-model';
+import { InvoicingWorkspaceSummary } from '../features/invoicing/invoicing-workspace';
+import { useInvoicingWorkspaceModel } from '../features/invoicing/use-invoicing-workspace-model';
 import { PlatformShell } from '../shared/layout/platform-shell';
 import {
   PLATFORM_MOODS,
@@ -4826,6 +4828,27 @@ export function App() {
       invoiceNumberingSettings?.previewNumber ??
       `INV-${String(invoices.length + 1).padStart(4, '0')}`,
     [invoiceNumberingSettings, invoices.length],
+  );
+  const invoicingWorkspaceModelInput = useMemo(
+    () => ({
+      customers,
+      electronicSubmissionSettings,
+      formatMoney,
+      humanizeKey,
+      invoiceNumberingSettings,
+      invoices,
+      issuerProfile,
+    }),
+    [
+      customers,
+      electronicSubmissionSettings,
+      invoiceNumberingSettings,
+      invoices,
+      issuerProfile,
+    ],
+  );
+  const invoicingWorkspaceModel = useInvoicingWorkspaceModel(
+    invoicingWorkspaceModelInput,
   );
   const leadingOperationalAlerts = useMemo(
     () => whatsappSummary?.operationalAlerts.slice(0, 4) ?? [],
@@ -41549,26 +41572,7 @@ export function App() {
                 <p className={styles.successBanner}>{invoicingActionMessage}</p>
               ) : null}
 
-              <div className={styles.invoiceKpiGrid}>
-                <div className={styles.commercialCard}>
-                  <span className={styles.muted}>Customers activos</span>
-                  <strong>{customers.length}</strong>
-                </div>
-                <div className={styles.commercialCard}>
-                  <span className={styles.muted}>Facturas emitidas</span>
-                  <strong>{issuedInvoiceCount}</strong>
-                </div>
-                <div className={styles.commercialCard}>
-                  <span className={styles.muted}>Valor total del portafolio</span>
-                  <strong>
-                    {formatMoney(invoicePortfolioTotal, invoicePortfolioCurrency)}
-                  </strong>
-                </div>
-                <div className={styles.commercialCard}>
-                  <span className={styles.muted}>Siguiente numero sugerido</span>
-                  <strong>{nextInvoiceNumberSuggestion}</strong>
-                </div>
-              </div>
+              <InvoicingWorkspaceSummary model={invoicingWorkspaceModel} />
 
               {invoicingReport ? (
                 <div className={styles.stack}>

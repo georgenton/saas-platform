@@ -49,6 +49,38 @@ Owner/operator responsible for issuing and tracking invoices.
 8. XML/RIDE preview panel.
 9. Numbering and tax settings.
 
+## Current Frontend Foundation
+
+The first integrated slice extracts only the top operational summary into
+`apps/web-platform/src/features/invoicing/`.
+
+Current feature files:
+
+- `model.ts`: metrics, readiness signals and next-action contract.
+- `adapters.ts`: maps existing `app.tsx` state into the feature model.
+- `invoicing-workspace.tsx`: reusable summary component rendered at the top of
+  the existing Invoicing domain screen.
+- `queries.ts`: TanStack Query key taxonomy for the next read-side migration.
+- `use-invoicing-workspace-model.ts`: memoized model hook.
+
+The existing screen still owns forms, invoice list/detail, XML/RIDE previews,
+payments and SRI submission actions. Claude Design should treat those as the
+next UI scope, not as already extracted components.
+
+## Design Slice 02 Scope
+
+Recommended Claude Design request:
+
+- Web and mobile Invoicing workspace for Ecuador.
+- Preserve professional, corporate, friendly tone.
+- Show issuer profile, SRI environment, gateway/submission readiness,
+  numbering, invoice portfolio metrics and next actions.
+- Include states for no issuer profile, no invoices, draft invoices, pending
+  authorization, authorized, rejected and electronic readiness blocked.
+- Use mood-aware shell primitives and avoid marketing-style hero layouts.
+- Distinguish preview, generated artifact, submitted artifact and authorized
+  artifact.
+
 ## Actions
 
 - create invoice

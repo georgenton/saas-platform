@@ -14,7 +14,10 @@ import styles from './app.module.css';
 import { CommandCenter } from '../features/command-center/command-center';
 import { useCommandCenterPlatformData } from '../features/command-center/queries';
 import { useCommandCenterModel } from '../features/command-center/use-command-center-model';
-import { InvoicingWorkspaceSummary } from '../features/invoicing/invoicing-workspace';
+import {
+  InvoicingWorkspaceOperations,
+  InvoicingWorkspaceSummary,
+} from '../features/invoicing/invoicing-workspace';
 import {
   invoicingQueryKeys,
   type InvoicingWorkspaceQueryData,
@@ -43493,172 +43496,10 @@ export function App() {
                   </div>
                 </div>
 
-                <div className={styles.stack}>
-                  <div className={styles.detailCard}>
-                    <div className={styles.sectionHeading}>
-                      <div>
-                        <span className={styles.label}>Invoices</span>
-                        <h3>{invoices.length} facturas</h3>
-                      </div>
-                    </div>
-
-                    {invoicingLoading ? (
-                      <p className={styles.muted}>Cargando invoices...</p>
-                    ) : invoices.length === 0 ? (
-                      <div className={styles.emptyState}>
-                        <p>Este tenant todavia no tiene facturas creadas.</p>
-                      </div>
-                    ) : (
-                      <div className={styles.stack}>
-                        {invoices.map((invoice) => (
-                          <button
-                            className={`${styles.invoiceCard} ${
-                              invoice.id === selectedInvoiceSummary?.id
-                                ? styles.invoiceCardActive
-                                : ''
-                            }`}
-                            key={invoice.id}
-                            onClick={() => setSelectedInvoiceId(invoice.id)}
-                            type="button"
-                          >
-                            <div className={styles.invoiceCardHeader}>
-                              <strong>{invoice.number}</strong>
-                              <span className={styles.statusPill}>
-                                {formatInvoiceStatus(invoice.status)}
-                              </span>
-                            </div>
-                            <span>
-                              {invoice.buyerName ??
-                                customerNameById.get(invoice.customerId) ??
-                                invoice.customerId}
-                            </span>
-                            <small>
-                              {invoice.itemCount} items ·{' '}
-                              {formatMoney(
-                                invoice.totals.totalInCents,
-                                invoice.currency,
-                              )}
-                            </small>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className={styles.detailCard} id="invoicing-invoice-detail">
-                    <div className={styles.sectionHeading}>
-                      <div>
-                        <span className={styles.label}>Invoice detail</span>
-                        <h3>
-                          {selectedInvoiceDetail?.number ??
-                            selectedInvoiceSummary?.number ??
-                            'Selecciona una factura'}
-                        </h3>
-                      </div>
-                    </div>
-
-                    {invoiceDetailLoading ? (
-                      <p className={styles.muted}>Cargando detalle de factura...</p>
-                    ) : selectedInvoiceDetail ? (
+                <InvoicingWorkspaceOperations
+                  detailChildren={
+                    selectedInvoiceDetail ? (
                       <>
-                        <div className={styles.invoiceDetailGrid}>
-                          <div>
-                            <span className={styles.muted}>Customer</span>
-                            <strong>
-                              {selectedInvoiceDetail.buyerName ??
-                                customerNameById.get(selectedInvoiceDetail.customerId) ??
-                                selectedInvoiceDetail.customerId}
-                            </strong>
-                            <small>
-                              {selectedInvoiceDetail.buyerIdentificationType
-                                ? `${formatBuyerIdentificationType(
-                                    selectedInvoiceDetail.buyerIdentificationType,
-                                  )}: ${selectedInvoiceDetail.buyerIdentification ?? 'Sin identificacion'}`
-                                : 'Sin identificacion Ecuador'}
-                            </small>
-                          </div>
-                          <div>
-                            <span className={styles.muted}>Issued</span>
-                            <strong>{formatDate(selectedInvoiceDetail.issuedAt)}</strong>
-                          </div>
-                          <div>
-                            <span className={styles.muted}>Due</span>
-                            <strong>{formatDate(selectedInvoiceDetail.dueAt)}</strong>
-                          </div>
-                          <div>
-                            <span className={styles.muted}>Currency</span>
-                            <strong>{selectedInvoiceDetail.currency}</strong>
-                          </div>
-                          <div>
-                            <span className={styles.muted}>Estado</span>
-                            <strong>
-                              {formatInvoiceStatus(selectedInvoiceDetail.status)}
-                            </strong>
-                          </div>
-                          <div>
-                            <span className={styles.muted}>Serie Ecuador</span>
-                            <strong>
-                              {selectedInvoiceDetail.establishmentCode &&
-                              selectedInvoiceDetail.emissionPointCode
-                                ? `${selectedInvoiceDetail.establishmentCode}-${selectedInvoiceDetail.emissionPointCode}`
-                                : 'No configurada'}
-                            </strong>
-                          </div>
-                          <div>
-                            <span className={styles.muted}>Secuencial</span>
-                            <strong>
-                              {selectedInvoiceDetail.sequenceNumber !== null
-                                ? String(selectedInvoiceDetail.sequenceNumber).padStart(
-                                    9,
-                                    '0',
-                                  )
-                                : 'Manual'}
-                            </strong>
-                          </div>
-                        </div>
-
-                        <div className={styles.actionRow}>
-                          {selectedInvoiceDetail.status === 'draft' ? (
-                            <button
-                              className={styles.secondaryButton}
-                              disabled={actionLoading === 'invoice-status:issued'}
-                              onClick={() => void handleUpdateInvoiceStatus('issued')}
-                              type="button"
-                            >
-                              {actionLoading === 'invoice-status:issued'
-                                ? 'Emitiendo...'
-                                : 'Marcar como emitida'}
-                            </button>
-                          ) : null}
-
-                          {(selectedInvoiceDetail.status === 'issued' ||
-                            selectedInvoiceDetail.status === 'partially_paid') ? (
-                            <button
-                              className={styles.primaryButton}
-                              disabled={actionLoading === 'invoice-status:paid'}
-                              onClick={() => void handleUpdateInvoiceStatus('paid')}
-                              type="button"
-                            >
-                              {actionLoading === 'invoice-status:paid'
-                                ? 'Registrando...'
-                                : 'Marcar como pagada'}
-                            </button>
-                          ) : null}
-
-                          {(selectedInvoiceDetail.status === 'draft' ||
-                            selectedInvoiceDetail.status === 'issued') ? (
-                            <button
-                              className={styles.dangerButton}
-                              disabled={actionLoading === 'invoice-status:void'}
-                              onClick={() => void handleUpdateInvoiceStatus('void')}
-                              type="button"
-                            >
-                              {actionLoading === 'invoice-status:void'
-                                ? 'Anulando...'
-                                : 'Anular factura'}
-                            </button>
-                          ) : null}
-                        </div>
 
                         {selectedInvoiceDetail.documentCode === '04' ||
                         selectedInvoiceDetail.documentCode === '05' ||
@@ -45261,13 +45102,38 @@ export function App() {
                           </p>
                         </form>
                       </>
-                    ) : (
-                      <div className={styles.emptyState}>
-                        <p>Selecciona una factura para revisar sus items y totales.</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                    ) : null
+                  }
+                  formatBuyerIdentificationType={formatBuyerIdentificationType}
+                  formatDate={formatDate}
+                  formatElectronicStatus={formatElectronicStatus}
+                  formatInvoiceStatus={formatInvoiceStatus}
+                  formatMoney={formatMoney}
+                  invoiceDetailLoading={invoiceDetailLoading}
+                  invoicingLoading={invoicingLoading}
+                  invoices={invoices}
+                  onMarkInvoiceIssued={() => {
+                    void handleUpdateInvoiceStatus('issued');
+                  }}
+                  onMarkInvoicePaid={() => {
+                    void handleUpdateInvoiceStatus('paid');
+                  }}
+                  onMarkInvoiceVoid={() => {
+                    void handleUpdateInvoiceStatus('void');
+                  }}
+                  onSelectInvoice={setSelectedInvoiceId}
+                  resolveCustomerName={(customerId, buyerName) =>
+                    buyerName ?? customerNameById.get(customerId) ?? customerId
+                  }
+                  selectedInvoiceDetail={selectedInvoiceDetail}
+                  selectedInvoiceId={selectedInvoiceId}
+                  selectedInvoiceSummary={selectedInvoiceSummary}
+                  statusActionLoadingKey={
+                    actionLoading.startsWith('invoice-status:')
+                      ? actionLoading
+                      : null
+                  }
+                />
               </div>
             </div>
           )}

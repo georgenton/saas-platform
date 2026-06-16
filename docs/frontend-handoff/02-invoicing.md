@@ -63,16 +63,17 @@ Current feature files:
   electronic sandbox signals.
 - `invoicing-workspace.tsx`: reusable workspace shell rendered at the top of
   the existing Invoicing domain screen; currently includes `StatusHero`,
-  `ReadinessRibbon`, and `Stepper`.
+  `ReadinessRibbon`, `Stepper`, and the first extracted `Queue + DetailPanel`
+  shell for invoice operations.
 - `queries.ts`: TanStack Query key taxonomy plus the extracted read-side
   workspace query for customers, tax rates, invoices, report summary, drafting
   assist, issuer profile, submission settings, numbering and electronic
   readiness.
 - `use-invoicing-workspace-model.ts`: memoized model hook.
 
-The existing screen still owns forms, invoice list/detail, XML/RIDE previews,
-payments and SRI submission actions. Claude Design should treat those as the
-next UI scope, not as already extracted components.
+The existing screen still owns forms, deeper invoice detail sections,
+XML/RIDE previews, payments and SRI submission actions. Claude Design should
+treat those as the next UI scope, not as already extracted components.
 
 The current design source-of-truth for the next UI integration phase is:
 

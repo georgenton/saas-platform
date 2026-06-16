@@ -23,6 +23,10 @@ apps/web-platform/src/
     app.tsx
     api.ts
     types.ts
+  shared/
+    api/
+      query-client.ts
+      platform-queries.ts
   features/
     command-center/
       command-center.tsx
@@ -55,8 +59,27 @@ Current split:
 - `shared/layout/platform-shell.model.ts`: shell nav, metric, and mood contracts.
 - `shared/layout/platform-shell.tsx`: sidebar, topbar, mood selector, shell
   metrics, and page composition.
+- `shared/api/query-client.ts`: TanStack Query client defaults for frontend
+  server state.
+- `shared/api/platform-queries.ts`: first query hooks for platform catalog and
+  tenant product access.
 - `app/app.tsx`: still composes the data from existing endpoints and passes
   normalized props into `PlatformShell` and `CommandCenter`.
+
+## Server State
+
+TanStack Query is the default foundation for frontend server state. Use it for
+API data that is fetched, cached, refreshed, invalidated, or shared across
+features.
+
+Initial migrated surfaces:
+
+- platform catalog: plans + products
+- tenant enabled products
+
+Keep local `useState` for form drafts, selected UI rows, temporary action
+messages, and staged user input. Prefer query hooks for API reads before adding
+new manual `useEffect` loading flows.
 
 ## Integration Rules
 
@@ -76,7 +99,9 @@ Current split:
 
 1. Add shared design-system primitives: `Button`, `StatusPill`, `Metric`,
    `Banner`, `Card`, `MoodSelector`.
-2. Move product-specific readiness builders out of `app.tsx` into feature data
+2. Move Command Center session/catalog composition into query-backed feature
+   adapters.
+3. Move product-specific readiness builders out of `app.tsx` into feature data
    adapters, starting with Command Center.
-3. Introduce an optional backend aggregate contract for
+4. Introduce an optional backend aggregate contract for
    `/tenancy/tenants/:tenantSlug/command-center` once the API is ready.

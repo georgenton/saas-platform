@@ -11,14 +11,7 @@ import {
 } from 'react';
 import styles from './app.module.css';
 import { CommandCenter } from '../features/command-center/command-center';
-import {
-  COMMAND_CENTER_PRODUCTS,
-  planSatisfiesRequirement,
-  productIsInSet,
-  type CommandCenterAccessState,
-  type CommandCenterProduct,
-  type CommandCenterProductDefinition,
-} from '../features/command-center/model';
+import { createCommandCenterModel } from '../features/command-center/adapters';
 import { PlatformShell } from '../shared/layout/platform-shell';
 import {
   PLATFORM_MOODS,
@@ -9374,287 +9367,56 @@ export function App() {
     growthAssistAiApprovalRequests.length +
     invoiceAssistantAiApprovalRequests.length +
     ecommerceLaunchAssistantAiApprovalRequests.length;
-  const commandCenterProducts = useMemo<CommandCenterProduct[]>(() => {
-    const permissionKeys = new Set(currentTenancy?.permissionKeys ?? []);
-    const productCatalogKeys = new Set(productCatalog.map((product) => product.key));
-    const activeCatalogKeys = new Set(
-      productCatalog
-        .filter((product) => product.isActive)
-        .map((product) => product.key),
-    );
-
-    const resolveAccessState = (
-      product: CommandCenterProductDefinition,
-    ): CommandCenterAccessState => {
-      const isEnabled = productIsInSet(product, enabledProductKeys);
-      const existsInCatalog =
-        productCatalogKeys.size === 0 || productIsInSet(product, productCatalogKeys);
-      const isCatalogActive =
-        activeCatalogKeys.size === 0 || productIsInSet(product, activeCatalogKeys);
-
-      if (product.key === 'ai-console' && aiEnabled) {
-        return canAccessTransversalAiConsole ? 'enabled' : 'permission_limited';
-      }
-
-      if (isEnabled) {
-        if (
-          product.requiredPermission &&
-          !permissionKeys.has(product.requiredPermission)
-        ) {
-          return 'permission_limited';
-        }
-
-        return 'enabled';
-      }
-
-      if (!existsInCatalog || !isCatalogActive) {
-        return 'disabled';
-      }
-
-      if (!planSatisfiesRequirement(currentPlan, product.requiresPlan)) {
-        return 'blocked_by_plan';
-      }
-
-      return product.addonPrice ? 'available' : 'disabled';
-    };
-
-    const buildReadiness = (
-      product: CommandCenterProductDefinition,
-      accessState: CommandCenterAccessState,
-    ): CommandCenterProduct['readiness'] => {
-      if (!['enabled', 'permission_limited'].includes(accessState)) {
-        return [];
-      }
-
-      switch (product.key) {
-        case 'invoicing':
-          return [
-            {
-              label: 'Emisor',
-              value: issuerProfile ? 'Configurado' : 'Pendiente',
-              tone: issuerProfile ? 'success' : 'warning',
-            },
-            {
-              label: 'Modo SRI',
-              value: issuerProfile?.environment
-                ? humanizeKey(issuerProfile.environment)
-                : electronicSubmissionSettings
-                  ? 'Configurado'
-                  : 'Sin cargar',
-              tone:
-                issuerProfile?.environment === 'production'
-                  ? 'success'
-                  : electronicSubmissionSettings
-                    ? 'neutral'
-                    : 'warning',
-            },
-            {
-              label: 'Facturas',
-              value: `${issuedInvoiceCount}/${invoices.length} emitidas`,
-              tone: invoices.length > 0 ? 'success' : 'neutral',
-            },
-          ];
-        case 'tax-compliance-ec':
-          return [
-            {
-              label: 'Periodo',
-              value: taxCompliancePeriod,
-              tone: 'neutral',
-            },
-            {
-              label: 'Eventos',
-              value: `${taxComplianceEvents.length}`,
-              tone: taxComplianceEvents.length > 0 ? 'success' : 'warning',
-            },
-            {
-              label: 'Revision contador',
-              value: `${taxComplianceAccountantReviews.length}`,
-              tone:
-                taxComplianceAccountantReviews.length > 0 ? 'success' : 'warning',
-            },
-          ];
-        case 'growth':
-          return [
-            {
-              label: 'WhatsApp',
-              value: whatsappSummary ? 'Monitoreado' : 'Sin cargar',
-              tone: whatsappSummary ? 'success' : 'neutral',
-            },
-            {
-              label: 'Alertas',
-              value: `${whatsappSummary?.operationalAlerts.length ?? 0}`,
-              tone:
-                (whatsappSummary?.operationalAlerts.length ?? 0) > 0
-                  ? 'warning'
-                  : 'success',
-            },
-            {
-              label: 'Casos abiertos',
-              value: `${filteredGrowthOperationalCases.length}`,
-              tone: filteredGrowthOperationalCases.length > 0 ? 'warning' : 'neutral',
-            },
-          ];
-        case 'ecommerce':
-          return [
-            {
-              label: 'Tienda',
-              value: tenantEcommerceCompletionDashboard
-                ? humanizeKey(tenantEcommerceCompletionDashboard.closeoutStatus)
-                : 'Sin cargar',
-              tone: tenantEcommerceCompletionDashboard ? 'success' : 'neutral',
-            },
-            {
-              label: 'Post-venta',
-              value: tenantEcommerceOrderPostSaleReportingSummary
-                ? humanizeKey(
-                    tenantEcommerceOrderPostSaleReportingSummary.reportingStatus,
-                  )
-                : 'Sin cargar',
-              tone: tenantEcommerceOrderPostSaleReportingSummary
-                ? 'success'
-                : 'neutral',
-            },
-            {
-              label: 'Handoff',
-              value: selectedTenantEcommerceInvoiceDraftHandoffWorkspace
-                ? 'Activo'
-                : 'Pendiente',
-              tone: selectedTenantEcommerceInvoiceDraftHandoffWorkspace
-                ? 'success'
-                : 'warning',
-            },
-          ];
-        case 'ai-console':
-          return [
-            {
-              label: 'Aprobaciones',
-              value: `${commandCenterAiApprovalRequestCount}`,
-              tone:
-                commandCenterAiApprovalRequestCount > 0 ? 'warning' : 'neutral',
-            },
-            {
-              label: 'Guarded execution',
-              value: tenantAiOperationsSummary ? 'Activo' : 'Sin cargar',
-              tone: tenantAiOperationsSummary ? 'success' : 'neutral',
-            },
-            {
-              label: 'Asistente',
-              value: visibleAiMemoryAgents.length > 0 ? 'Listo' : 'Pendiente',
-              tone: visibleAiMemoryAgents.length > 0 ? 'success' : 'neutral',
-            },
-          ];
-        default:
-          return [];
-      }
-    };
-
-    const buildEvidence = (
-      product: CommandCenterProductDefinition,
-      accessState: CommandCenterAccessState,
-    ): CommandCenterProduct['evidence'] => {
-      if (!['enabled', 'permission_limited'].includes(accessState)) {
-        return null;
-      }
-
-      switch (product.key) {
-        case 'invoicing':
-          return selectedInvoiceSummary
-            ? {
-                label: `Factura ${selectedInvoiceSummary.number}`,
-                source: humanizeKey(selectedInvoiceSummary.status),
-                when: formatDate(selectedInvoiceSummary.issuedAt),
-              }
-            : {
-                label: 'Resumen de facturacion disponible',
-                source: `${invoices.length} documentos`,
-                when: 'Workspace actual',
-              };
-        case 'tax-compliance-ec':
-          return {
-            label: `${taxComplianceEvents.length} eventos tributarios`,
-            source: `Periodo ${taxCompliancePeriod}`,
-            when: taxComplianceWorkspace
-              ? humanizeKey(taxComplianceWorkspace.status)
-              : 'Sin cargar',
-          };
-        case 'growth':
-          return {
-            label: whatsappSummary
-              ? `${whatsappSummary.operationalAlerts.length} alertas operativas`
-              : 'Workbench de conversaciones',
-            source: canReadGrowthConversations ? 'Growth habilitado' : 'Solo lectura',
-            when: whatsappSummary ? 'Monitor activo' : 'Sin cargar',
-          };
-        case 'ecommerce':
-          return {
-            label: tenantEcommerceOrderPostSaleReportingSummary
-              ? humanizeKey(
-                  tenantEcommerceOrderPostSaleReportingSummary.reportingStatus,
-                )
-              : 'Post-venta y handoff listos para operar',
-            source: 'Ecommerce operational chain',
-            when: tenantEcommerceOrderPostSaleReportingSummary
-              ? 'Reporting cargado'
-              : 'Sin cargar',
-          };
-        case 'ai-console':
-          return {
-            label: `${commandCenterAiApprovalRequestCount} aprobaciones en memoria`,
-            source: 'AI suggestion-first',
-            when: tenantAiOperationsSummary
-              ? formatDate(tenantAiOperationsSummary.generatedAt)
-              : 'Sin cargar',
-          };
-        default:
-          return null;
-      }
-    };
-
-    return COMMAND_CENTER_PRODUCTS.map((product) => {
-      const accessState = resolveAccessState(product);
-      const requiresPermission =
-        product.requiredPermission && !permissionKeys.has(product.requiredPermission);
-      const blocker =
-        accessState === 'permission_limited'
-          ? `Solo lectura: necesitas el permiso ${product.requiredPermission}.`
-          : accessState === 'blocked_by_plan'
-            ? `Incluido en el plan ${product.requiresPlan}. Tu plan actual es ${
-                currentPlan?.name ?? 'sin plan'
-              }.`
-            : accessState === 'available'
-              ? `Disponible como add-on${product.addonPrice ? ` (${product.addonPrice})` : ''}.`
-              : accessState === 'disabled'
-                ? 'No habilitado para este workspace; visible como modulo futuro.'
-                : requiresPermission
-                  ? `Permiso requerido: ${product.requiredPermission}.`
-                  : null;
-      const primaryAction =
-        accessState === 'enabled'
-          ? 'Entrar'
-          : accessState === 'permission_limited'
-            ? 'Entrar en solo lectura'
-            : accessState === 'blocked_by_plan'
-              ? 'Ver plan Scale'
-              : accessState === 'available'
-                ? 'Activar add-on'
-                : 'Ver en Marketplace';
-
-      return {
-        ...product,
-        accessState,
-        readiness: buildReadiness(product, accessState),
-        evidence: buildEvidence(product, accessState),
-        blocker,
-        primaryAction,
-        secondaryAction:
-          accessState === 'permission_limited'
-            ? 'Solicitar permiso'
-            : accessState === 'enabled'
-              ? 'Ver evidencia'
-              : null,
-      };
-    });
-  }, [
+  const commandCenterModel = useMemo(() => createCommandCenterModel({
+    ai: {
+      approvalRequestCount: commandCenterAiApprovalRequestCount,
+      memoryAgentCount: visibleAiMemoryAgents.length,
+      operationsGeneratedAt: tenantAiOperationsSummary?.generatedAt ?? null,
+      operationsSummaryLoaded: tenantAiOperationsSummary !== null,
+    },
+    aiEnabled,
+    canAccessTransversalAiConsole,
+    canReadGrowthConversations,
+    currentPlan,
+    ecommerce: {
+      completionCloseoutStatus:
+        tenantEcommerceCompletionDashboard?.closeoutStatus ?? null,
+      hasInvoiceDraftHandoff:
+        selectedTenantEcommerceInvoiceDraftHandoffWorkspace !== null,
+      postSaleReportingStatus:
+        tenantEcommerceOrderPostSaleReportingSummary?.reportingStatus ?? null,
+    },
+    enabledProductKeys,
+    formatDate,
+    growth: {
+      operationalAlertCount: whatsappSummary?.operationalAlerts.length ?? null,
+      openCaseCount: filteredGrowthOperationalCases.length,
+      whatsappSummaryLoaded: whatsappSummary !== null,
+    },
+    humanizeKey,
+    invoicing: {
+      electronicSubmissionSettingsLoaded: electronicSubmissionSettings !== null,
+      invoiceCount: invoices.length,
+      issuedInvoiceCount,
+      issuerEnvironment: issuerProfile?.environment ?? null,
+      issuerProfileLoaded: issuerProfile !== null,
+      selectedInvoice: selectedInvoiceSummary
+        ? {
+            issuedAt: selectedInvoiceSummary.issuedAt,
+            number: selectedInvoiceSummary.number,
+            status: selectedInvoiceSummary.status,
+          }
+        : null,
+    },
+    permissionKeys: currentTenancy?.permissionKeys ?? [],
+    productCatalog,
+    taxCompliance: {
+      accountantReviewCount: taxComplianceAccountantReviews.length,
+      eventCount: taxComplianceEvents.length,
+      period: taxCompliancePeriod,
+      workspaceStatus: taxComplianceWorkspace?.status ?? null,
+    },
+  }), [
     aiEnabled,
     canAccessTransversalAiConsole,
     canReadGrowthConversations,
@@ -9669,35 +9431,17 @@ export function App() {
     issuerProfile,
     productCatalog,
     selectedInvoiceSummary,
+    selectedTenantEcommerceInvoiceDraftHandoffWorkspace,
     taxComplianceAccountantReviews.length,
     taxComplianceEvents.length,
     taxCompliancePeriod,
     taxComplianceWorkspace,
     tenantAiOperationsSummary,
     tenantEcommerceCompletionDashboard,
-    selectedTenantEcommerceInvoiceDraftHandoffWorkspace,
     tenantEcommerceOrderPostSaleReportingSummary,
     visibleAiMemoryAgents.length,
     whatsappSummary,
   ]);
-  const commandCenterAccessCounts = useMemo(
-    () =>
-      commandCenterProducts.reduce(
-        (counts, product) => {
-          counts[product.accessState] += 1;
-
-          return counts;
-        },
-        {
-          enabled: 0,
-          permission_limited: 0,
-          blocked_by_plan: 0,
-          available: 0,
-          disabled: 0,
-        } satisfies Record<CommandCenterAccessState, number>,
-      ),
-    [commandCenterProducts],
-  );
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -26615,7 +26359,7 @@ export function App() {
     >
 
         <CommandCenter
-          accessCounts={commandCenterAccessCounts}
+          accessCounts={commandCenterModel.accessCounts}
           catalogError={catalogError}
           catalogLoading={catalogLoading}
           currentPlanLabel={
@@ -26634,7 +26378,7 @@ export function App() {
           maxUsersLabel={
             maxUsers ? `${maxUsers} usuarios` : 'Usuarios sin limite definido'
           }
-          products={commandCenterProducts}
+          products={commandCenterModel.products}
           subscriptionStatusLabel={currentSubscription?.status ?? 'No registrada'}
           tenantMemberCount={session?.tenancies.length ?? 0}
           tenantName={currentTenancy?.tenant.name ?? 'Sin workspace activo'}

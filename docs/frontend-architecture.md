@@ -29,6 +29,7 @@ apps/web-platform/src/
       platform-queries.ts
   features/
     command-center/
+      adapters.ts
       command-center.tsx
       model.ts
   shared/
@@ -61,6 +62,9 @@ Current split:
 
 - `features/command-center/model.ts`: product registry, access states, labels,
   and helper functions.
+- `features/command-center/adapters.ts`: converts app/server signals into the
+  presentational Command Center model: products, access states, readiness,
+  evidence, blockers, actions, and access counts.
 - `features/command-center/command-center.tsx`: presentational sections and
   product cards.
 - `shared/layout/platform-shell.model.ts`: shell nav, metric, and mood contracts.
@@ -74,8 +78,8 @@ Current split:
   cards, metrics, mood selection, and status pills. These currently wrap the
   established CSS module classes so visual behavior remains stable while the
   architecture becomes reusable.
-- `app/app.tsx`: still composes the data from existing endpoints and passes
-  normalized props into `PlatformShell` and `CommandCenter`.
+- `app/app.tsx`: still composes source data from existing endpoints and passes
+  normalized props into `PlatformShell` plus adapter input into Command Center.
 
 ## Design System
 
@@ -123,9 +127,8 @@ new manual `useEffect` loading flows.
 
 ## Next Slices
 
-1. Move Command Center session/catalog composition into query-backed feature
-   adapters.
-2. Move product-specific readiness builders out of `app.tsx` into feature data
-   adapters, starting with Command Center.
-3. Introduce an optional backend aggregate contract for
+1. Move Command Center source-data reads into query-backed feature hooks.
+2. Introduce an optional backend aggregate contract for
    `/tenancy/tenants/:tenantSlug/command-center` once the API is ready.
+3. Extract the next product surface from legacy `app.tsx`, starting with the
+   highest-value frontend workflow selected for Claude Design polish.

@@ -1,5 +1,3 @@
-import type { PlatformPlan } from '../../app/types';
-
 export type CommandCenterAccessState =
   | 'enabled'
   | 'permission_limited'
@@ -169,7 +167,7 @@ export function productIsInSet(
 }
 
 export function planSatisfiesRequirement(
-  currentPlan: PlatformPlan | null,
+  currentPlan: { id?: string | null; name?: string | null } | null,
   requiredPlan: string | undefined,
 ): boolean {
   if (!requiredPlan) {

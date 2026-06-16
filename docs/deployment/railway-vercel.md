@@ -8,6 +8,17 @@ Usar Railway para el backend NestJS + Prisma + PostgreSQL y Vercel para el front
 
 Esta separacion mantiene el backend como servicio persistente con Docker, migraciones Prisma y base de datos administrada, mientras el frontend queda optimizado para previews y trabajo fino de UX/UI.
 
+## URLs activas
+
+Estado registrado al 2026-06-16:
+
+- Frontend Vercel activo: `https://saas-platform-api-platform.vercel.app/`
+- Backend productivo: Railway
+
+Nota: cuando cambie alguno de estos endpoints, actualizar esta seccion junto con
+`VITE_API_BASE_URL`, `CORS_ORIGIN` y `WEB_PLATFORM_BASE_URL` para no perder la
+trazabilidad del entorno real que estamos usando para QA e integracion visual.
+
 ## Servicios
 
 ### Railway - API
@@ -119,16 +130,21 @@ Este deploy no cambia la estrategia de frontend.
 
 Despues de tener Railway + Vercel funcionando, retomamos los slices de integracion visual en este orden:
 
-1. **Platform Shell real**
+1. **Access / Login Gateway**
+   - reemplazar el textarea JWT como entrada principal;
+   - mantener el token bootstrap como carril tecnico avanzado;
+   - resolver signed-out, loading, invitaciones, seleccion de tenant y handoff al command center.
+
+2. **Platform Shell real**
    - convertir el shell actual en una estructura desktop/mobile mas cercana al handoff de Claude Design;
    - mantener moods frontend-only con `localStorage`;
    - derivar estados visuales de producto desde API real.
 
-2. **Product Command Center**
+3. **Product Command Center**
    - conectar dashboard operativo con `auth/me`, catalogo, subscription, entitlements y feature flags;
    - dejar estados vacio/loading/error/permission claros.
 
-3. **Pantallas producto por producto**
+4. **Pantallas producto por producto**
    - Invoicing;
    - Tax Compliance EC;
    - Growth;

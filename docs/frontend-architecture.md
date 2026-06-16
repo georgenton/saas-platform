@@ -98,6 +98,44 @@ Current split:
 - `app/app.tsx`: still composes source data from existing endpoints and passes
   normalized props into `PlatformShell` plus adapter input into Command Center.
 
+## Access Foundation Next
+
+Before continuing deeper product refinement, the frontend should extract the
+signed-out and session-entry experience into its own feature boundary.
+
+Why now:
+
+- the deployed app already works in Railway + Vercel
+- the current `Bearer token` textarea was acceptable for technical validation
+- it is now actively harming realistic UX evaluation
+- Invoicing and later product screens should be tested behind a more honest
+  access flow
+
+Target feature direction:
+
+- `features/access/model.ts`
+- `features/access/adapters.ts`
+- `features/access/access-gateway.tsx`
+- `features/access/queries.ts`
+- `features/access/use-access-model.ts`
+
+Scope of that feature:
+
+- signed-out gateway
+- session bootstrap/loading
+- invitation review
+- tenancy selection
+- handoff into authenticated shell
+- advanced token bootstrap hidden behind progressive disclosure
+
+Important guardrail:
+
+The backend currently supports `auth/me`, current tenancy selection, and
+invitation flows, but not a formal web credential login contract. The frontend
+must not fake working password, magic-link, or SSO flows. The access feature
+should make room for future auth providers without pretending they already
+exist.
+
 ## Invoicing First Product Surface
 
 Electronic Invoicing EC is the first product surface being extracted because it
@@ -192,15 +230,17 @@ new manual `useEffect` loading flows.
 
 ## Next Slices
 
-1. Refine the extracted SRI settings/actions into a true progressive-disclosure
-   panel so dense Ecuador configuration appears only when relevant.
-2. Continue aligning queue/detail/mobile behavior with the Claude Design
+1. Extract the Access / Login Gateway so the signed-out experience no longer
+   depends on the raw JWT textarea as the primary UI.
+2. Keep the advanced token bootstrap available, but move it behind explicit
+   progressive disclosure for technical users and QA.
+3. Resume Invoicing refinement only after the entry flow is calmer and more
+   realistic for product evaluation.
+4. Continue aligning queue/detail/mobile behavior with the Claude Design
    `02-invoicing-workspace` slice without pasting the prototype into app code.
-3. Use `docs/frontend-handoff/03-invoicing-sri-progressive-disclosure.md` as
-   the next design handoff for the Ecuador SRI control area.
-4. Extract any remaining invoice-side write-heavy panels from `app.tsx` only if
-   they still prove too coupled after the current modular split.
-5. Implement `/tenancy/tenants/:tenantSlug/command-center` in the API when the
+5. Use `docs/frontend-handoff/03-invoicing-sri-progressive-disclosure.md` as
+   the next Invoicing refinement handoff after Access is in place.
+6. Implement `/tenancy/tenants/:tenantSlug/command-center` in the API when the
    backend is ready, then switch `useCommandCenterPlatformData` to the BFF.
-6. Continue replacing legacy inline controls with shared design-system
+7. Continue replacing legacy inline controls with shared design-system
    primitives as each product surface moves out of `app.tsx`.

@@ -16,6 +16,7 @@ consume existing contracts before requesting new backend scope.
 
 ## Implementation Order
 
+0. `00-access-login-gateway.md`
 1. `00-platform-shell.md`
 2. `01-product-command-center.md`
 3. `02-invoicing.md`
@@ -25,6 +26,17 @@ consume existing contracts before requesting new backend scope.
 7. `06-ai-console.md`
 8. `07-clinics.md`
 9. `08-growth.md`
+
+## Current Active Sequence
+
+The current frontend priority is:
+
+1. Access / Login Gateway
+2. Product Command Center handoff cleanup as needed
+3. Resume Invoicing refinement on top of a real entry experience
+
+This order is intentional. The team should not continue polishing signed-in
+product surfaces as if the JWT textarea were the permanent entrance to the app.
 
 ## Design Rules For Claude Design
 

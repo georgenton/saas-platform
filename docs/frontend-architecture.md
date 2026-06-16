@@ -30,6 +30,7 @@ apps/web-platform/src/
   features/
     command-center/
       adapters.ts
+      bff-contract.ts
       command-center.tsx
       model.ts
       queries.ts
@@ -67,10 +68,14 @@ Current split:
 - `features/command-center/adapters.ts`: converts app/server signals into the
   presentational Command Center model: products, access states, readiness,
   evidence, blockers, actions, and access counts.
+- `features/command-center/bff-contract.ts`: documents the future read-only BFF
+  aggregate path, query key and response DTO types without calling the endpoint
+  before the backend exists.
 - `features/command-center/command-center.tsx`: presentational sections and
   product cards.
 - `features/command-center/queries.ts`: wraps TanStack Query reads for the
-  platform catalog and tenant product access needed by the Command Center.
+  platform catalog and tenant product access needed by the Command Center; it
+  also exports the future aggregate query key.
 - `features/command-center/use-command-center-model.ts`: memoized feature hook
   that resolves the presentational model from normalized adapter input.
 - `shared/layout/platform-shell.model.ts`: shell nav, metric, and mood contracts.
@@ -133,9 +138,9 @@ new manual `useEffect` loading flows.
 
 ## Next Slices
 
-1. Introduce an optional backend aggregate contract for
-   `/tenancy/tenants/:tenantSlug/command-center` once the API is ready.
-2. Extract the next product surface from legacy `app.tsx`, starting with the
+1. Extract the next product surface from legacy `app.tsx`, starting with the
    highest-value frontend workflow selected for Claude Design polish.
+2. Implement `/tenancy/tenants/:tenantSlug/command-center` in the API when the
+   backend is ready, then switch `useCommandCenterPlatformData` to the BFF.
 3. Continue replacing legacy inline controls with shared design-system
    primitives as each product surface moves out of `app.tsx`.

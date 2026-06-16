@@ -2,6 +2,9 @@ import {
   usePlatformCatalogQuery,
   useTenantEnabledProductsQuery,
 } from '../../shared/api/platform-queries';
+import { commandCenterBffQueryKey } from './bff-contract';
+
+export { commandCenterBffQueryKey };
 
 export function useCommandCenterPlatformData(
   token: string,

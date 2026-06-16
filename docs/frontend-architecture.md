@@ -32,6 +32,8 @@ apps/web-platform/src/
       adapters.ts
       command-center.tsx
       model.ts
+      queries.ts
+      use-command-center-model.ts
   shared/
     layout/
       platform-shell.tsx
@@ -67,6 +69,10 @@ Current split:
   evidence, blockers, actions, and access counts.
 - `features/command-center/command-center.tsx`: presentational sections and
   product cards.
+- `features/command-center/queries.ts`: wraps TanStack Query reads for the
+  platform catalog and tenant product access needed by the Command Center.
+- `features/command-center/use-command-center-model.ts`: memoized feature hook
+  that resolves the presentational model from normalized adapter input.
 - `shared/layout/platform-shell.model.ts`: shell nav, metric, and mood contracts.
 - `shared/layout/platform-shell.tsx`: sidebar, topbar, mood selector, shell
   metrics, and page composition.
@@ -127,8 +133,9 @@ new manual `useEffect` loading flows.
 
 ## Next Slices
 
-1. Move Command Center source-data reads into query-backed feature hooks.
-2. Introduce an optional backend aggregate contract for
+1. Introduce an optional backend aggregate contract for
    `/tenancy/tenants/:tenantSlug/command-center` once the API is ready.
-3. Extract the next product surface from legacy `app.tsx`, starting with the
+2. Extract the next product surface from legacy `app.tsx`, starting with the
    highest-value frontend workflow selected for Claude Design polish.
+3. Continue replacing legacy inline controls with shared design-system
+   primitives as each product surface moves out of `app.tsx`.

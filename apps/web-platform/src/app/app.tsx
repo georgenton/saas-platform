@@ -11,16 +11,13 @@ import {
 } from 'react';
 import styles from './app.module.css';
 import { CommandCenter } from '../features/command-center/command-center';
-import { createCommandCenterModel } from '../features/command-center/adapters';
+import { useCommandCenterPlatformData } from '../features/command-center/queries';
+import { useCommandCenterModel } from '../features/command-center/use-command-center-model';
 import { PlatformShell } from '../shared/layout/platform-shell';
 import {
   PLATFORM_MOODS,
   type PlatformMoodKey,
 } from '../shared/layout/platform-shell.model';
-import {
-  usePlatformCatalogQuery,
-  useTenantEnabledProductsQuery,
-} from '../shared/api/platform-queries';
 import {
   AI_AGENT_WEB_REGISTRY,
   AiAgentDedicatedActionKeyPrefixes,
@@ -4636,22 +4633,16 @@ export function App() {
   const currentTenancy = session?.currentTenancy ?? null;
   const currentEntitlements = currentTenancy?.entitlements ?? [];
   const currentSubscription = currentTenancy?.subscription ?? null;
-  const platformCatalogQuery = usePlatformCatalogQuery(token);
-  const tenantEnabledProductsQuery = useTenantEnabledProductsQuery(
+  const {
+    catalogError,
+    catalogLoading,
+    planCatalog,
+    productCatalog,
+    tenantEnabledProducts,
+  } = useCommandCenterPlatformData(
     token,
     currentTenancy?.tenant.slug ?? null,
   );
-  const planCatalog = platformCatalogQuery.data?.plans ?? [];
-  const productCatalog = platformCatalogQuery.data?.products ?? [];
-  const tenantEnabledProducts = tenantEnabledProductsQuery.data ?? [];
-  const catalogLoading =
-    platformCatalogQuery.isLoading || tenantEnabledProductsQuery.isLoading;
-  const catalogError =
-    platformCatalogQuery.error instanceof Error
-      ? platformCatalogQuery.error.message
-      : tenantEnabledProductsQuery.error instanceof Error
-        ? tenantEnabledProductsQuery.error.message
-        : null;
   const canManageInvitations = Boolean(
     currentTenancy?.permissionKeys.includes('tenant.invitations.manage'),
   );
@@ -9367,7 +9358,7 @@ export function App() {
     growthAssistAiApprovalRequests.length +
     invoiceAssistantAiApprovalRequests.length +
     ecommerceLaunchAssistantAiApprovalRequests.length;
-  const commandCenterModel = useMemo(() => createCommandCenterModel({
+  const commandCenterModelInput = useMemo(() => ({
     ai: {
       approvalRequestCount: commandCenterAiApprovalRequestCount,
       memoryAgentCount: visibleAiMemoryAgents.length,
@@ -9442,6 +9433,7 @@ export function App() {
     visibleAiMemoryAgents.length,
     whatsappSummary,
   ]);
+  const commandCenterModel = useCommandCenterModel(commandCenterModelInput);
 
   useEffect(() => {
     const url = new URL(window.location.href);

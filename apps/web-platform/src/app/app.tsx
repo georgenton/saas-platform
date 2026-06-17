@@ -4712,6 +4712,7 @@ export function App() {
   const accessGatewayModel = useMemo<AccessGatewayModel>(
     () => ({
       advancedOpen: accessAdvancedOpen,
+      apiBaseUrl: API_BASE_URL,
       capabilities: ['SaaS Platform'],
       currentUserEmail: session?.email ?? null,
       hasStoredToken: Boolean(token),

@@ -123,6 +123,7 @@ function AccessCard({
 }
 
 function AdvancedTokenPanel({
+  apiBaseUrl,
   error,
   open,
   tokenBusy,
@@ -131,6 +132,7 @@ function AdvancedTokenPanel({
   onTokenInputChange,
   onUseToken,
 }: {
+  apiBaseUrl: string;
   error: string | null;
   open: boolean;
   tokenBusy: boolean;
@@ -161,6 +163,10 @@ function AdvancedTokenPanel({
       {open ? (
         <div className={styles.accessAdvancedBody}>
           {error ? <Banner tone="error">{error}</Banner> : null}
+          <div className={styles.accessApiDiagnostic}>
+            <span>API base</span>
+            <code>{apiBaseUrl}</code>
+          </div>
           <label className={styles.field}>
             <span>Bearer token</span>
             <textarea
@@ -247,6 +253,7 @@ function GatewayState({
       </div>
 
       <AdvancedTokenPanel
+        apiBaseUrl={model.apiBaseUrl}
         error={hasTokenError ? model.sessionError : null}
         onOpenChange={onAdvancedOpenChange}
         onTokenInputChange={onTokenInputChange}

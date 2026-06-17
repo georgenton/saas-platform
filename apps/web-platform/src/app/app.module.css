@@ -260,18 +260,18 @@
   border: 1px solid var(--border);
   border-radius: 8px;
   display: grid;
-  gap: 18px;
+  gap: 14px;
   grid-template-columns: minmax(0, 1fr) auto;
-  margin-bottom: 14px;
-  padding: 20px;
+  margin-bottom: 12px;
+  padding: 16px 18px;
 }
 
 .productWorkspaceHero h2 {
   color: var(--text-strong);
-  font-size: 1.9rem;
+  font-size: 1.35rem;
   letter-spacing: 0;
   line-height: 1.15;
-  margin: 4px 0 8px;
+  margin: 2px 0 6px;
 }
 
 .productWorkspaceHero p {
@@ -279,6 +279,31 @@
   line-height: 1.55;
   margin: 0;
   max-width: 74ch;
+}
+
+.productWorkspaceContext {
+  align-items: center;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 14px 16px;
+}
+
+.productWorkspaceContext p {
+  color: var(--text);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.productWorkspaceContext a {
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+  text-decoration: none;
+  white-space: nowrap;
 }
 
 .productWorkspaceActions {
@@ -3517,6 +3542,10 @@
     justify-content: flex-start;
   }
 
+  .productWorkspaceContext {
+    grid-template-columns: 1fr;
+  }
+
   .commandCenterHeader,
   .commandDomainHeader,
   .productStatusHeader,
@@ -3587,6 +3616,10 @@
   .productWorkspaceActions {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .productWorkspaceContext a {
+    width: 100%;
   }
 
   .productWorkspaceTabs {

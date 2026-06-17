@@ -23,6 +23,50 @@ const INVOICING_WORKSPACE_TABS: Array<{
   { href: '#invoicing-documents', key: 'documents', label: 'Documentos' },
 ];
 
+const INVOICING_SUBVIEW_CONTEXT: Record<
+  InvoicingWorkspaceSubview,
+  {
+    actionHref: string;
+    actionLabel: string;
+    description: string;
+    eyebrow: string;
+    title: string;
+  }
+> = {
+  overview: {
+    actionHref: '#invoicing-settings-sri',
+    actionLabel: 'Revisar SRI',
+    description:
+      'Vista ejecutiva del producto: readiness Ecuador, métricas y próximo foco operativo.',
+    eyebrow: 'Resumen operativo',
+    title: 'Estado general de facturación',
+  },
+  settings: {
+    actionHref: '#invoicing-customer-draft',
+    actionLabel: 'Crear borrador',
+    description:
+      'Configura emisor, firma, numeración y conexión SRI sin mezclarlo con la cola documental.',
+    eyebrow: 'Preparación fiscal',
+    title: 'Configuración SRI',
+  },
+  draft: {
+    actionHref: '#invoicing-documents',
+    actionLabel: 'Ver documentos',
+    description:
+      'Crea compradores y borradores con una guía clara antes de pasar a revisión o envío.',
+    eyebrow: 'Emisión guiada',
+    title: 'Clientes y borrador',
+  },
+  documents: {
+    actionHref: '#invoicing-settings-sri',
+    actionLabel: 'Ajustar SRI',
+    description:
+      'Revisa la cola, el comprobante seleccionado, estado electrónico, evidencia y acciones.',
+    eyebrow: 'Operación documental',
+    title: 'Documentos y envío',
+  },
+};
+
 type InvoicingDomainSectionProps = {
   activeSubview: InvoicingWorkspaceSubview;
   children?: ReactNode;
@@ -54,6 +98,8 @@ export function InvoicingDomainSection({
   onPrimaryAction,
   onRefresh,
 }: InvoicingDomainSectionProps) {
+  const subviewContext = INVOICING_SUBVIEW_CONTEXT[activeSubview];
+
   return (
     <section
       className={styles.adminPanel}
@@ -65,9 +111,8 @@ export function InvoicingDomainSection({
           <span className={styles.label}>Producto activo · Ecuador</span>
           <h2>Facturacion electronica SRI</h2>
           <p>
-            Opera emisor, firma, compradores, borradores, documentos y envio SRI
-            desde una superficie dedicada. El Command Center queda como entrada;
-            este es el workspace del producto.
+            Emision, configuracion SRI y seguimiento documental en un workspace
+            enfocado.
           </p>
         </div>
         <div className={styles.productWorkspaceActions}>
@@ -97,8 +142,8 @@ export function InvoicingDomainSection({
 
       <div className={styles.sectionHeading}>
         <div>
-          <span className={styles.label}>Panel operativo</span>
-          <h2>Resumen, configuracion y documentos</h2>
+          <span className={styles.label}>{subviewContext.eyebrow}</span>
+          <h2>{subviewContext.title}</h2>
         </div>
         {emptyState === 'ready' ? (
           <button
@@ -140,10 +185,22 @@ export function InvoicingDomainSection({
             <p className={styles.successBanner}>{invoicingActionMessage}</p>
           ) : null}
 
-          <InvoicingWorkspaceSummary
-            model={model}
-            onPrimaryAction={onPrimaryAction}
-          />
+          <div className={styles.productWorkspaceContext}>
+            <p>{subviewContext.description}</p>
+            <a
+              className={styles.secondaryButton}
+              href={subviewContext.actionHref}
+            >
+              {subviewContext.actionLabel}
+            </a>
+          </div>
+
+          {activeSubview === 'overview' ? (
+            <InvoicingWorkspaceSummary
+              model={model}
+              onPrimaryAction={onPrimaryAction}
+            />
+          ) : null}
 
           {children}
         </div>

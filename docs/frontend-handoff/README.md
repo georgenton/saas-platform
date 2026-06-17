@@ -24,12 +24,13 @@ consume existing contracts before requesting new backend scope.
 5. `05-invoicing-settings-sri.md`
 6. `06-invoicing-customer-draft-flow.md`
 7. `07-invoicing-items-flow.md`
-8. `03-ecommerce.md`
-9. `04-tax-compliance-ec.md`
-10. `05-accounting.md`
-11. `06-ai-console.md`
-12. `07-clinics.md`
-13. `08-growth.md`
+8. `08-invoicing-document-review.md`
+9. `03-ecommerce.md`
+10. `04-tax-compliance-ec.md`
+11. `05-accounting.md`
+12. `06-ai-console.md`
+13. `07-clinics.md`
+14. `08-growth.md`
 
 ## Current Active Sequence
 
@@ -41,6 +42,7 @@ The current frontend priority is:
 4. Mature the Ecuador SRI workspace and settings before expanding other product screens
 5. Refine the customer + draft invoice lane before moving to invoice items and detail polish
 6. Refine invoice item entry and totals before document review / XML / RIDE
+7. Refine document review before deeper XML / RIDE and electronic lifecycle work
 
 This order is intentional. The team should not continue polishing signed-in
 product surfaces as if the JWT textarea were the permanent entrance to the app.

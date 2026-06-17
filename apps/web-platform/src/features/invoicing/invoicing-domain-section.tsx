@@ -1,0 +1,95 @@
+import type { ReactNode } from 'react';
+import styles from '../../app/app.module.css';
+import type {
+  InvoicingWorkspaceFoundationModel,
+  InvoicingWorkspaceHeroActionKey,
+} from './model';
+import { InvoicingWorkspaceSummary } from './workspace-summary';
+
+type InvoicingDomainSectionProps = {
+  children?: ReactNode;
+  currentTenancyName: string | null;
+  effectiveError: string | null;
+  emptyState:
+    | 'no-session'
+    | 'no-tenancy'
+    | 'product-disabled'
+    | 'ready';
+  invoiceDetailLoading: boolean;
+  invoicingActionMessage: string | null;
+  invoicingLoading: boolean;
+  model: InvoicingWorkspaceFoundationModel;
+  onPrimaryAction: (actionKey: InvoicingWorkspaceHeroActionKey) => void;
+  onRefresh: () => void;
+};
+
+export function InvoicingDomainSection({
+  children,
+  currentTenancyName,
+  effectiveError,
+  emptyState,
+  invoiceDetailLoading,
+  invoicingActionMessage,
+  invoicingLoading,
+  model,
+  onPrimaryAction,
+  onRefresh,
+}: InvoicingDomainSectionProps) {
+  return (
+    <section className={styles.adminPanel} id="invoicing-domain">
+      <div className={styles.sectionHeading}>
+        <div>
+          <span className={styles.label}>Invoicing product domain</span>
+          <h2>Customers, invoices y detalle operacional</h2>
+        </div>
+        {emptyState === 'ready' ? (
+          <button
+            className={styles.ghostButton}
+            disabled={invoicingLoading || invoiceDetailLoading}
+            onClick={onRefresh}
+            type="button"
+          >
+            {invoicingLoading ? 'Refrescando...' : 'Refrescar invoicing'}
+          </button>
+        ) : null}
+      </div>
+
+      {emptyState === 'no-session' ? (
+        <div className={styles.emptyState}>
+          <p>Primero carguemos la sesion para abrir el workspace de invoicing.</p>
+        </div>
+      ) : emptyState === 'no-tenancy' ? (
+        <div className={styles.emptyState}>
+          <p>
+            Selecciona un tenant actual para consultar y operar el dominio de
+            invoicing.
+          </p>
+        </div>
+      ) : emptyState === 'product-disabled' ? (
+        <div className={styles.emptyState}>
+          <p>
+            El producto <strong>invoicing</strong> no esta habilitado para{' '}
+            {currentTenancyName ?? 'este tenant'} segun su acceso efectivo
+            actual.
+          </p>
+        </div>
+      ) : (
+        <div className={styles.stack}>
+          {effectiveError ? (
+            <p className={styles.errorBanner}>{effectiveError}</p>
+          ) : null}
+          {invoicingActionMessage ? (
+            <p className={styles.successBanner}>{invoicingActionMessage}</p>
+          ) : null}
+
+          <InvoicingWorkspaceSummary
+            model={model}
+            onPrimaryAction={onPrimaryAction}
+          />
+
+          {children}
+        </div>
+      )}
+    </section>
+  );
+}

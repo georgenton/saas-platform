@@ -197,6 +197,21 @@
   margin-bottom: 18px;
 }
 
+.page:has(#invoicing-domain:target) > section:not(#invoicing-domain),
+.page:has(#invoicing-domain :target) > section:not(#invoicing-domain) {
+  display: none;
+}
+
+.page:has(#invoicing-domain:target) #invoicing-domain,
+.page:has(#invoicing-domain :target) #invoicing-domain {
+  margin-top: 0;
+}
+
+.page:has(#invoicing-domain:target) .topbar,
+.page:has(#invoicing-domain :target) .topbar {
+  margin-bottom: 18px;
+}
+
 .commandCenter {
   background: var(--surface);
   border: 1px solid var(--border);

@@ -37,10 +37,40 @@ export function InvoicingDomainSection({
 }: InvoicingDomainSectionProps) {
   return (
     <section className={styles.adminPanel} id="invoicing-domain">
+      <div className={styles.productWorkspaceHero}>
+        <div>
+          <span className={styles.label}>Producto activo · Ecuador</span>
+          <h2>Facturacion electronica SRI</h2>
+          <p>
+            Opera emisor, firma, compradores, borradores, documentos y envio SRI
+            desde una superficie dedicada. El Command Center queda como entrada;
+            este es el workspace del producto.
+          </p>
+        </div>
+        <div className={styles.productWorkspaceActions}>
+          <a className={styles.secondaryButton} href="#product-command-center">
+            Volver al Command Center
+          </a>
+          <a className={styles.primaryButton} href="#invoicing-issuer-profile">
+            Configurar SRI
+          </a>
+        </div>
+      </div>
+
+      <nav
+        aria-label="Navegacion interna de facturacion electronica"
+        className={styles.productWorkspaceTabs}
+      >
+        <a href="#invoicing-domain">Resumen</a>
+        <a href="#invoicing-issuer-profile">Configuracion SRI</a>
+        <a href="#invoicing-customer-draft-flow">Clientes y borrador</a>
+        <a href="#invoicing-invoice-detail">Documentos</a>
+      </nav>
+
       <div className={styles.sectionHeading}>
         <div>
-          <span className={styles.label}>Invoicing product domain</span>
-          <h2>Customers, invoices y detalle operacional</h2>
+          <span className={styles.label}>Panel operativo</span>
+          <h2>Resumen, configuracion y documentos</h2>
         </div>
         {emptyState === 'ready' ? (
           <button

@@ -266,7 +266,10 @@ export function InvoicingCustomerDraftFlow({
   };
 
   return (
-    <section className={styles.invoicingCustomerFlow}>
+    <section
+      className={styles.invoicingCustomerFlow}
+      id="invoicing-customer-draft-flow"
+    >
       <div className={styles.invoicingCustomerFlowHero}>
         <div>
           <span className={styles.label}>Invoicing · Primera factura</span>

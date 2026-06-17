@@ -1,3 +1,4 @@
+export { InvoicingDomainSection } from './invoicing-domain-section';
 export { InvoicingWorkspaceSummary } from './workspace-summary';
 export { Stepper, deriveStageFromInvoiceDetail } from './workspace-shared';
 export { InvoicingWorkspaceOperations } from './workspace-operations';

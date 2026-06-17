@@ -20,6 +20,7 @@ import { CommandCenter } from '../features/command-center/command-center';
 import { useCommandCenterPlatformData } from '../features/command-center/queries';
 import { useCommandCenterModel } from '../features/command-center/use-command-center-model';
 import {
+  InvoicingDomainSection,
   InvoicingDocumentPreviewPanel,
   InvoicingElectronicStatusPanel,
   InvoicingInvoiceItemsPanel,
@@ -27,7 +28,6 @@ import {
   InvoicingPaymentsPanel,
   InvoicingTechnicalTracePanel,
   InvoicingWorkspaceOperations,
-  InvoicingWorkspaceSummary,
 } from '../features/invoicing/invoicing-workspace';
 import {
   invoicingQueryKeys,
@@ -41578,54 +41578,28 @@ export function App() {
           )}
         </section>
 
-        <section className={styles.adminPanel} id="invoicing-domain">
-          <div className={styles.sectionHeading}>
-            <div>
-              <span className={styles.label}>Invoicing product domain</span>
-              <h2>Customers, invoices y detalle operacional</h2>
-            </div>
-            {session && currentTenancy && invoicingEnabled ? (
-              <button
-                className={styles.ghostButton}
-                disabled={invoicingLoading || invoiceDetailLoading}
-                onClick={() => void refreshInvoicingWorkspace()}
-                type="button"
-              >
-                {invoicingLoading ? 'Refrescando...' : 'Refrescar invoicing'}
-              </button>
-            ) : null}
-          </div>
-
-          {!session ? (
-            <div className={styles.emptyState}>
-              <p>Primero carguemos la sesion para abrir el workspace de invoicing.</p>
-            </div>
-          ) : !currentTenancy ? (
-            <div className={styles.emptyState}>
-              <p>Selecciona un tenant actual para consultar y operar el dominio de invoicing.</p>
-            </div>
-          ) : !invoicingEnabled ? (
-            <div className={styles.emptyState}>
-              <p>
-                El producto <strong>invoicing</strong> no esta habilitado para este
-                tenant segun su acceso efectivo actual.
-              </p>
-            </div>
-          ) : (
-            <div className={styles.stack}>
-              {effectiveInvoicingError ? (
-                <p className={styles.errorBanner}>{effectiveInvoicingError}</p>
-              ) : null}
-              {invoicingActionMessage ? (
-                <p className={styles.successBanner}>{invoicingActionMessage}</p>
-              ) : null}
-
-              <InvoicingWorkspaceSummary
-                model={invoicingWorkspaceModel}
-                onPrimaryAction={handleInvoicingWorkspacePrimaryAction}
-              />
-
-              {invoicingReport ? (
+        <InvoicingDomainSection
+          currentTenancyName={currentTenancy?.tenant.name ?? null}
+          effectiveError={effectiveInvoicingError}
+          emptyState={
+            !session
+              ? 'no-session'
+              : !currentTenancy
+                ? 'no-tenancy'
+                : !invoicingEnabled
+                  ? 'product-disabled'
+                  : 'ready'
+          }
+          invoiceDetailLoading={invoiceDetailLoading}
+          invoicingActionMessage={invoicingActionMessage}
+          invoicingLoading={invoicingLoading}
+          model={invoicingWorkspaceModel}
+          onPrimaryAction={handleInvoicingWorkspacePrimaryAction}
+          onRefresh={() => {
+            void refreshInvoicingWorkspace();
+          }}
+        >
+          {invoicingReport ? (
                 <div className={styles.stack}>
                   <div className={styles.sectionHeading}>
                     <div>
@@ -44501,9 +44475,7 @@ export function App() {
                   }
                 />
               </div>
-            </div>
-          )}
-        </section>
+        </InvoicingDomainSection>
 
         <section className={styles.adminPanel} id="tax-compliance-ec">
           <div className={styles.sectionHeading}>

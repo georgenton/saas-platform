@@ -3341,6 +3341,43 @@
   gap: 8px;
 }
 
+.moodCompact {
+  align-items: center;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 6px;
+  grid-template-columns: auto minmax(120px, 1fr) auto;
+  min-height: 48px;
+  padding: 8px 10px;
+}
+
+.moodCompact > span {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.moodCompact select {
+  appearance: none;
+  background: transparent;
+  border: none;
+  color: var(--text-strong);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 800;
+  min-width: 0;
+  outline: none;
+}
+
+.moodCompact:focus-within {
+  border-color: var(--focus-ring);
+  box-shadow: var(--focus-ring-shadow);
+}
+
 .moodButton {
   align-items: center;
   background: var(--surface);

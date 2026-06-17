@@ -2245,6 +2245,9 @@ export function App() {
   );
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [sessionLoading, setSessionLoading] = useState(false);
+  const [activeHash, setActiveHash] = useState(() =>
+    typeof window === 'undefined' ? '' : window.location.hash,
+  );
 
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
   const [selectedInvoiceDetail, setSelectedInvoiceDetail] =
@@ -4735,6 +4738,21 @@ export function App() {
       tokenInput,
     ],
   );
+  const activeProductWorkspace =
+    activeHash === '#invoicing-domain' || activeHash.startsWith('#invoicing-')
+      ? 'invoicing'
+      : null;
+
+  useEffect(() => {
+    const syncActiveHash = () => setActiveHash(window.location.hash);
+
+    syncActiveHash();
+    window.addEventListener('hashchange', syncActiveHash);
+
+    return () => {
+      window.removeEventListener('hashchange', syncActiveHash);
+    };
+  }, []);
 
   const sessionHeadline = useMemo(() => {
     if (session?.currentTenancy) {
@@ -26423,6 +26441,7 @@ export function App() {
 
   return (
     <PlatformShell
+      activeProductWorkspace={activeProductWorkspace}
       apiBaseUrl={API_BASE_URL}
       headline={sessionHeadline}
       metrics={[

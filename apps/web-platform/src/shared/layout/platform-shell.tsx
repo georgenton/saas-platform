@@ -8,6 +8,7 @@ import type {
 } from './platform-shell.model';
 
 type PlatformShellProps = {
+  activeProductWorkspace?: 'invoicing' | null;
   apiBaseUrl: string;
   children: ReactNode;
   headline: string;
@@ -20,6 +21,7 @@ type PlatformShellProps = {
 };
 
 export function PlatformShell({
+  activeProductWorkspace = null,
   apiBaseUrl,
   children,
   headline,
@@ -30,6 +32,10 @@ export function PlatformShell({
   tenantSlug,
   title,
 }: PlatformShellProps) {
+  const pageClassName = activeProductWorkspace
+    ? `${styles.page} ${styles.pageProductWorkspaceActive}`
+    : styles.page;
+
   return (
     <div className={styles.shell} data-mood={mood}>
       <aside className={styles.sidebar} aria-label="Navegacion principal">
@@ -59,7 +65,10 @@ export function PlatformShell({
         </div>
       </aside>
 
-      <main className={styles.page}>
+      <main
+        className={pageClassName}
+        data-active-product-workspace={activeProductWorkspace ?? undefined}
+      >
         <header className={styles.topbar}>
           <div className={styles.topbarIdentity}>
             <span className={styles.eyebrow}>Workspace operativo</span>

@@ -201,7 +201,7 @@
   display: none;
 }
 
-.pageProductWorkspaceActive #invoicing-domain {
+.pageProductWorkspaceActive [data-product-workspace='invoicing'] {
   margin-top: 0;
 }
 
@@ -320,6 +320,12 @@
 .productWorkspaceTabs a:hover {
   background: var(--surface);
   color: var(--text-strong);
+}
+
+.productWorkspaceTabs a[aria-current='page'] {
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+  color: var(--primary);
 }
 
 .commandSummaryCard {

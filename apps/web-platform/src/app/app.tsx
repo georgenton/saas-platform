@@ -33,6 +33,7 @@ import {
   InvoicingWorkspaceOperations,
   InvoicingWorkspaceReports,
   InvoicingWorkspaceSettings,
+  type InvoicingWorkspaceSubview,
 } from '../features/invoicing/invoicing-workspace';
 import {
   invoicingQueryKeys,
@@ -4742,6 +4743,17 @@ export function App() {
     activeHash === '#invoicing-domain' || activeHash.startsWith('#invoicing-')
       ? 'invoicing'
       : null;
+  const activeInvoicingSubview: InvoicingWorkspaceSubview =
+    activeHash === '#invoicing-settings-sri' ||
+    activeHash === '#invoicing-issuer-profile'
+      ? 'settings'
+      : activeHash === '#invoicing-customer-draft' ||
+          activeHash === '#invoicing-customer-draft-flow'
+        ? 'draft'
+        : activeHash === '#invoicing-documents' ||
+            activeHash === '#invoicing-invoice-detail'
+          ? 'documents'
+          : 'overview';
 
   useEffect(() => {
     const syncActiveHash = () => setActiveHash(window.location.hash);
@@ -41604,6 +41616,7 @@ export function App() {
         </section>
 
         <InvoicingDomainSection
+          activeSubview={activeInvoicingSubview}
           currentTenancyName={currentTenancy?.tenant.name ?? null}
           effectiveError={effectiveInvoicingError}
           emptyState={
@@ -41624,7 +41637,7 @@ export function App() {
             void refreshInvoicingWorkspace();
           }}
         >
-          {invoicingReport ? (
+          {activeInvoicingSubview === 'overview' && invoicingReport ? (
             <InvoicingWorkspaceReports
               formatDate={formatDate}
               formatInvoiceStatus={formatInvoiceStatus}
@@ -41634,7 +41647,8 @@ export function App() {
             />
           ) : null}
 
-              {invoiceDocumentDraftingAssist ? (
+              {activeInvoicingSubview === 'overview' &&
+              invoiceDocumentDraftingAssist ? (
                 <InvoicingWorkspaceAssist
                   formatMoney={formatMoney}
                   invoicePortfolioCurrency={invoicePortfolioCurrency}
@@ -41693,7 +41707,7 @@ export function App() {
                 </InvoicingWorkspaceAssist>
               ) : null}
 
-              <div className={styles.twoColumn}>
+              {activeInvoicingSubview === 'settings' ? (
                 <div className={styles.stack}>
                   <InvoicingWorkspaceSettings
                     actionLoading={actionLoading}
@@ -41788,7 +41802,11 @@ export function App() {
                       transmissionMode: submissionMode,
                     }}
                   />
+                </div>
+              ) : null}
 
+              {activeInvoicingSubview === 'draft' ? (
+                <div className={styles.stack}>
                   <InvoicingCustomerDraftFlow
                     actionLoading={actionLoading}
                     customerForm={{
@@ -41899,7 +41917,9 @@ export function App() {
                     )}
                   </div>
                 </div>
+              ) : null}
 
+              {activeInvoicingSubview === 'documents' ? (
                 <InvoicingWorkspaceOperations
                   detailChildren={
                     selectedInvoiceDetail ? (
@@ -42772,7 +42792,7 @@ export function App() {
                       : null
                   }
                 />
-              </div>
+              ) : null}
         </InvoicingDomainSection>
 
         <section className={styles.adminPanel} id="tax-compliance-ec">

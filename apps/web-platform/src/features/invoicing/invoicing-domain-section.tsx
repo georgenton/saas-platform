@@ -6,7 +6,25 @@ import type {
 } from './model';
 import { InvoicingWorkspaceSummary } from './workspace-summary';
 
+export type InvoicingWorkspaceSubview =
+  | 'overview'
+  | 'settings'
+  | 'draft'
+  | 'documents';
+
+const INVOICING_WORKSPACE_TABS: Array<{
+  href: string;
+  key: InvoicingWorkspaceSubview;
+  label: string;
+}> = [
+  { href: '#invoicing-domain', key: 'overview', label: 'Resumen' },
+  { href: '#invoicing-settings-sri', key: 'settings', label: 'Configuracion SRI' },
+  { href: '#invoicing-customer-draft', key: 'draft', label: 'Clientes y borrador' },
+  { href: '#invoicing-documents', key: 'documents', label: 'Documentos' },
+];
+
 type InvoicingDomainSectionProps = {
+  activeSubview: InvoicingWorkspaceSubview;
   children?: ReactNode;
   currentTenancyName: string | null;
   effectiveError: string | null;
@@ -24,6 +42,7 @@ type InvoicingDomainSectionProps = {
 };
 
 export function InvoicingDomainSection({
+  activeSubview,
   children,
   currentTenancyName,
   effectiveError,
@@ -52,10 +71,10 @@ export function InvoicingDomainSection({
           </p>
         </div>
         <div className={styles.productWorkspaceActions}>
-          <a className={styles.secondaryButton} href="#product-command-center">
+          <a className={styles.secondaryButton} href="#platform-home">
             Volver al Command Center
           </a>
-          <a className={styles.primaryButton} href="#invoicing-issuer-profile">
+          <a className={styles.primaryButton} href="#invoicing-settings-sri">
             Configurar SRI
           </a>
         </div>
@@ -65,10 +84,15 @@ export function InvoicingDomainSection({
         aria-label="Navegacion interna de facturacion electronica"
         className={styles.productWorkspaceTabs}
       >
-        <a href="#invoicing-domain">Resumen</a>
-        <a href="#invoicing-issuer-profile">Configuracion SRI</a>
-        <a href="#invoicing-customer-draft-flow">Clientes y borrador</a>
-        <a href="#invoicing-invoice-detail">Documentos</a>
+        {INVOICING_WORKSPACE_TABS.map((tab) => (
+          <a
+            aria-current={activeSubview === tab.key ? 'page' : undefined}
+            href={tab.href}
+            key={tab.key}
+          >
+            {tab.label}
+          </a>
+        ))}
       </nav>
 
       <div className={styles.sectionHeading}>

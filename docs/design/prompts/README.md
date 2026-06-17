@@ -3,14 +3,16 @@
 This folder stores prompts that should be pasted into Claude Design slice by
 slice.
 
-Start with:
+Current sequence:
 
 1. `00-platform-shell.md`
+2. `01-access-login-gateway.md`
+3. `05-invoicing-settings-sri.md`
 
 After Claude Design exports a ZIP, place it under:
 
 ```txt
-docs/design/claude-design/00-platform-shell/
+docs/design/claude-design/<slice-name>/
 ```
 
 Then ask Codex to review and integrate the delivery against the real backend,

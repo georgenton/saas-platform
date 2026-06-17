@@ -197,7 +197,7 @@
   margin-bottom: 18px;
 }
 
-.pageProductWorkspaceActive > section:not(#invoicing-domain) {
+.pageProductWorkspaceActive > section:not([data-product-workspace='invoicing']) {
   display: none;
 }
 

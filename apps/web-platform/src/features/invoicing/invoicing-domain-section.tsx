@@ -36,7 +36,11 @@ export function InvoicingDomainSection({
   onRefresh,
 }: InvoicingDomainSectionProps) {
   return (
-    <section className={styles.adminPanel} id="invoicing-domain">
+    <section
+      className={styles.adminPanel}
+      data-product-workspace="invoicing"
+      id="invoicing-domain"
+    >
       <div className={styles.productWorkspaceHero}>
         <div>
           <span className={styles.label}>Producto activo · Ecuador</span>

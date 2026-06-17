@@ -4731,19 +4731,15 @@ export function App() {
   );
 
   const sessionHeadline = useMemo(() => {
-    if (!session) {
-      return 'Conecta un Bearer token para ver la sesion del usuario y probar el onboarding.';
-    }
-
-    if (session.currentTenancy) {
+    if (session?.currentTenancy) {
       return `Trabajando en ${session.currentTenancy.tenant.name}`;
     }
 
-    if (session.pendingInvitations.length > 0) {
+    if (session?.pendingInvitations.length) {
       return 'Hay onboarding pendiente listo para revisarse.';
     }
 
-    return 'La sesion existe, pero todavia no tiene un workspace activo.';
+    return 'Panel operativo del workspace actual.';
   }, [session]);
 
   const currentPlan = useMemo(() => {
@@ -4776,10 +4772,10 @@ export function App() {
   const platformShellNavItems = useMemo(
     () => [
       {
-        href: '#platform-access',
-        label: 'Acceso',
-        meta: session ? flowLabel(session.sessionState.recommendedFlow) : 'Sin sesion',
-        state: session ? 'Listo' : 'Pendiente',
+        href: '#platform-home',
+        label: 'Inicio',
+        meta: session ? flowLabel(session.sessionState.recommendedFlow) : 'Operando',
+        state: currentTenancy ? 'Activo' : 'Listo',
       },
       {
         href: '#tenant-workspace',
@@ -4821,6 +4817,7 @@ export function App() {
       },
     ],
     [
+      currentTenancy,
       canAccessTransversalAiConsole,
       canManageInvitations,
       canReadGrowthConversations,
@@ -26456,68 +26453,34 @@ export function App() {
       title={currentTenancy ? currentTenancy.tenant.name : 'Consola multi-producto'}
     >
 
-        <CommandCenter
-          accessCounts={commandCenterModel.accessCounts}
-          catalogError={catalogError}
-          catalogLoading={catalogLoading}
-          currentPlanLabel={
-            currentPlan?.name ?? currentSubscription?.planId ?? 'Sin plan'
-          }
-          currentPlanPriceLabel={
-            currentPlan
-              ? `${formatMoney(
-                  currentPlan.priceInCents,
-                  currentPlan.currency,
-                )}/${currentPlan.billingCycle}`
-              : 'No definido'
-          }
-          hasCurrentTenancy={currentTenancy !== null}
-          hasSession={session !== null}
-          maxUsersLabel={
-            maxUsers ? `${maxUsers} usuarios` : 'Usuarios sin limite definido'
-          }
-          products={commandCenterModel.products}
-          subscriptionStatusLabel={currentSubscription?.status ?? 'No registrada'}
-          tenantMemberCount={session?.tenancies.length ?? 0}
-          tenantName={currentTenancy?.tenant.name ?? 'Sin workspace activo'}
-          tenantRoleLabel={currentTenancy?.roleKeys.join(', ') || 'sin rol'}
-          tenantSlug={currentTenancy?.tenant.slug ?? 'sin tenant'}
-        />
-
-        <section className={styles.tokenCard} id="platform-access">
-          <div className={styles.sectionHeading}>
-            <div>
-              <span className={styles.label}>Acceso temporal</span>
-              <h2>Conectar un Bearer token</h2>
-            </div>
-            {token ? (
-              <button className={styles.ghostButton} onClick={handleTokenReset} type="button">
-                Limpiar sesion local
-              </button>
-            ) : null}
-          </div>
-
-          <form className={styles.tokenForm} onSubmit={handleTokenSubmit}>
-            <label className={styles.field}>
-              <span>Authorization Bearer</span>
-              <textarea
-                value={tokenInput}
-                onChange={(event) => setTokenInput(event.target.value)}
-                placeholder="Pega aqui el JWT que usas para probar /api/auth/me"
-                rows={4}
-              />
-            </label>
-            <button
-              className={styles.primaryButton}
-              disabled={!tokenInput.trim() || sessionLoading}
-              type="submit"
-            >
-              {sessionLoading ? 'Cargando sesion...' : 'Cargar sesion'}
-            </button>
-          </form>
-
-          {sessionError ? <p className={styles.errorBanner}>{sessionError}</p> : null}
-          {actionMessage ? <p className={styles.successBanner}>{actionMessage}</p> : null}
+        <section id="platform-home">
+          <CommandCenter
+            accessCounts={commandCenterModel.accessCounts}
+            catalogError={catalogError}
+            catalogLoading={catalogLoading}
+            currentPlanLabel={
+              currentPlan?.name ?? currentSubscription?.planId ?? 'Sin plan'
+            }
+            currentPlanPriceLabel={
+              currentPlan
+                ? `${formatMoney(
+                    currentPlan.priceInCents,
+                    currentPlan.currency,
+                  )}/${currentPlan.billingCycle}`
+                : 'No definido'
+            }
+            hasCurrentTenancy={currentTenancy !== null}
+            hasSession={session !== null}
+            maxUsersLabel={
+              maxUsers ? `${maxUsers} usuarios` : 'Usuarios sin limite definido'
+            }
+            products={commandCenterModel.products}
+            subscriptionStatusLabel={currentSubscription?.status ?? 'No registrada'}
+            tenantMemberCount={session?.tenancies.length ?? 0}
+            tenantName={currentTenancy?.tenant.name ?? 'Sin workspace activo'}
+            tenantRoleLabel={currentTenancy?.roleKeys.join(', ') || 'sin rol'}
+            tenantSlug={currentTenancy?.tenant.slug ?? 'sin tenant'}
+          />
         </section>
 
         <section className={styles.contentGrid} id="tenant-workspace">

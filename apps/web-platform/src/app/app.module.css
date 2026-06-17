@@ -863,6 +863,11 @@
   color: var(--danger);
 }
 
+.statusPillInfo {
+  background: var(--info-soft);
+  color: var(--info);
+}
+
 .pending {
   background: var(--info-soft);
   color: var(--info);
@@ -1266,12 +1271,7 @@
 }
 
 .monoValue {
-  font-family:
-    'IBM Plex Mono',
-    ui-monospace,
-    SFMono-Regular,
-    Menlo,
-    monospace;
+  font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 .invoicingCustomerFlow {
@@ -1492,12 +1492,7 @@
 .invoicingCustomerBuyerRow small {
   color: var(--text-muted);
   display: block;
-  font-family:
-    'IBM Plex Mono',
-    ui-monospace,
-    SFMono-Regular,
-    Menlo,
-    monospace;
+  font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.76rem;
   margin-top: 2px;
 }
@@ -1652,12 +1647,7 @@
 
 .invoicingItemsContextMain h3 {
   color: var(--text-strong);
-  font-family:
-    'IBM Plex Mono',
-    ui-monospace,
-    SFMono-Regular,
-    Menlo,
-    monospace;
+  font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 1.2rem;
   margin: 4px 0 0;
 }
@@ -1757,12 +1747,7 @@
 }
 
 .invoicingItemTotal {
-  font-family:
-    'IBM Plex Mono',
-    ui-monospace,
-    SFMono-Regular,
-    Menlo,
-    monospace;
+  font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
   text-align: right;
 }
 
@@ -1799,12 +1784,7 @@
 
 .invoicingItemsEstimate strong {
   color: var(--text-strong);
-  font-family:
-    'IBM Plex Mono',
-    ui-monospace,
-    SFMono-Regular,
-    Menlo,
-    monospace;
+  font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 1.1rem;
 }
 
@@ -1833,12 +1813,7 @@
 
 .invoicingItemsTotalsList strong {
   color: var(--text-strong);
-  font-family:
-    'IBM Plex Mono',
-    ui-monospace,
-    SFMono-Regular,
-    Menlo,
-    monospace;
+  font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 .invoicingItemsGrandTotal {
@@ -1849,6 +1824,351 @@
 
 .invoicingItemsGrandTotal strong {
   font-size: 1.25rem;
+}
+
+.invoicingDocumentReview {
+  display: grid;
+  gap: 16px;
+}
+
+.invoicingDocumentReviewHero {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface-raised) 88%, var(--primary-soft) 12%) 0%,
+    var(--surface-raised) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--border) 78%, var(--primary) 22%);
+  border-radius: 8px;
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.invoicingDocumentReviewHeroMain {
+  align-items: flex-start;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+}
+
+.invoicingDocumentReviewHeroMain h3 {
+  color: var(--text-strong);
+  font-family: var(--font-mono);
+  font-size: 1.35rem;
+  margin: 4px 0 0;
+}
+
+.invoicingDocumentReviewHeroMain p {
+  color: var(--text-muted);
+  line-height: 1.55;
+  margin: 6px 0 0;
+  max-width: 680px;
+}
+
+.invoicingDocumentReviewHeroMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.invoicingDocumentReadinessGrid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.invoicingDocumentReadinessCheck {
+  align-items: center;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: flex;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+}
+
+.invoicingDocumentReadinessCheck > span {
+  align-items: center;
+  border-radius: 999px;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 0.78rem;
+  font-weight: 900;
+  height: 26px;
+  justify-content: center;
+  width: 26px;
+}
+
+.invoicingDocumentReadinessCheck strong {
+  color: var(--text-strong);
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.invoicingDocumentReadinessCheck small {
+  color: var(--text-muted);
+  display: block;
+  margin-top: 1px;
+}
+
+.invoicingDocumentReadinessCheckSuccess > span {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.invoicingDocumentReadinessCheckWarning > span {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.invoicingDocumentReviewLayout {
+  align-items: start;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 0.38fr);
+}
+
+.invoicingDocumentReviewMain,
+.invoicingDocumentReviewRail {
+  display: grid;
+  gap: 16px;
+}
+
+.invoicingDocumentReviewRail {
+  position: sticky;
+  top: 14px;
+}
+
+.invoicingDocumentReviewIdentityGrid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.invoicingDocumentReviewCard,
+.invoicingDocumentTotalsCard,
+.invoicingDocumentArtifactCard,
+.invoicingDocumentAuthorizationCard {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+}
+
+.invoicingDocumentFactList {
+  display: grid;
+  gap: 2px;
+}
+
+.invoicingDocumentFactRow {
+  align-items: baseline;
+  border-top: 1px solid var(--divider);
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(92px, 0.35fr) minmax(0, 1fr);
+  padding: 8px 0;
+}
+
+.invoicingDocumentFactRow:first-child {
+  border-top: 0;
+}
+
+.invoicingDocumentFactRow span {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.invoicingDocumentFactRow strong {
+  color: var(--text-strong);
+  font-weight: 650;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.invoicingDocumentNumberingGrid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.invoicingDocumentLineList {
+  display: grid;
+}
+
+.invoicingDocumentLineRow {
+  align-items: flex-start;
+  border-top: 1px solid var(--divider);
+  display: grid;
+  gap: 12px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  padding: 12px 0;
+}
+
+.invoicingDocumentLineRow:first-child {
+  border-top: 0;
+}
+
+.invoicingDocumentLineRow strong {
+  color: var(--text-strong);
+}
+
+.invoicingDocumentLineRow small {
+  color: var(--text-muted);
+  display: block;
+  margin-top: 3px;
+}
+
+.invoicingDocumentLinePosition {
+  align-items: center;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-muted);
+  display: inline-flex;
+  font-size: 0.75rem;
+  font-weight: 800;
+  height: 26px;
+  justify-content: center;
+  width: 26px;
+}
+
+.invoicingDocumentLineTotal,
+.invoicingDocumentTotalsCard strong,
+.invoicingDocumentGrandTotal strong {
+  font-family: var(--font-mono);
+}
+
+.invoicingDocumentNotes {
+  border-top: 1px solid var(--divider);
+  padding-top: 12px;
+}
+
+.invoicingDocumentNotes p {
+  color: var(--text);
+  line-height: 1.55;
+  margin: 6px 0 0;
+}
+
+.invoicingDocumentTotalsCard > div,
+.invoicingDocumentGrandTotal {
+  align-items: baseline;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.invoicingDocumentTotalsCard span {
+  color: var(--text-muted);
+}
+
+.invoicingDocumentGrandTotal {
+  border-top: 1px solid var(--divider);
+  margin-top: 2px;
+  padding-top: 12px;
+}
+
+.invoicingDocumentGrandTotal span,
+.invoicingDocumentGrandTotal strong {
+  color: var(--text-strong);
+  font-size: 1.18rem;
+}
+
+.invoicingDocumentArtifactRow {
+  align-items: center;
+  border-top: 1px solid var(--divider);
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 12px 0;
+}
+
+.invoicingDocumentArtifactRow:first-of-type {
+  border-top: 0;
+}
+
+.invoicingDocumentArtifactRow strong {
+  color: var(--text-strong);
+  display: block;
+}
+
+.invoicingDocumentArtifactRow small {
+  color: var(--text-muted);
+  display: block;
+  font-family: var(--font-mono);
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.invoicingDocumentArtifactRowUnavailable {
+  opacity: 0.62;
+}
+
+.invoicingDocumentActionGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.invoicingDocumentAuthorizationCard {
+  background: var(--info-soft);
+  border-color: color-mix(in srgb, var(--info) 38%, var(--border) 62%);
+}
+
+.invoicingDocumentAuthorizationCardSuccess {
+  background: var(--success-soft);
+  border-color: color-mix(in srgb, var(--success) 42%, var(--border) 58%);
+}
+
+.invoicingDocumentAuthorizationCard h3 {
+  color: var(--text-strong);
+  margin: -6px 0 0;
+}
+
+.invoicingDocumentAuthorizationCard p {
+  color: var(--text);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.invoicingDocumentAccessKey {
+  display: grid;
+  gap: 6px;
+}
+
+.invoicingDocumentAccessKey span {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.invoicingDocumentAccessKey code {
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-strong);
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  line-height: 1.65;
+  padding: 10px;
+  word-break: break-word;
+}
+
+.calloutWarning {
+  background: var(--warning-soft);
+  border: 1px solid color-mix(in srgb, var(--warning) 38%, var(--border) 62%);
+  border-radius: 8px;
+  color: var(--on-warning-soft);
+  font-weight: 650;
+  padding: 12px;
 }
 
 .invoiceCardHeader {
@@ -1868,7 +2188,10 @@
   align-items: center;
   column-gap: 14px;
   display: grid;
-  grid-template-columns: minmax(120px, 0.95fr) minmax(0, 1.5fr) minmax(120px, 0.85fr) auto;
+  grid-template-columns: minmax(120px, 0.95fr) minmax(0, 1.5fr) minmax(
+      120px,
+      0.85fr
+    ) auto;
 }
 
 .invoicingQueueHeader {
@@ -1975,8 +2298,11 @@
 }
 
 .invoicingDetailFocusCard {
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 88%, var(--primary-soft) 12%) 0%, var(--surface-raised) 100%);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface-raised) 88%, var(--primary-soft) 12%) 0%,
+    var(--surface-raised) 100%
+  );
   border: 1px solid color-mix(in srgb, var(--border) 76%, var(--primary) 24%);
   border-radius: 8px;
   display: grid;
@@ -2075,8 +2401,11 @@
 }
 
 .invoicingSRINextStepCard {
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 90%, var(--primary-soft) 10%) 0%, var(--surface-sunken) 100%);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface-raised) 90%, var(--primary-soft) 10%) 0%,
+    var(--surface-sunken) 100%
+  );
   border: 1px solid color-mix(in srgb, var(--border) 74%, var(--primary) 26%);
   border-left: 3px solid var(--primary);
   border-radius: 8px;
@@ -2118,8 +2447,11 @@
 }
 
 .invoicingSRIActionCue {
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 90%, var(--primary-soft) 10%) 0%, var(--surface-sunken) 100%);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface-raised) 90%, var(--primary-soft) 10%) 0%,
+    var(--surface-sunken) 100%
+  );
   border: 1px solid color-mix(in srgb, var(--border) 74%, var(--primary) 26%);
   border-radius: 8px;
   display: grid;
@@ -2201,19 +2533,30 @@
 }
 
 .invoicingSRIInterventionPanel {
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--surface-sunken) 84%, var(--primary-soft) 16%) 0%, var(--surface-sunken) 100%);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface-sunken) 84%, var(--primary-soft) 16%) 0%,
+    var(--surface-sunken) 100%
+  );
   border-color: color-mix(in srgb, var(--border) 72%, var(--primary) 28%);
 }
 
 .invoicingSRIFallbackPanel {
-  background: color-mix(in srgb, var(--surface-sunken) 92%, var(--warning-soft) 8%);
+  background: color-mix(
+    in srgb,
+    var(--surface-sunken) 92%,
+    var(--warning-soft) 8%
+  );
   border-style: dashed;
   border-color: var(--border-strong);
 }
 
 .invoicingSRISectionIntro {
-  background: color-mix(in srgb, var(--surface-raised) 86%, var(--primary-soft) 14%);
+  background: color-mix(
+    in srgb,
+    var(--surface-raised) 86%,
+    var(--primary-soft) 14%
+  );
   border: 1px solid color-mix(in srgb, var(--border) 78%, var(--primary) 22%);
   border-radius: 8px;
   display: grid;
@@ -2309,8 +2652,11 @@
 
 .invoicingSettingsVerdict {
   align-items: start;
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 88%, var(--primary-soft) 12%) 0%, var(--surface-sunken) 100%);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface-raised) 88%, var(--primary-soft) 12%) 0%,
+    var(--surface-sunken) 100%
+  );
   border-left: 3px solid var(--primary);
   display: flex;
   gap: 16px;
@@ -2480,7 +2826,11 @@
 }
 
 .operatorBrief {
-  background: linear-gradient(180deg, rgba(255, 249, 239, 0.96) 0%, rgba(245, 238, 228, 0.88) 100%);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 249, 239, 0.96) 0%,
+    rgba(245, 238, 228, 0.88) 100%
+  );
   border: 1px solid rgba(143, 86, 49, 0.14);
   border-radius: 24px;
   display: grid;
@@ -2501,8 +2851,16 @@
 
 .assistBrief {
   background:
-    radial-gradient(circle at top right, rgba(33, 100, 171, 0.12), transparent 28%),
-    linear-gradient(180deg, rgba(249, 252, 255, 0.98) 0%, rgba(240, 246, 252, 0.9) 100%);
+    radial-gradient(
+      circle at top right,
+      rgba(33, 100, 171, 0.12),
+      transparent 28%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(249, 252, 255, 0.98) 0%,
+      rgba(240, 246, 252, 0.9) 100%
+    );
   border: 1px solid rgba(33, 100, 171, 0.14);
   border-radius: 24px;
   display: grid;
@@ -2531,7 +2889,11 @@
 }
 
 .assistCueCard {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.84) 0%, rgba(246, 250, 255, 0.9) 100%);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.84) 0%,
+    rgba(246, 250, 255, 0.9) 100%
+  );
   border: 1px solid rgba(33, 100, 171, 0.12);
   border-radius: 20px;
   display: grid;
@@ -2593,7 +2955,11 @@
 
 .backdrop {
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--primary-soft) 38%, transparent) 0%, transparent 44%),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--primary-soft) 38%, transparent) 0%,
+      transparent 44%
+    ),
     var(--app-bg);
 }
 
@@ -2934,6 +3300,10 @@
   .invoicingCustomerFlowGrid,
   .invoicingCustomerStepper,
   .invoicingItemsLayout,
+  .invoicingDocumentReadinessGrid,
+  .invoicingDocumentReviewLayout,
+  .invoicingDocumentReviewIdentityGrid,
+  .invoicingDocumentNumberingGrid,
   .invoiceInlineGrid,
   .invoiceTotalsGrid,
   .invoiceDetailGrid,
@@ -2988,7 +3358,8 @@
   .invoicingCustomerDirectoryHeader,
   .invoicingCustomerFormHeader,
   .invoicingCustomerIdentityHeader,
-  .invoicingItemsContextMain {
+  .invoicingItemsContextMain,
+  .invoicingDocumentReviewHeroMain {
     align-items: stretch;
     flex-direction: column;
   }
@@ -3028,6 +3399,11 @@
     top: auto;
   }
 
+  .invoicingDocumentReviewRail {
+    position: static;
+    top: auto;
+  }
+
   .invoicingItemRow {
     grid-template-columns: auto minmax(0, 1fr);
   }
@@ -3039,6 +3415,23 @@
 
   .invoicingItemsEstimate {
     grid-template-columns: 1fr;
+  }
+
+  .invoicingDocumentFactRow,
+  .invoicingDocumentArtifactRow {
+    grid-template-columns: 1fr;
+  }
+
+  .invoicingDocumentLineRow {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .invoicingDocumentLineTotal {
+    grid-column: 2;
+  }
+
+  .invoicingDocumentActionGroup {
+    justify-content: flex-start;
   }
 
   .invoicingSRIStatusTile .invoiceCardHeader,
@@ -3093,7 +3486,7 @@
     top: auto;
   }
 
-.planSpotlightHeader {
+  .planSpotlightHeader {
     align-items: stretch;
     flex-direction: column;
   }
@@ -3101,7 +3494,11 @@
 
 .accessGateway {
   background:
-    radial-gradient(circle at top right, color-mix(in srgb, var(--primary) 10%, transparent), transparent 36%),
+    radial-gradient(
+      circle at top right,
+      color-mix(in srgb, var(--primary) 10%, transparent),
+      transparent 36%
+    ),
     var(--app-bg);
   color: var(--text);
   min-height: 100vh;

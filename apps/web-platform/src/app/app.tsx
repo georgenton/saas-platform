@@ -42748,7 +42748,7 @@ export function App() {
                   selectedInvoiceId={selectedInvoiceId}
                   selectedInvoiceSummary={selectedInvoiceSummary}
                   statusActionLoadingKey={
-                    actionLoading.startsWith('invoice-status:')
+                    actionLoading?.startsWith('invoice-status:')
                       ? actionLoading
                       : null
                   }

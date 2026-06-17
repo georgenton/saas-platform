@@ -1259,6 +1259,373 @@
   box-shadow: var(--focus-ring-shadow);
 }
 
+.fieldHint {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.monoValue {
+  font-family:
+    'IBM Plex Mono',
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+}
+
+.invoicingCustomerFlow {
+  display: grid;
+  gap: 16px;
+}
+
+.invoicingCustomerFlowHero {
+  align-items: start;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  padding: 18px;
+}
+
+.invoicingCustomerFlowHero h3 {
+  color: var(--text-strong);
+  font-size: 1.35rem;
+  margin: 4px 0 0;
+}
+
+.invoicingCustomerFlowHero p {
+  color: var(--text-muted);
+  line-height: 1.55;
+  margin: 6px 0 0;
+  max-width: 680px;
+}
+
+.invoicingCustomerStepper {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 6px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: 6px;
+}
+
+.invoicingCustomerStepButton {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: grid;
+  gap: 2px;
+  grid-template-columns: auto minmax(0, 1fr);
+  padding: 10px 12px;
+  text-align: left;
+}
+
+.invoicingCustomerStepButton span {
+  align-items: center;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-muted);
+  display: inline-flex;
+  font-size: 0.72rem;
+  font-weight: 800;
+  grid-row: span 2;
+  height: 30px;
+  justify-content: center;
+  width: 30px;
+}
+
+.invoicingCustomerStepButton small {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.invoicingCustomerStepButton strong {
+  color: var(--text);
+  font-size: 0.9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.invoicingCustomerStepButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.56;
+}
+
+.invoicingCustomerStepButtonActive {
+  background: var(--primary-soft);
+}
+
+.invoicingCustomerStepButtonActive span {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-contrast);
+}
+
+.invoicingCustomerStepButtonActive strong {
+  color: var(--on-primary-soft);
+}
+
+.invoicingCustomerStepButtonDone span {
+  background: var(--success);
+  border-color: var(--success);
+  color: #ffffff;
+}
+
+.invoicingCustomerFlowGrid {
+  align-items: start;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 320px);
+}
+
+.invoicingCustomerFlowMain {
+  min-width: 0;
+}
+
+.invoicingCustomerStepCard,
+.invoicingCustomerRailCard,
+.invoicingCustomerSRIReassurance {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.invoicingCustomerStepCard {
+  overflow: hidden;
+}
+
+.invoicingCustomerStepHeader {
+  align-items: center;
+  border-bottom: 1px solid var(--divider);
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+  padding: 18px;
+}
+
+.invoicingCustomerStepHeader h3 {
+  color: var(--text-strong);
+  font-size: 1.18rem;
+  margin: 4px 0 0;
+}
+
+.invoicingCustomerStepBody {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+}
+
+.invoicingCustomerDirectoryHeader,
+.invoicingCustomerFormHeader {
+  align-items: start;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.invoicingCustomerDirectoryHeader span,
+.invoicingCustomerFormHeader strong {
+  color: var(--text-strong);
+  font-weight: 800;
+}
+
+.invoicingCustomerDirectoryHeader small,
+.invoicingCustomerFormHeader small {
+  color: var(--text-muted);
+  line-height: 1.45;
+  max-width: 320px;
+  text-align: right;
+}
+
+.invoicingCustomerDirectory,
+.invoicingCustomerForm,
+.invoicingCustomerFacts,
+.invoicingCustomerRailList {
+  display: grid;
+  gap: 10px;
+}
+
+.invoicingCustomerForm {
+  border-top: 1px solid var(--divider);
+  padding-top: 16px;
+}
+
+.invoicingCustomerBuyerRow {
+  align-items: center;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  cursor: pointer;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  padding: 12px 14px;
+  text-align: left;
+}
+
+.invoicingCustomerBuyerRow:hover,
+.invoicingCustomerBuyerRowSelected {
+  background: var(--primary-soft);
+  border-color: var(--primary);
+}
+
+.invoicingCustomerBuyerRow strong {
+  color: var(--text-strong);
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.invoicingCustomerBuyerRow small {
+  color: var(--text-muted);
+  display: block;
+  font-family:
+    'IBM Plex Mono',
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+  font-size: 0.76rem;
+  margin-top: 2px;
+}
+
+.invoicingCustomerBuyerRow em {
+  background: var(--surface-sunken);
+  border-radius: 999px;
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  font-style: normal;
+  font-weight: 800;
+  padding: 6px 9px;
+}
+
+.invoicingCustomerAvatar,
+.invoicingCustomerAvatarLarge {
+  align-items: center;
+  background: var(--primary-soft);
+  border-radius: 999px;
+  color: var(--on-primary-soft);
+  display: inline-flex;
+  flex: none;
+  font-weight: 800;
+  justify-content: center;
+}
+
+.invoicingCustomerAvatar {
+  height: 38px;
+  width: 38px;
+}
+
+.invoicingCustomerAvatarLarge {
+  height: 52px;
+  width: 52px;
+}
+
+.invoicingCustomerIdentityHeader {
+  align-items: center;
+  display: flex;
+  gap: 14px;
+}
+
+.invoicingCustomerIdentityHeader strong {
+  color: var(--text-strong);
+  display: block;
+  font-size: 1.08rem;
+}
+
+.invoicingCustomerIdentityHeader small {
+  color: var(--text-muted);
+}
+
+.invoicingCustomerFacts {
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 14px;
+}
+
+.invoicingCustomerFactRow {
+  align-items: center;
+  border-top: 1px solid var(--divider);
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(105px, 0.45fr) minmax(0, 1fr);
+  padding: 11px 0;
+}
+
+.invoicingCustomerFactRow:first-child {
+  border-top: 0;
+}
+
+.invoicingCustomerFactRow span {
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.invoicingCustomerFactRow strong {
+  color: var(--text-strong);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.invoicingCustomerInfoNote,
+.invoicingCustomerSRIReassurance {
+  background: var(--info-soft);
+  color: var(--on-info-soft);
+  display: grid;
+  gap: 4px;
+  padding: 13px 14px;
+}
+
+.invoicingCustomerInfoNote {
+  border-radius: 8px;
+}
+
+.invoicingCustomerInfoNote strong,
+.invoicingCustomerSRIReassurance strong {
+  color: var(--text-strong);
+}
+
+.invoicingCustomerInfoNote span,
+.invoicingCustomerSRIReassurance p {
+  line-height: 1.5;
+  margin: 0;
+}
+
+.invoicingCustomerFlowRail {
+  display: grid;
+  gap: 14px;
+  position: sticky;
+  top: 14px;
+}
+
+.invoicingCustomerRailCard {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+}
+
+.invoicingCustomerRailList .invoicingCustomerFactRow {
+  grid-template-columns: 1fr;
+  gap: 4px;
+}
+
 .invoiceCardHeader {
   align-items: start;
   display: flex;
@@ -2339,6 +2706,8 @@
   .identityBlock,
   .sessionStateGrid,
   .detailGrid,
+  .invoicingCustomerFlowGrid,
+  .invoicingCustomerStepper,
   .invoiceInlineGrid,
   .invoiceTotalsGrid,
   .invoiceDetailGrid,
@@ -2386,6 +2755,45 @@
   .invoicingStagePreviewHeader {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .invoicingCustomerFlowHero,
+  .invoicingCustomerStepHeader,
+  .invoicingCustomerDirectoryHeader,
+  .invoicingCustomerFormHeader,
+  .invoicingCustomerIdentityHeader {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .invoicingCustomerDirectoryHeader small,
+  .invoicingCustomerFormHeader small {
+    max-width: none;
+    text-align: left;
+  }
+
+  .invoicingCustomerStepButton {
+    grid-template-columns: auto minmax(0, 1fr);
+    min-height: 58px;
+  }
+
+  .invoicingCustomerBuyerRow {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .invoicingCustomerBuyerRow em {
+    justify-self: start;
+    grid-column: 2;
+  }
+
+  .invoicingCustomerFlowRail {
+    position: static;
+    top: auto;
+  }
+
+  .invoicingCustomerFactRow {
+    grid-template-columns: 1fr;
+    gap: 4px;
   }
 
   .invoicingSRIStatusTile .invoiceCardHeader,

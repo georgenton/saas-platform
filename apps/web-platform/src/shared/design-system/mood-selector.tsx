@@ -7,16 +7,47 @@ import {
 type MoodSelectorProps = {
   mood: PlatformMoodKey;
   onMoodChange: (mood: PlatformMoodKey) => void;
+  variant?: 'full' | 'compact';
 };
 
-export function MoodSelector({ mood, onMoodChange }: MoodSelectorProps) {
+export function MoodSelector({
+  mood,
+  onMoodChange,
+  variant = 'full',
+}: MoodSelectorProps) {
+  const activeMood = PLATFORM_MOODS.find(
+    (platformMood) => platformMood.key === mood,
+  );
+
+  if (variant === 'compact') {
+    return (
+      <label className={styles.moodCompact}>
+        <span>Modo</span>
+        <select
+          aria-label="Elegir mood de interfaz"
+          onChange={(event) => onMoodChange(event.target.value as PlatformMoodKey)}
+          value={mood}
+        >
+          {PLATFORM_MOODS.map((platformMood) => (
+            <option key={platformMood.key} value={platformMood.key}>
+              {platformMood.label}
+            </option>
+          ))}
+        </select>
+        <i
+          aria-hidden="true"
+          className={styles.moodSwatch}
+          data-preview-mood={activeMood?.key ?? mood}
+        />
+      </label>
+    );
+  }
+
   return (
     <div className={styles.moodPanel}>
       <div>
         <span>Modo visual</span>
-        <strong>
-          {PLATFORM_MOODS.find((platformMood) => platformMood.key === mood)?.label}
-        </strong>
+        <strong>{activeMood?.label}</strong>
       </div>
       <div
         aria-label="Elegir mood de interfaz"

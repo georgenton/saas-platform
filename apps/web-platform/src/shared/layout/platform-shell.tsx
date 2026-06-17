@@ -81,7 +81,11 @@ export function PlatformShell({
               <span>Tenant</span>
               <strong>{tenantSlug}</strong>
             </div>
-            <MoodSelector mood={mood} onMoodChange={onMoodChange} />
+            <MoodSelector
+              mood={mood}
+              onMoodChange={onMoodChange}
+              variant="compact"
+            />
           </div>
         </header>
 

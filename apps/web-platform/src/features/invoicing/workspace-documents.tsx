@@ -30,6 +30,144 @@ type InvoicingNotificationsPanelProps = {
   onSendInvoiceEmail: () => void;
 };
 
+type DocumentReadinessCheck = {
+  detail: string;
+  key: string;
+  label: string;
+  ok: boolean;
+};
+
+type Tone = 'danger' | 'info' | 'neutral' | 'success' | 'warning';
+
+const invoiceStatusLabels: Record<string, string> = {
+  draft: 'Borrador',
+  issued: 'Emitida',
+  paid: 'Pagada',
+  void: 'Anulada',
+};
+
+const environmentLabels: Record<string, string> = {
+  production: 'Producción',
+  testing: 'Pruebas',
+};
+
+function deriveDocumentReadiness(
+  document: InvoiceDocumentResponse,
+): DocumentReadinessCheck[] {
+  return [
+    {
+      detail: document.issuer.taxId
+        ? 'RUC y ambiente configurados.'
+        : 'Falta RUC o ambiente del emisor.',
+      key: 'issuer',
+      label: 'Emisor',
+      ok: Boolean(
+        document.issuer.legalName &&
+          document.issuer.taxId &&
+          document.issuer.environment,
+      ),
+    },
+    {
+      detail:
+        (document.customer.identification ?? document.customer.taxId)
+          ? 'Comprador identificado.'
+          : 'Falta la identificación fiscal del comprador.',
+      key: 'buyer',
+      label: 'Comprador',
+      ok: Boolean(
+        document.customer.name &&
+          (document.customer.identification ?? document.customer.taxId),
+      ),
+    },
+    {
+      detail: 'Serie, punto de emisión y secuencial asignados.',
+      key: 'numbering',
+      label: 'Numeración',
+      ok: Boolean(
+        document.invoice.documentCode &&
+          document.invoice.establishmentCode &&
+          document.invoice.emissionPointCode &&
+          document.invoice.sequenceNumber !== null,
+      ),
+    },
+    {
+      detail:
+        document.lines.length > 0
+          ? `${document.lines.length} línea${document.lines.length === 1 ? '' : 's'} lista${document.lines.length === 1 ? '' : 's'}.`
+          : 'La factura no tiene líneas.',
+      key: 'lines',
+      label: 'Líneas y totales',
+      ok: document.lines.length > 0,
+    },
+  ];
+}
+
+function getElectronicTone(status: string | null): Tone {
+  if (status === 'authorized') {
+    return 'success';
+  }
+
+  if (status === 'returned' || status === 'rejected') {
+    return 'danger';
+  }
+
+  if (status === 'signed' || status === 'submitted') {
+    return 'info';
+  }
+
+  return 'neutral';
+}
+
+function getInvoiceStatusLabel(status: string): string {
+  return invoiceStatusLabels[status] ?? status;
+}
+
+function getEnvironmentLabel(value: string | null): string {
+  if (!value) {
+    return 'No configurado';
+  }
+
+  return environmentLabels[value] ?? value;
+}
+
+function formatSequence(value: number | null): string {
+  return value === null ? 'Manual' : String(value).padStart(9, '0');
+}
+
+function ReadinessCheckPill({ check }: { check: DocumentReadinessCheck }) {
+  return (
+    <div
+      className={
+        check.ok
+          ? `${styles.invoicingDocumentReadinessCheck} ${styles.invoicingDocumentReadinessCheckSuccess}`
+          : `${styles.invoicingDocumentReadinessCheck} ${styles.invoicingDocumentReadinessCheckWarning}`
+      }
+      title={check.detail}
+    >
+      <span aria-hidden="true">{check.ok ? '✓' : '!'}</span>
+      <div>
+        <strong>{check.label}</strong>
+        <small>{check.ok ? 'Completo' : 'Por revisar'}</small>
+      </div>
+    </div>
+  );
+}
+
+function DocumentFact({
+  label,
+  value,
+}: {
+  label: string;
+  value: string | null | undefined;
+}) {
+  return (
+    <div className={styles.invoicingDocumentFactRow}>
+      <span>{label}</span>
+      <strong>{value?.trim() ? value : 'Sin dato'}</strong>
+    </div>
+  );
+}
+
 export function InvoicingDocumentPreviewPanel({
   actionLoading,
   formatBuyerIdentificationType,
@@ -45,188 +183,387 @@ export function InvoicingDocumentPreviewPanel({
   selectedInvoiceDocument,
   selectedInvoiceRide,
 }: InvoicingDocumentPreviewPanelProps) {
+  if (!selectedInvoiceDocument) {
+    return (
+      <div className={styles.documentPreview}>
+        <div className={styles.emptyState}>
+          <span className={styles.label}>Invoicing · Revisión</span>
+          <h3>Selecciona una factura para revisar</h3>
+          <p>
+            Elige una factura del listado para ver emisor, comprador,
+            numeración, líneas, totales y artefactos disponibles.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const readinessChecks = deriveDocumentReadiness(selectedInvoiceDocument);
+  const isReady = readinessChecks.every((check) => check.ok);
+  const electronicTone = getElectronicTone(
+    selectedInvoiceDocument.invoice.electronicStatus,
+  );
+  const isAuthorizedRide = Boolean(
+    selectedInvoiceRide?.ride.canBePrintedAsAuthorized &&
+      selectedInvoiceDocument.invoice.electronicStatus === 'authorized',
+  );
+  const currency = selectedInvoiceDocument.invoice.currency;
+
   return (
-    <>
-      {selectedInvoiceDocument ? (
-        <div className={styles.documentPreview}>
-          <div className={styles.sectionHeading}>
-            <div>
-              <span className={styles.label}>Document preview</span>
-              <h3>
+    <div className={styles.invoicingDocumentReview}>
+      <section className={styles.invoicingDocumentReviewHero}>
+        <div className={styles.invoicingDocumentReviewHeroMain}>
+          <div>
+            <span className={styles.label}>Invoicing · Revisión</span>
+            <h3>
+              {formatElectronicDocumentLabel(
+                selectedInvoiceDocument.invoice.documentCode,
+              )}{' '}
+              {selectedInvoiceDocument.invoice.number}
+            </h3>
+            <p>
+              Revisa el documento antes de abrir RIDE o XML. Esta superficie no
+              firma, no envía al SRI y no marca autorización legal.
+            </p>
+          </div>
+          <span
+            className={
+              isReady
+                ? `${styles.statusPill} ${styles.statusPillSuccess}`
+                : `${styles.statusPill} ${styles.statusPillWarning}`
+            }
+          >
+            {isReady ? 'Listo para revisar' : 'Datos por revisar'}
+          </span>
+        </div>
+
+        <div className={styles.invoicingDocumentReviewHeroMeta}>
+          <span className={styles.statusPill}>
+            {getInvoiceStatusLabel(selectedInvoiceDocument.invoice.status)}
+          </span>
+          <span
+            className={`${styles.statusPill} ${
+              electronicTone === 'success'
+                ? styles.statusPillSuccess
+                : electronicTone === 'danger'
+                  ? styles.statusPillDanger
+                  : electronicTone === 'info'
+                    ? styles.statusPillInfo
+                    : ''
+            }`}
+          >
+            {formatElectronicStatus(
+              selectedInvoiceDocument.invoice.electronicStatus,
+            )}
+          </span>
+          <span className={styles.statusPill}>
+            {getEnvironmentLabel(selectedInvoiceDocument.issuer.environment)}
+          </span>
+        </div>
+      </section>
+
+      <section className={styles.invoicingDocumentReadinessGrid}>
+        {readinessChecks.map((check) => (
+          <ReadinessCheckPill check={check} key={check.key} />
+        ))}
+      </section>
+
+      <div className={styles.invoicingDocumentReviewLayout}>
+        <div className={styles.invoicingDocumentReviewMain}>
+          <section className={styles.invoicingDocumentReviewIdentityGrid}>
+            <article className={styles.invoicingDocumentReviewCard}>
+              <div className={styles.invoiceCardHeader}>
+                <div>
+                  <span className={styles.label}>Emisor</span>
+                  <h3>{selectedInvoiceDocument.issuer.legalName}</h3>
+                </div>
+                <span className={styles.statusPill}>Fiscal</span>
+              </div>
+              <div className={styles.invoicingDocumentFactList}>
+                <DocumentFact
+                  label="RUC"
+                  value={selectedInvoiceDocument.issuer.taxId}
+                />
+                <DocumentFact
+                  label="Nombre comercial"
+                  value={selectedInvoiceDocument.issuer.commercialName}
+                />
+                <DocumentFact
+                  label="Ambiente"
+                  value={getEnvironmentLabel(
+                    selectedInvoiceDocument.issuer.environment,
+                  )}
+                />
+                <DocumentFact
+                  label="Emisión"
+                  value={selectedInvoiceDocument.issuer.emissionType}
+                />
+                <DocumentFact
+                  label="Dirección matriz"
+                  value={selectedInvoiceDocument.issuer.matrixAddress}
+                />
+              </div>
+            </article>
+
+            <article className={styles.invoicingDocumentReviewCard}>
+              <div className={styles.invoiceCardHeader}>
+                <div>
+                  <span className={styles.label}>Comprador</span>
+                  <h3>{selectedInvoiceDocument.customer.name}</h3>
+                </div>
+                <span className={styles.statusPill}>Cliente</span>
+              </div>
+              <div className={styles.invoicingDocumentFactList}>
+                <DocumentFact
+                  label="Tipo"
+                  value={
+                    selectedInvoiceDocument.customer.identificationType
+                      ? formatBuyerIdentificationType(
+                          selectedInvoiceDocument.customer.identificationType,
+                        )
+                      : null
+                  }
+                />
+                <DocumentFact
+                  label="Identificación"
+                  value={
+                    selectedInvoiceDocument.customer.identification ??
+                    selectedInvoiceDocument.customer.taxId
+                  }
+                />
+                <DocumentFact
+                  label="Email"
+                  value={selectedInvoiceDocument.customer.email}
+                />
+                <DocumentFact
+                  label="Dirección"
+                  value={selectedInvoiceDocument.customer.billingAddress}
+                />
+              </div>
+            </article>
+          </section>
+
+          <section className={styles.invoicingDocumentReviewCard}>
+            <div className={styles.invoiceCardHeader}>
+              <div>
+                <span className={styles.label}>Numeración y contexto</span>
+                <h3>{selectedInvoiceDocument.invoice.number}</h3>
+              </div>
+              <span className={styles.statusPill}>
                 {formatElectronicDocumentLabel(
                   selectedInvoiceDocument.invoice.documentCode,
-                )}{' '}
-                {selectedInvoiceDocument.invoice.number}
-              </h3>
+                )}
+              </span>
             </div>
-            <button
-              className={styles.secondaryButton}
-              disabled={actionLoading === 'open-invoice-document'}
-              onClick={onOpenPrintableInvoice}
-              type="button"
-            >
-              {actionLoading === 'open-invoice-document'
-                ? 'Abriendo...'
-                : 'Abrir version imprimible'}
-            </button>
-            <button
-              className={styles.ghostButton}
-              disabled={actionLoading === 'open-invoice-ride'}
-              onClick={onOpenElectronicRide}
-              type="button"
-            >
-              {actionLoading === 'open-invoice-ride'
-                ? 'Abriendo RIDE...'
-                : 'Abrir RIDE electronico'}
-            </button>
-          </div>
+            <div className={styles.invoicingDocumentNumberingGrid}>
+              <DocumentFact
+                label="CodDoc"
+                value={selectedInvoiceDocument.invoice.documentCode}
+              />
+              <DocumentFact
+                label="Serie"
+                value={`${selectedInvoiceDocument.invoice.establishmentCode ?? '---'}-${selectedInvoiceDocument.invoice.emissionPointCode ?? '---'}`}
+              />
+              <DocumentFact
+                label="Secuencial"
+                value={formatSequence(
+                  selectedInvoiceDocument.invoice.sequenceNumber,
+                )}
+              />
+              <DocumentFact
+                label="Emitida"
+                value={selectedInvoiceDocument.invoice.issuedAt}
+              />
+              <DocumentFact
+                label="Vence"
+                value={selectedInvoiceDocument.invoice.dueAt}
+              />
+            </div>
+          </section>
 
-          <div className={styles.invoiceDetailGrid}>
-            <div className={styles.detailCard}>
-              <span className={styles.muted}>Emisor</span>
-              <strong>{selectedInvoiceDocument.issuer.legalName}</strong>
-              <small>
-                {selectedInvoiceDocument.issuer.taxId
-                  ? `RUC ${selectedInvoiceDocument.issuer.taxId}`
-                  : selectedInvoiceDocument.issuer.tenantSlug}
-              </small>
+          <section className={styles.invoicingDocumentReviewCard}>
+            <div className={styles.invoiceCardHeader}>
+              <div>
+                <span className={styles.label}>Líneas del documento</span>
+                <h3>
+                  {selectedInvoiceDocument.lines.length}{' '}
+                  {selectedInvoiceDocument.lines.length === 1
+                    ? 'línea'
+                    : 'líneas'}
+                </h3>
+              </div>
+              <span className={styles.statusPill}>
+                Total{' '}
+                {formatMoney(
+                  selectedInvoiceDocument.totals.totalInCents,
+                  currency,
+                )}
+              </span>
             </div>
-            <div className={styles.detailCard}>
-              <span className={styles.muted}>Cliente</span>
-              <strong>{selectedInvoiceDocument.customer.name}</strong>
-              <small>
-                {selectedInvoiceDocument.customer.identificationType
-                  ? `${formatBuyerIdentificationType(
-                      selectedInvoiceDocument.customer.identificationType,
-                    )}: ${
-                      selectedInvoiceDocument.customer.identification ??
-                      'Sin identificacion'
-                    }`
-                  : selectedInvoiceDocument.customer.taxId ??
-                    selectedInvoiceDocument.customer.email ??
-                    'Sin identificacion fiscal'}
-              </small>
-              <small>
-                {selectedInvoiceDocument.customer.billingAddress ??
-                  'Sin direccion del comprador'}
-              </small>
+            <div className={styles.invoicingDocumentLineList}>
+              {selectedInvoiceDocument.lines.length > 0 ? (
+                selectedInvoiceDocument.lines.map((line) => (
+                  <div
+                    className={styles.invoicingDocumentLineRow}
+                    key={line.id}
+                  >
+                    <span className={styles.invoicingDocumentLinePosition}>
+                      {line.position}
+                    </span>
+                    <div>
+                      <strong>{line.description}</strong>
+                      <small>
+                        {line.quantity} x{' '}
+                        {formatMoney(line.unitPriceInCents, currency)} ·{' '}
+                        {line.taxRateName && line.taxRatePercentage !== null
+                          ? `${line.taxRateName} ${formatPercentage(
+                              line.taxRatePercentage,
+                            )}%`
+                          : 'Sin impuesto'}{' '}
+                        · IVA {formatMoney(line.lineTaxInCents, currency)}
+                      </small>
+                    </div>
+                    <strong className={styles.invoicingDocumentLineTotal}>
+                      {formatMoney(line.lineTotalInCents, currency)}
+                    </strong>
+                  </div>
+                ))
+              ) : (
+                <div className={styles.calloutWarning}>
+                  Agrega líneas antes de previsualizar el documento.
+                </div>
+              )}
             </div>
-          </div>
 
-          <div className={styles.invoiceDetailGrid}>
-            <div className={styles.detailCard}>
-              <span className={styles.muted}>Ambiente</span>
+            {selectedInvoiceDocument.invoice.notes ? (
+              <div className={styles.invoicingDocumentNotes}>
+                <span className={styles.label}>Notas</span>
+                <p>{selectedInvoiceDocument.invoice.notes}</p>
+              </div>
+            ) : null}
+          </section>
+        </div>
+
+        <aside className={styles.invoicingDocumentReviewRail}>
+          <section className={styles.invoicingDocumentTotalsCard}>
+            <div>
+              <span>Subtotal</span>
               <strong>
-                {selectedInvoiceDocument.issuer.environment ?? 'No configurado'}
-              </strong>
-              <small>
-                Emision:{' '}
-                {selectedInvoiceDocument.issuer.emissionType ?? 'No configurada'}
-              </small>
-            </div>
-            <div className={styles.detailCard}>
-              <span className={styles.muted}>Estado electronico</span>
-              <strong>
-                {formatElectronicStatus(
-                  selectedInvoiceDocument.invoice.electronicStatus,
+                {formatMoney(
+                  selectedInvoiceDocument.totals.subtotalInCents,
+                  currency,
                 )}
               </strong>
-              <small>
-                {selectedInvoiceDocument.invoice.authorizationNumber ??
-                  selectedInvoiceDocument.invoice.accessKey ??
-                  'Sin autorizacion registrada'}
-              </small>
             </div>
-            <div className={styles.detailCard}>
-              <span className={styles.muted}>Numeracion</span>
-              <strong>
-                {selectedInvoiceDocument.invoice.documentCode ?? 'Sin codDoc'} ·{' '}
-                {selectedInvoiceDocument.invoice.establishmentCode ?? '---'}-
-                {selectedInvoiceDocument.invoice.emissionPointCode ?? '---'}
-              </strong>
-              <small>
-                Secuencial:{' '}
-                {selectedInvoiceDocument.invoice.sequenceNumber !== null
-                  ? String(
-                      selectedInvoiceDocument.invoice.sequenceNumber,
-                    ).padStart(9, '0')
-                  : 'Manual'}
-              </small>
-            </div>
-          </div>
-
-          <div className={styles.stack}>
-            {selectedInvoiceDocument.lines.map((line) => (
-              <div className={styles.documentLineCard} key={line.id}>
-                <div className={styles.invoiceCardHeader}>
-                  <strong>
-                    #{line.position} · {line.description}
-                  </strong>
-                  <span className={styles.statusPill}>
-                    {formatMoney(
-                      line.lineTotalInCents,
-                      selectedInvoiceDocument.invoice.currency,
-                    )}
-                  </span>
-                </div>
-                <small>
-                  {line.quantity} x{' '}
-                  {formatMoney(
-                    line.unitPriceInCents,
-                    selectedInvoiceDocument.invoice.currency,
-                  )}{' '}
-                  ={' '}
-                  {formatMoney(
-                    line.lineSubtotalInCents,
-                    selectedInvoiceDocument.invoice.currency,
-                  )}
-                </small>
-                <small>
-                  Impuesto:{' '}
-                  {line.taxRateName && line.taxRatePercentage !== null
-                    ? `${line.taxRateName} (${formatPercentage(
-                        line.taxRatePercentage,
-                      )}%)`
-                    : 'Sin impuesto'}
-                </small>
-                <small>
-                  Tax line:{' '}
-                  {formatMoney(
-                    line.lineTaxInCents,
-                    selectedInvoiceDocument.invoice.currency,
-                  )}
-                </small>
-              </div>
-            ))}
-          </div>
-
-          {selectedInvoiceDocument.invoice.notes ? (
-            <div className={styles.detailCard}>
-              <span className={styles.muted}>Notas</span>
-              <strong>{selectedInvoiceDocument.invoice.notes}</strong>
-            </div>
-          ) : null}
-        </div>
-      ) : null}
-
-      {selectedInvoiceRide ? (
-        <div className={styles.documentPreview}>
-          <div className={styles.sectionHeading}>
             <div>
-              <span className={styles.label}>Electronic RIDE</span>
-              <h3>{selectedInvoiceRide.ride.documentLabel}</h3>
+              <span>IVA / impuesto</span>
+              <strong>
+                {formatMoney(
+                  selectedInvoiceDocument.totals.taxInCents,
+                  currency,
+                )}
+              </strong>
             </div>
-            <div className={styles.actionRow}>
+            <div className={styles.invoicingDocumentGrandTotal}>
+              <span>Total</span>
+              <strong>
+                {formatMoney(
+                  selectedInvoiceDocument.totals.totalInCents,
+                  currency,
+                )}
+              </strong>
+            </div>
+          </section>
+
+          <section className={styles.invoicingDocumentArtifactCard}>
+            <div className={styles.invoiceCardHeader}>
+              <div>
+                <span className={styles.label}>Artefactos</span>
+                <h3>Previsualización</h3>
+              </div>
+              <span className={styles.statusPill}>
+                {isAuthorizedRide
+                  ? 'RIDE autorizado'
+                  : selectedInvoiceRide
+                    ? 'RIDE referencial'
+                    : 'Sin RIDE'}
+              </span>
+            </div>
+
+            <div className={styles.invoicingDocumentArtifactRow}>
+              <div>
+                <strong>Versión imprimible</strong>
+                <small>Vista HTML del documento</small>
+              </div>
               <button
-                className={styles.ghostButton}
-                disabled={actionLoading === 'download-invoice-ride'}
-                onClick={onDownloadElectronicRide}
+                className={styles.secondaryButton}
+                disabled={actionLoading === 'open-invoice-document'}
+                onClick={onOpenPrintableInvoice}
                 type="button"
               >
-                {actionLoading === 'download-invoice-ride'
-                  ? 'Descargando RIDE...'
-                  : 'Descargar RIDE'}
+                {actionLoading === 'open-invoice-document'
+                  ? 'Abriendo...'
+                  : 'Abrir'}
               </button>
+            </div>
+
+            <div
+              className={`${styles.invoicingDocumentArtifactRow} ${
+                selectedInvoiceRide
+                  ? ''
+                  : styles.invoicingDocumentArtifactRowUnavailable
+              }`}
+            >
+              <div>
+                <strong>RIDE electrónico</strong>
+                <small>
+                  {selectedInvoiceArtifacts?.rideHtmlFileName ??
+                    'Aún no generado'}
+                </small>
+              </div>
+              <div className={styles.invoicingDocumentActionGroup}>
+                <button
+                  className={styles.ghostButton}
+                  disabled={
+                    !selectedInvoiceRide ||
+                    actionLoading === 'open-invoice-ride'
+                  }
+                  onClick={onOpenElectronicRide}
+                  type="button"
+                >
+                  {actionLoading === 'open-invoice-ride'
+                    ? 'Abriendo...'
+                    : 'Abrir'}
+                </button>
+                <button
+                  className={styles.ghostButton}
+                  disabled={
+                    actionLoading === 'download-invoice-ride' ||
+                    !selectedInvoiceArtifacts?.canDownloadRide
+                  }
+                  onClick={onDownloadElectronicRide}
+                  type="button"
+                >
+                  {actionLoading === 'download-invoice-ride'
+                    ? 'Descargando...'
+                    : 'RIDE'}
+                </button>
+              </div>
+            </div>
+
+            <div
+              className={`${styles.invoicingDocumentArtifactRow} ${
+                selectedInvoiceArtifacts?.canDownloadXml
+                  ? ''
+                  : styles.invoicingDocumentArtifactRowUnavailable
+              }`}
+            >
+              <div>
+                <strong>XML preliminar</strong>
+                <small>
+                  {selectedInvoiceArtifacts?.xmlFileName ?? 'Aún no generado'}
+                </small>
+              </div>
               <button
                 className={styles.ghostButton}
                 disabled={
@@ -237,64 +574,74 @@ export function InvoicingDocumentPreviewPanel({
                 type="button"
               >
                 {actionLoading === 'download-invoice-xml'
-                  ? 'Descargando XML...'
-                  : 'Descargar XML'}
+                  ? 'Descargando...'
+                  : 'XML'}
               </button>
             </div>
-          </div>
+          </section>
 
-          <div className={styles.invoiceDetailGrid}>
-            <div className={styles.detailCard}>
-              <span className={styles.muted}>Ambiente</span>
-              <strong>{selectedInvoiceRide.ride.environmentLabel}</strong>
-              <small>Emision {selectedInvoiceRide.ride.emissionTypeLabel}</small>
-            </div>
-            <div className={styles.detailCard}>
-              <span className={styles.muted}>Estado RIDE</span>
-              <strong>{selectedInvoiceRide.ride.electronicStatusLabel}</strong>
-              <small>
-                {selectedInvoiceRide.ride.canBePrintedAsAuthorized
-                  ? 'Listo como comprobante autorizado'
-                  : 'Aun referencial o pendiente'}
-              </small>
-            </div>
-          </div>
-
-          <div className={styles.detailCard}>
-            <span className={styles.muted}>Clave de acceso</span>
-            <pre className={styles.codeBlock}>
-              {selectedInvoiceRide.ride.accessKeyChunks.length > 0
-                ? selectedInvoiceRide.ride.accessKeyChunks.join(' · ')
-                : 'No generada'}
-            </pre>
-          </div>
-
-          {selectedInvoiceArtifacts ? (
-            <div className={styles.invoiceDetailGrid}>
-              <div className={styles.detailCard}>
-                <span className={styles.muted}>Archivo RIDE</span>
-                <strong>{selectedInvoiceArtifacts.rideHtmlFileName}</strong>
-              </div>
-              <div className={styles.detailCard}>
-                <span className={styles.muted}>Archivo XML</span>
-                <strong>{selectedInvoiceArtifacts.xmlFileName}</strong>
-              </div>
-            </div>
-          ) : null}
-
-          {selectedInvoiceRide.ride.additionalInfoFields.length > 0 ? (
-            <div className={styles.stack}>
-              {selectedInvoiceRide.ride.additionalInfoFields.map((field) => (
-                <div className={styles.detailCard} key={field.label}>
-                  <span className={styles.muted}>{field.label}</span>
-                  <strong>{field.value}</strong>
+          {selectedInvoiceRide ? (
+            <section
+              className={`${styles.invoicingDocumentAuthorizationCard} ${
+                isAuthorizedRide
+                  ? styles.invoicingDocumentAuthorizationCardSuccess
+                  : ''
+              }`}
+            >
+              <span className={styles.label}>Estado RIDE</span>
+              <h3>{selectedInvoiceRide.ride.electronicStatusLabel}</h3>
+              <p>
+                {isAuthorizedRide
+                  ? 'Imprimible como comprobante autorizado.'
+                  : 'Aún referencial o pendiente. No autorizado por el SRI.'}
+              </p>
+              <DocumentFact
+                label="Ambiente"
+                value={selectedInvoiceRide.ride.environmentLabel}
+              />
+              <DocumentFact
+                label="Emisión"
+                value={selectedInvoiceRide.ride.emissionTypeLabel}
+              />
+              <DocumentFact
+                label="Autorización"
+                value={selectedInvoiceRide.ride.authorizationNumber}
+              />
+              {selectedInvoiceRide.ride.accessKeyChunks.length > 0 ? (
+                <div className={styles.invoicingDocumentAccessKey}>
+                  <span>Clave de acceso</span>
+                  <code>
+                    {selectedInvoiceRide.ride.accessKeyChunks.join(' · ')}
+                  </code>
                 </div>
-              ))}
-            </div>
+              ) : null}
+              {selectedInvoiceRide.ride.additionalInfoFields.length > 0 ? (
+                <div className={styles.invoicingDocumentFactList}>
+                  {selectedInvoiceRide.ride.additionalInfoFields.map(
+                    (field) => (
+                      <DocumentFact
+                        key={field.label}
+                        label={field.label}
+                        value={field.value}
+                      />
+                    ),
+                  )}
+                </div>
+              ) : null}
+            </section>
           ) : null}
-        </div>
-      ) : null}
-    </>
+
+          <section className={styles.invoicingDocumentReviewCard}>
+            <strong>Revisar no es enviar al SRI</strong>
+            <p className={styles.muted}>
+              La firma, el envío y la autorización ocurren en su propio flujo.
+              Aquí solo validamos que el documento y sus artefactos sean
+              entendibles antes de avanzar.
+            </p>
+          </section>
+        </aside>
+      </div>
+    </div>
   );
 }
 
@@ -325,7 +672,9 @@ export function InvoicingNotificationsPanel({
         <label className={styles.field}>
           <span>Destinatario</span>
           <input
-            onChange={(event) => onInvoiceEmailRecipientChange(event.target.value)}
+            onChange={(event) =>
+              onInvoiceEmailRecipientChange(event.target.value)
+            }
             placeholder="billing@customer.dev"
             type="email"
             value={invoiceEmailRecipient}
@@ -335,7 +684,9 @@ export function InvoicingNotificationsPanel({
         <label className={styles.field}>
           <span>Mensaje opcional</span>
           <textarea
-            onChange={(event) => onInvoiceEmailMessageChange(event.target.value)}
+            onChange={(event) =>
+              onInvoiceEmailMessageChange(event.target.value)
+            }
             placeholder="Te compartimos la factura del periodo."
             value={invoiceEmailMessage}
           />

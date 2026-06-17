@@ -197,18 +197,15 @@
   margin-bottom: 18px;
 }
 
-.page:has(#invoicing-domain:target) > section:not(#invoicing-domain),
-.page:has(#invoicing-domain :target) > section:not(#invoicing-domain) {
+.pageProductWorkspaceActive > section:not(#invoicing-domain) {
   display: none;
 }
 
-.page:has(#invoicing-domain:target) #invoicing-domain,
-.page:has(#invoicing-domain :target) #invoicing-domain {
+.pageProductWorkspaceActive #invoicing-domain {
   margin-top: 0;
 }
 
-.page:has(#invoicing-domain:target) .topbar,
-.page:has(#invoicing-domain :target) .topbar {
+.pageProductWorkspaceActive .topbar {
   margin-bottom: 18px;
 }
 

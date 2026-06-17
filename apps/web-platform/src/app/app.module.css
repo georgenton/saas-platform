@@ -242,6 +242,74 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.productWorkspaceHero {
+  align-items: start;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  margin-bottom: 14px;
+  padding: 20px;
+}
+
+.productWorkspaceHero h2 {
+  color: var(--text-strong);
+  font-size: 1.9rem;
+  letter-spacing: 0;
+  line-height: 1.15;
+  margin: 4px 0 8px;
+}
+
+.productWorkspaceHero p {
+  color: var(--text-muted);
+  line-height: 1.55;
+  margin: 0;
+  max-width: 74ch;
+}
+
+.productWorkspaceActions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.productWorkspaceActions a {
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+  text-align: center;
+  text-decoration: none;
+}
+
+.productWorkspaceTabs {
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+  padding: 8px;
+}
+
+.productWorkspaceTabs a {
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 0.86rem;
+  font-weight: 800;
+  padding: 10px 12px;
+  text-decoration: none;
+}
+
+.productWorkspaceTabs a:hover {
+  background: var(--surface);
+  color: var(--text-strong);
+}
+
 .commandSummaryCard {
   background: var(--surface-raised);
   border: 1px solid var(--border);
@@ -3386,6 +3454,14 @@
     grid-template-columns: 1fr;
   }
 
+  .productWorkspaceHero {
+    grid-template-columns: 1fr;
+  }
+
+  .productWorkspaceActions {
+    justify-content: flex-start;
+  }
+
   .commandCenterHeader,
   .commandDomainHeader,
   .productStatusHeader,
@@ -3443,6 +3519,28 @@
 
   .productStatusCard {
     min-height: 0;
+  }
+
+  .productWorkspaceHero {
+    padding: 16px;
+  }
+
+  .productWorkspaceHero h2 {
+    font-size: 1.45rem;
+  }
+
+  .productWorkspaceActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .productWorkspaceTabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+  }
+
+  .productWorkspaceTabs a {
+    flex: 0 0 auto;
   }
 
   .tokenForm,

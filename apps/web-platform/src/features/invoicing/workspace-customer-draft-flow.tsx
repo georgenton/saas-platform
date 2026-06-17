@@ -1,8 +1,15 @@
-import type { FormEventHandler } from 'react';
+import {
+  type FormEventHandler,
+  type ReactNode,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import styles from '../../app/app.module.css';
 import type { CustomerResponse } from '../../app/types';
 
 type BuyerIdentificationType = '04' | '05' | '06' | '07' | '08';
+type CustomerDraftFlowStep = 'buyer' | 'identity' | 'draft';
 
 type InvoicingCustomerDraftFlowProps = {
   actionLoading: string | null;
@@ -40,6 +47,190 @@ type InvoicingCustomerDraftFlowProps = {
   };
 };
 
+const BUYER_IDENTIFICATION_TYPES: Record<
+  BuyerIdentificationType,
+  {
+    label: string;
+    shortLabel: string;
+    hint: string;
+    placeholder: string;
+  }
+> = {
+  '04': {
+    label: 'RUC',
+    shortLabel: 'RUC',
+    hint: 'Empresa o negocio con RUC',
+    placeholder: '1790012345001',
+  },
+  '05': {
+    label: 'Cedula',
+    shortLabel: 'Cedula',
+    hint: 'Persona natural ecuatoriana',
+    placeholder: '0102030405',
+  },
+  '06': {
+    label: 'Pasaporte',
+    shortLabel: 'Pasaporte',
+    hint: 'Extranjero con pasaporte',
+    placeholder: 'AB1234567',
+  },
+  '07': {
+    label: 'Consumidor final',
+    shortLabel: 'Consumidor final',
+    hint: 'Venta sin identificar al comprador',
+    placeholder: '9999999999999',
+  },
+  '08': {
+    label: 'Exterior',
+    shortLabel: 'Exterior',
+    hint: 'Cliente fuera de Ecuador',
+    placeholder: 'EXT-000123',
+  },
+};
+
+const FLOW_STEPS: Array<{
+  key: CustomerDraftFlowStep;
+  label: string;
+  eyebrow: string;
+}> = [
+  { key: 'buyer', label: 'Comprador', eyebrow: 'Paso 1' },
+  { key: 'identity', label: 'Identidad fiscal', eyebrow: 'Paso 2' },
+  { key: 'draft', label: 'Borrador', eyebrow: 'Paso 3' },
+];
+
+function getBuyerIdentificationType(value: string | null | undefined) {
+  if (value && value in BUYER_IDENTIFICATION_TYPES) {
+    return BUYER_IDENTIFICATION_TYPES[value as BuyerIdentificationType];
+  }
+
+  return null;
+}
+
+function getBuyerIdentificationLabel(customer: CustomerResponse) {
+  const type = getBuyerIdentificationType(customer.identificationType);
+  const identification =
+    customer.identification ?? customer.taxId ?? 'Sin identificacion';
+
+  return `${type?.shortLabel ?? 'ID'} · ${identification}`;
+}
+
+function getCustomerInitials(name: string) {
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase();
+}
+
+function deriveFlowState(
+  selectedCustomerId: string,
+  currentStep: CustomerDraftFlowStep,
+) {
+  const done = new Set<CustomerDraftFlowStep>();
+  const reachable = new Set<CustomerDraftFlowStep>(['buyer']);
+
+  if (selectedCustomerId) {
+    done.add('buyer');
+    reachable.add('identity');
+    reachable.add('draft');
+  }
+
+  if (currentStep === 'draft' && selectedCustomerId) {
+    done.add('identity');
+  }
+
+  return { done, reachable };
+}
+
+function StepCard({
+  children,
+  eyebrow,
+  title,
+  trailing,
+}: {
+  children: ReactNode;
+  eyebrow: string;
+  title: string;
+  trailing?: ReactNode;
+}) {
+  return (
+    <section className={styles.invoicingCustomerStepCard}>
+      <header className={styles.invoicingCustomerStepHeader}>
+        <div>
+          <span className={styles.label}>{eyebrow}</span>
+          <h3>{title}</h3>
+        </div>
+        {trailing}
+      </header>
+      <div className={styles.invoicingCustomerStepBody}>{children}</div>
+    </section>
+  );
+}
+
+function FieldFact({
+  label,
+  value,
+  mono,
+}: {
+  label: string;
+  value: string | null | undefined;
+  mono?: boolean;
+}) {
+  return (
+    <div className={styles.invoicingCustomerFactRow}>
+      <span>{label}</span>
+      <strong className={mono ? styles.monoValue : undefined}>
+        {value?.trim() ? value : 'Sin dato'}
+      </strong>
+    </div>
+  );
+}
+
+function InvoicingCustomerStepper({
+  currentStep,
+  done,
+  onStepChange,
+  reachable,
+}: {
+  currentStep: CustomerDraftFlowStep;
+  done: Set<CustomerDraftFlowStep>;
+  onStepChange: (step: CustomerDraftFlowStep) => void;
+  reachable: Set<CustomerDraftFlowStep>;
+}) {
+  return (
+    <div className={styles.invoicingCustomerStepper} aria-label="Flujo de factura">
+      {FLOW_STEPS.map((step, index) => {
+        const isCurrent = currentStep === step.key;
+        const isDone = done.has(step.key);
+        const canReach = reachable.has(step.key);
+
+        return (
+          <button
+            aria-current={isCurrent ? 'step' : undefined}
+            className={[
+              styles.invoicingCustomerStepButton,
+              isCurrent ? styles.invoicingCustomerStepButtonActive : '',
+              isDone ? styles.invoicingCustomerStepButtonDone : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+            disabled={!canReach}
+            key={step.key}
+            onClick={() => onStepChange(step.key)}
+            type="button"
+          >
+            <span>{isDone ? 'OK' : index + 1}</span>
+            <small>{step.eyebrow}</small>
+            <strong>{step.label}</strong>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export function InvoicingCustomerDraftFlow({
   actionLoading,
   customerForm,
@@ -49,253 +240,493 @@ export function InvoicingCustomerDraftFlow({
   invoicingLoading,
   nextInvoiceNumberSuggestion,
 }: InvoicingCustomerDraftFlowProps) {
+  const [currentStep, setCurrentStep] =
+    useState<CustomerDraftFlowStep>(() =>
+      invoiceForm.customerId ? 'identity' : 'buyer',
+    );
+  const hasCustomers = customers.length > 0;
+  const selectedCustomer = useMemo(
+    () =>
+      customers.find((customer) => customer.id === invoiceForm.customerId) ??
+      null,
+    [customers, invoiceForm.customerId],
+  );
+  const idType = BUYER_IDENTIFICATION_TYPES[customerForm.identificationType];
+  const flowState = deriveFlowState(invoiceForm.customerId, currentStep);
+
+  useEffect(() => {
+    if (!invoiceForm.customerId && currentStep !== 'buyer') {
+      setCurrentStep('buyer');
+    }
+  }, [currentStep, invoiceForm.customerId]);
+
+  const selectCustomer = (customerId: string) => {
+    invoiceForm.onCustomerIdChange(customerId);
+    setCurrentStep('identity');
+  };
+
   return (
-    <>
-      <div className={styles.detailCard}>
-        <div className={styles.sectionHeading}>
-          <div>
-            <span className={styles.label}>Customers</span>
-            <h3>{customers.length} registrados</h3>
-          </div>
-          <span className={styles.statusPill}>
-            {customers.length === 0 ? 'Primer comprador' : 'Directorio fiscal'}
-          </span>
-        </div>
-
-        <div className={styles.invoicingSRIActionCue}>
-          <strong>Comprador primero, factura despues</strong>
+    <section className={styles.invoicingCustomerFlow}>
+      <div className={styles.invoicingCustomerFlowHero}>
+        <div>
+          <span className={styles.label}>Invoicing · Primera factura</span>
+          <h3>Comprador y borrador</h3>
           <p>
-            Este flujo prepara los datos fiscales del comprador antes de crear
-            el borrador. Asi evitamos facturas incompletas y dejamos listo el
-            camino hacia items, firma y SRI.
+            Crea o elige al comprador, confirma su identidad fiscal y genera el
+            borrador. Sin envio al SRI todavia.
           </p>
         </div>
-
-        <form className={styles.stack} onSubmit={customerForm.onSubmit}>
-          <label className={styles.field}>
-            <span>Nombre del customer</span>
-            <input
-              onChange={(event) => customerForm.onNameChange(event.target.value)}
-              placeholder="Acme Corp"
-              value={customerForm.name}
-            />
-          </label>
-          <div className={styles.invoiceInlineGrid}>
-            <label className={styles.field}>
-              <span>Email</span>
-              <input
-                onChange={(event) =>
-                  customerForm.onEmailChange(event.target.value)
-                }
-                placeholder="billing@acme.com"
-                type="email"
-                value={customerForm.email}
-              />
-            </label>
-            <label className={styles.field}>
-              <span>Tipo identificacion</span>
-              <select
-                className={styles.selectField}
-                onChange={(event) =>
-                  customerForm.onIdentificationTypeChange(
-                    event.target.value as BuyerIdentificationType,
-                  )
-                }
-                value={customerForm.identificationType}
-              >
-                <option value="04">04 · RUC</option>
-                <option value="05">05 · Cedula</option>
-                <option value="06">06 · Pasaporte</option>
-                <option value="07">07 · Consumidor final</option>
-                <option value="08">08 · Exterior</option>
-              </select>
-            </label>
-          </div>
-          <div className={styles.invoiceInlineGrid}>
-            <label className={styles.field}>
-              <span>Identificacion</span>
-              <input
-                onChange={(event) => customerForm.onTaxIdChange(event.target.value)}
-                placeholder={
-                  customerForm.identificationType === '07'
-                    ? '9999999999999'
-                    : '0999999999'
-                }
-                value={customerForm.taxId}
-              />
-            </label>
-            <label className={styles.field}>
-              <span>Direccion</span>
-              <input
-                onChange={(event) =>
-                  customerForm.onBillingAddressChange(event.target.value)
-                }
-                placeholder="Direccion del comprador"
-                value={customerForm.billingAddress}
-              />
-            </label>
-          </div>
-          <button
-            className={styles.primaryButton}
-            disabled={
-              !customerForm.name.trim() || actionLoading === 'create-customer'
-            }
-            type="submit"
-          >
-            {actionLoading === 'create-customer'
-              ? 'Creando customer...'
-              : 'Crear customer'}
-          </button>
-          <p className={styles.muted}>
-            Cada customer queda aislado por tenant y ahora tambien puede guardar
-            la semantica Ecuador del comprador para reutilizarla en multiples
-            facturas.
-          </p>
-        </form>
-
-        {invoicingLoading ? (
-          <p className={styles.muted}>Cargando customers...</p>
-        ) : customers.length === 0 ? (
-          <div className={styles.emptyState}>
-            <p>Este tenant todavia no tiene customers registrados.</p>
-          </div>
-        ) : (
-          <div className={styles.stack}>
-            {customers.map((customer) => (
-              <div className={styles.invoiceCard} key={customer.id}>
-                <strong>{customer.name}</strong>
-                <span>{customer.email ?? 'Sin email'}</span>
-                <small>
-                  {customer.identificationType
-                    ? `${formatBuyerIdentificationType(
-                        customer.identificationType,
-                      )}: ${customer.identification ?? 'Sin identificacion'}`
-                    : customer.taxId ?? 'Sin tax id'}
-                </small>
-                <small>{customer.billingAddress ?? 'Sin direccion'}</small>
-              </div>
-            ))}
-          </div>
-        )}
+        <span className={styles.statusPill}>Lane guiada</span>
       </div>
 
-      <div className={styles.detailCard} id="invoicing-create-invoice">
-        <div className={styles.sectionHeading}>
-          <div>
-            <span className={styles.label}>Create invoice</span>
-            <h3>Nueva factura</h3>
-          </div>
-          <span className={styles.statusPill}>Draft primero</span>
-        </div>
+      <InvoicingCustomerStepper
+        currentStep={currentStep}
+        done={flowState.done}
+        onStepChange={setCurrentStep}
+        reachable={flowState.reachable}
+      />
 
-        <form className={styles.stack} onSubmit={invoiceForm.onSubmit}>
-          {customers.length === 0 ? (
-            <div className={styles.emptyState}>
-              <p>
-                Primero necesitamos al menos un customer para poder emitir la
-                primera factura.
-              </p>
-            </div>
+      <div className={styles.invoicingCustomerFlowGrid}>
+        <div className={styles.invoicingCustomerFlowMain}>
+          {currentStep === 'buyer' ? (
+            <StepCard
+              eyebrow="Paso 1 de 3"
+              title={hasCustomers ? 'Elige o crea el comprador' : 'Crea tu primer comprador'}
+              trailing={
+                <span className={styles.statusPill}>
+                  {hasCustomers
+                    ? `${customers.length} registrados`
+                    : 'Primer comprador'}
+                </span>
+              }
+            >
+              {invoicingLoading ? (
+                <p className={styles.muted}>Cargando compradores...</p>
+              ) : hasCustomers ? (
+                <div className={styles.stack}>
+                  <div className={styles.invoicingCustomerDirectoryHeader}>
+                    <span>Directorio fiscal</span>
+                    <small>
+                      Selecciona un comprador para confirmar sus datos antes del
+                      borrador.
+                    </small>
+                  </div>
+                  <div className={styles.invoicingCustomerDirectory}>
+                    {customers.map((customer) => {
+                      const selected = customer.id === invoiceForm.customerId;
+
+                      return (
+                        <button
+                          className={[
+                            styles.invoicingCustomerBuyerRow,
+                            selected ? styles.invoicingCustomerBuyerRowSelected : '',
+                          ]
+                            .filter(Boolean)
+                            .join(' ')}
+                          key={customer.id}
+                          onClick={() => selectCustomer(customer.id)}
+                          type="button"
+                        >
+                          <span className={styles.invoicingCustomerAvatar}>
+                            {getCustomerInitials(customer.name)}
+                          </span>
+                          <span>
+                            <strong>{customer.name}</strong>
+                            <small>{getBuyerIdentificationLabel(customer)}</small>
+                          </span>
+                          <em>
+                            {formatBuyerIdentificationType(
+                              customer.identificationType,
+                            )}
+                          </em>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                <div className={styles.emptyState}>
+                  <strong>Aun no tienes compradores</strong>
+                  <p>
+                    Toda factura empieza por un comprador. Registra el primero
+                    con sus datos fiscales de Ecuador y seguimos con el
+                    borrador.
+                  </p>
+                </div>
+              )}
+
+              <form
+                className={styles.invoicingCustomerForm}
+                onSubmit={customerForm.onSubmit}
+              >
+                <div className={styles.invoicingCustomerFormHeader}>
+                  <div>
+                    <span className={styles.label}>Nuevo comprador</span>
+                    <strong>Datos fiscales reutilizables</strong>
+                  </div>
+                  <small>{idType.hint}</small>
+                </div>
+                <label className={styles.field}>
+                  <span>Nombre o razon social</span>
+                  <input
+                    onChange={(event) =>
+                      customerForm.onNameChange(event.target.value)
+                    }
+                    placeholder="Comercial Andina S.A."
+                    value={customerForm.name}
+                  />
+                </label>
+                <div className={styles.invoiceInlineGrid}>
+                  <label className={styles.field}>
+                    <span>Email</span>
+                    <input
+                      onChange={(event) =>
+                        customerForm.onEmailChange(event.target.value)
+                      }
+                      placeholder="pagos@andina.ec"
+                      type="email"
+                      value={customerForm.email}
+                    />
+                  </label>
+                  <label className={styles.field}>
+                    <span>Tipo de identificacion</span>
+                    <select
+                      className={styles.selectField}
+                      onChange={(event) =>
+                        customerForm.onIdentificationTypeChange(
+                          event.target.value as BuyerIdentificationType,
+                        )
+                      }
+                      value={customerForm.identificationType}
+                    >
+                      {Object.entries(BUYER_IDENTIFICATION_TYPES).map(
+                        ([value, option]) => (
+                          <option key={value} value={value}>
+                            {value} · {option.label}
+                          </option>
+                        ),
+                      )}
+                    </select>
+                  </label>
+                </div>
+                <div className={styles.invoiceInlineGrid}>
+                  <label className={styles.field}>
+                    <span>Identificacion</span>
+                    <input
+                      className={styles.monoValue}
+                      onChange={(event) =>
+                        customerForm.onTaxIdChange(event.target.value)
+                      }
+                      placeholder={idType.placeholder}
+                      value={customerForm.taxId}
+                    />
+                    <small className={styles.fieldHint}>
+                      {customerForm.identificationType === '07'
+                        ? 'Consumidor final suele usar 9999999999999.'
+                        : idType.hint}
+                    </small>
+                  </label>
+                  <label className={styles.field}>
+                    <span>Direccion</span>
+                    <input
+                      onChange={(event) =>
+                        customerForm.onBillingAddressChange(event.target.value)
+                      }
+                      placeholder="Direccion del comprador"
+                      value={customerForm.billingAddress}
+                    />
+                  </label>
+                </div>
+                <div className={styles.inlineActionRow}>
+                  <button
+                    className={styles.primaryButton}
+                    disabled={
+                      !customerForm.name.trim() ||
+                      actionLoading === 'create-customer'
+                    }
+                    type="submit"
+                  >
+                    {actionLoading === 'create-customer'
+                      ? 'Guardando comprador...'
+                      : 'Guardar comprador'}
+                  </button>
+                  <p className={styles.muted}>
+                    Queda aislado por tenant y se reutiliza en futuras facturas.
+                  </p>
+                </div>
+              </form>
+            </StepCard>
           ) : null}
 
-          <div className={styles.invoiceInlineGrid}>
-            <label className={styles.field}>
-              <span>Customer</span>
-              <select
-                className={styles.selectField}
-                onChange={(event) =>
-                  invoiceForm.onCustomerIdChange(event.target.value)
+          {currentStep === 'identity' ? (
+            <StepCard
+              eyebrow="Paso 2 de 3"
+              title="Confirma la identidad fiscal"
+              trailing={<span className={styles.statusPillSuccess}>Revisar</span>}
+            >
+              {selectedCustomer ? (
+                <>
+                  <div className={styles.invoicingCustomerIdentityHeader}>
+                    <span className={styles.invoicingCustomerAvatarLarge}>
+                      {getCustomerInitials(selectedCustomer.name)}
+                    </span>
+                    <div>
+                      <strong>{selectedCustomer.name}</strong>
+                      <small>
+                        {selectedCustomer.identificationType
+                          ? `${selectedCustomer.identificationType} · ${
+                              getBuyerIdentificationType(
+                                selectedCustomer.identificationType,
+                              )?.label ?? 'Identificacion'
+                            }`
+                          : 'Sin tipo de identificacion'}
+                      </small>
+                    </div>
+                  </div>
+                  <div className={styles.invoicingCustomerFacts}>
+                    <FieldFact
+                      label="Tipo"
+                      value={
+                        selectedCustomer.identificationType
+                          ? `${selectedCustomer.identificationType} · ${formatBuyerIdentificationType(
+                              selectedCustomer.identificationType,
+                            )}`
+                          : null
+                      }
+                    />
+                    <FieldFact
+                      label="Identificacion"
+                      mono
+                      value={
+                        selectedCustomer.identification ??
+                        selectedCustomer.taxId
+                      }
+                    />
+                    <FieldFact label="Email" value={selectedCustomer.email} />
+                    <FieldFact
+                      label="Direccion"
+                      value={selectedCustomer.billingAddress}
+                    />
+                  </div>
+                  <div className={styles.invoicingCustomerInfoNote}>
+                    <strong>Borrador, no SRI.</strong>
+                    <span>
+                      Estos datos identifican al comprador en la factura. El
+                      envio, firma y autorizacion electronica se manejan despues.
+                    </span>
+                  </div>
+                  <div className={styles.inlineActionRow}>
+                    <button
+                      className={styles.primaryButton}
+                      onClick={() => setCurrentStep('draft')}
+                      type="button"
+                    >
+                      Confirmar y crear borrador
+                    </button>
+                    <button
+                      className={styles.secondaryButton}
+                      onClick={() => setCurrentStep('buyer')}
+                      type="button"
+                    >
+                      Elegir otro comprador
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className={styles.emptyState}>
+                  <p>Elige un comprador primero para confirmar su identidad.</p>
+                  <button
+                    className={styles.primaryButton}
+                    onClick={() => setCurrentStep('buyer')}
+                    type="button"
+                  >
+                    Volver a comprador
+                  </button>
+                </div>
+              )}
+            </StepCard>
+          ) : null}
+
+          {currentStep === 'draft' ? (
+            <StepCard
+              eyebrow="Paso 3 de 3"
+              title="Crear borrador de factura"
+              trailing={<span className={styles.statusPill}>Draft primero</span>}
+            >
+              {!hasCustomers ? (
+                <div className={styles.emptyState}>
+                  <strong>Primero necesitas un comprador</strong>
+                  <p>
+                    No se puede crear un borrador sin un comprador con datos
+                    fiscales.
+                  </p>
+                  <button
+                    className={styles.primaryButton}
+                    onClick={() => setCurrentStep('buyer')}
+                    type="button"
+                  >
+                    Ir a crear comprador
+                  </button>
+                </div>
+              ) : (
+                <form className={styles.stack} onSubmit={invoiceForm.onSubmit}>
+                  <div className={styles.invoiceInlineGrid}>
+                    <label className={styles.field}>
+                      <span>Comprador</span>
+                      <select
+                        className={styles.selectField}
+                        onChange={(event) =>
+                          invoiceForm.onCustomerIdChange(event.target.value)
+                        }
+                        value={invoiceForm.customerId}
+                      >
+                        <option value="">Selecciona un comprador</option>
+                        {customers.map((customer) => (
+                          <option key={customer.id} value={customer.id}>
+                            {customer.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className={styles.field}>
+                      <span>Numero</span>
+                      <input
+                        className={styles.monoValue}
+                        onChange={(event) =>
+                          invoiceForm.onNumberChange(event.target.value)
+                        }
+                        placeholder={nextInvoiceNumberSuggestion}
+                        value={invoiceForm.number}
+                      />
+                      <small className={styles.fieldHint}>
+                        Vacio = se autogenera ({nextInvoiceNumberSuggestion}).
+                      </small>
+                    </label>
+                  </div>
+                  <div className={styles.invoiceInlineGrid}>
+                    <label className={styles.field}>
+                      <span>Moneda</span>
+                      <input
+                        className={styles.monoValue}
+                        maxLength={3}
+                        onChange={(event) =>
+                          invoiceForm.onCurrencyChange(
+                            event.target.value.toUpperCase(),
+                          )
+                        }
+                        placeholder="USD"
+                        value={invoiceForm.currency}
+                      />
+                    </label>
+                    <label className={styles.field}>
+                      <span>Estado</span>
+                      <select
+                        className={styles.selectField}
+                        onChange={(event) =>
+                          invoiceForm.onStatusChange(event.target.value)
+                        }
+                        value={invoiceForm.status}
+                      >
+                        <option value="draft">draft · borrador</option>
+                        <option value="issued">issued · emitida</option>
+                        <option value="paid">paid · pagada</option>
+                        <option value="void">void · anulada</option>
+                      </select>
+                      <small className={styles.fieldHint}>
+                        Usa draft para ir agregando items.
+                      </small>
+                    </label>
+                  </div>
+                  <label className={styles.field}>
+                    <span>Vence el</span>
+                    <input
+                      onChange={(event) =>
+                        invoiceForm.onDueAtChange(event.target.value)
+                      }
+                      type="date"
+                      value={invoiceForm.dueAt}
+                    />
+                  </label>
+                  <label className={styles.field}>
+                    <span>Notas</span>
+                    <textarea
+                      onChange={(event) =>
+                        invoiceForm.onNotesChange(event.target.value)
+                      }
+                      placeholder="Notas opcionales para la factura"
+                      value={invoiceForm.notes}
+                    />
+                  </label>
+                  <div className={styles.inlineActionRow}>
+                    <button
+                      className={styles.primaryButton}
+                      disabled={
+                        customers.length === 0 ||
+                        !invoiceForm.customerId ||
+                        !invoiceForm.currency.trim() ||
+                        actionLoading === 'create-invoice'
+                      }
+                      type="submit"
+                    >
+                      {actionLoading === 'create-invoice'
+                        ? 'Creando factura...'
+                        : 'Crear borrador'}
+                    </button>
+                    <p className={styles.muted}>
+                      Crear el borrador no lo envia al SRI. Despues agregas
+                      items y preparas la emision.
+                    </p>
+                  </div>
+                </form>
+              )}
+            </StepCard>
+          ) : null}
+        </div>
+
+        <aside className={styles.invoicingCustomerFlowRail}>
+          <div className={styles.invoicingCustomerRailCard}>
+            <div className={styles.sectionHeading}>
+              <div>
+                <span className={styles.label}>Resumen del flujo</span>
+                <h3>Primera factura</h3>
+              </div>
+            </div>
+            <div className={styles.invoicingCustomerRailList}>
+              <FieldFact
+                label="Comprador"
+                value={
+                  selectedCustomer
+                    ? selectedCustomer.name
+                    : hasCustomers
+                      ? 'Ninguno elegido'
+                      : 'Sin compradores'
                 }
-                value={invoiceForm.customerId}
-              >
-                <option value="">Selecciona un customer</option>
-                {customers.map((customer) => (
-                  <option key={customer.id} value={customer.id}>
-                    {customer.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className={styles.field}>
-              <span>Numero</span>
-              <input
-                onChange={(event) =>
-                  invoiceForm.onNumberChange(event.target.value)
-                }
-                placeholder={nextInvoiceNumberSuggestion}
-                value={invoiceForm.number}
               />
-            </label>
-          </div>
-
-          <div className={styles.invoiceInlineGrid}>
-            <label className={styles.field}>
-              <span>Currency</span>
-              <input
-                maxLength={3}
-                onChange={(event) =>
-                  invoiceForm.onCurrencyChange(event.target.value)
+              <FieldFact
+                label="Identidad"
+                mono
+                value={
+                  selectedCustomer
+                    ? getBuyerIdentificationLabel(selectedCustomer)
+                    : null
                 }
-                placeholder="USD"
-                value={invoiceForm.currency}
               />
-            </label>
-            <label className={styles.field}>
-              <span>Status</span>
-              <select
-                className={styles.selectField}
-                onChange={(event) =>
-                  invoiceForm.onStatusChange(event.target.value)
-                }
-                value={invoiceForm.status}
-              >
-                <option value="draft">draft</option>
-                <option value="issued">issued</option>
-                <option value="paid">paid</option>
-                <option value="void">void</option>
-              </select>
-            </label>
+              <FieldFact
+                label="Borrador"
+                mono
+                value={invoiceForm.number || nextInvoiceNumberSuggestion}
+              />
+            </div>
           </div>
-
-          <label className={styles.field}>
-            <span>Due at</span>
-            <input
-              onChange={(event) => invoiceForm.onDueAtChange(event.target.value)}
-              type="date"
-              value={invoiceForm.dueAt}
-            />
-          </label>
-
-          <label className={styles.field}>
-            <span>Notes</span>
-            <textarea
-              onChange={(event) => invoiceForm.onNotesChange(event.target.value)}
-              placeholder="Notas opcionales para la factura"
-              value={invoiceForm.notes}
-            />
-          </label>
-
-          <button
-            className={styles.primaryButton}
-            disabled={
-              customers.length === 0 ||
-              !invoiceForm.customerId ||
-              !invoiceForm.currency.trim() ||
-              actionLoading === 'create-invoice'
-            }
-            type="submit"
-          >
-            {actionLoading === 'create-invoice'
-              ? 'Creando factura...'
-              : 'Crear factura'}
-          </button>
-          <p className={styles.muted}>
-            Tip: usa estado <strong>draft</strong> para ir agregando items antes
-            de pasarla a emitida. Si dejas el numero vacio y ya configuraste la
-            numeracion Ecuador, se autogenerara.
-          </p>
-        </form>
+          <div className={styles.invoicingCustomerSRIReassurance}>
+            <strong>Esto no es una emision al SRI.</strong>
+            <p>
+              Aqui solo creas el comprador y el borrador. Los items, la firma y
+              el envio electronico vienen despues, en sus propias pantallas.
+            </p>
+          </div>
+        </aside>
       </div>
-    </>
+    </section>
   );
 }

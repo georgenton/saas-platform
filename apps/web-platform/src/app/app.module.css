@@ -1626,6 +1626,231 @@
   gap: 4px;
 }
 
+.invoicingItemsFlow,
+.invoicingItemsLayout,
+.invoicingItemsList,
+.invoicingItemsTotalsList {
+  display: grid;
+  gap: 16px;
+}
+
+.invoicingItemsContextCard,
+.invoicingItemsCard,
+.invoicingItemsTotalsCard {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 18px;
+}
+
+.invoicingItemsContextMain {
+  align-items: start;
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+}
+
+.invoicingItemsContextMain h3 {
+  color: var(--text-strong);
+  font-family:
+    'IBM Plex Mono',
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+  font-size: 1.2rem;
+  margin: 4px 0 0;
+}
+
+.invoicingItemsContextMain p {
+  color: var(--text-muted);
+  margin: 4px 0 0;
+}
+
+.invoicingItemsContextMeta {
+  border-top: 1px solid var(--divider);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 12px;
+}
+
+.invoicingItemsContextMeta span {
+  background: var(--surface-sunken);
+  border-radius: 999px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  padding: 7px 10px;
+}
+
+.invoicingItemsContextMeta strong {
+  color: var(--text-strong);
+}
+
+.invoicingItemsLayout {
+  align-items: start;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 320px);
+}
+
+.invoicingItemsCard {
+  display: grid;
+  gap: 16px;
+}
+
+.invoicingItemsEmptyState {
+  background: var(--primary-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--on-primary-soft);
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  padding: 26px 18px;
+  text-align: center;
+}
+
+.invoicingItemsEmptyState strong {
+  color: var(--text-strong);
+}
+
+.invoicingItemsEmptyState p,
+.invoicingItemsWarning p {
+  line-height: 1.5;
+  margin: 0;
+}
+
+.invoicingItemRow {
+  align-items: start;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  padding: 14px;
+}
+
+.invoicingItemPosition {
+  align-items: center;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-muted);
+  display: inline-flex;
+  font-size: 0.75rem;
+  font-weight: 800;
+  height: 28px;
+  justify-content: center;
+  width: 28px;
+}
+
+.invoicingItemRow strong {
+  color: var(--text-strong);
+}
+
+.invoicingItemRow small {
+  color: var(--text-muted);
+  display: block;
+  line-height: 1.45;
+  margin-top: 3px;
+}
+
+.invoicingItemTotal {
+  font-family:
+    'IBM Plex Mono',
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+  text-align: right;
+}
+
+.invoicingItemsWarning {
+  background: var(--warning-soft);
+  border-radius: 8px;
+  color: var(--on-warning-soft);
+  display: grid;
+  gap: 5px;
+  padding: 13px 14px;
+}
+
+.invoicingItemsWarning strong {
+  color: var(--text-strong);
+}
+
+.invoicingItemsEstimate {
+  align-items: baseline;
+  background: var(--surface-sunken);
+  border: 1px dashed var(--border-strong);
+  border-radius: 8px;
+  display: grid;
+  gap: 6px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 12px 14px;
+}
+
+.invoicingItemsEstimate span {
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.invoicingItemsEstimate strong {
+  color: var(--text-strong);
+  font-family:
+    'IBM Plex Mono',
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+  font-size: 1.1rem;
+}
+
+.invoicingItemsEstimate small {
+  color: var(--text-muted);
+  grid-column: 1 / -1;
+}
+
+.invoicingItemsTotalsRail {
+  display: grid;
+  gap: 14px;
+  position: sticky;
+  top: 14px;
+}
+
+.invoicingItemsTotalsList {
+  gap: 8px;
+}
+
+.invoicingItemsTotalsList span {
+  align-items: baseline;
+  color: var(--text-muted);
+  display: flex;
+  justify-content: space-between;
+}
+
+.invoicingItemsTotalsList strong {
+  color: var(--text-strong);
+  font-family:
+    'IBM Plex Mono',
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+}
+
+.invoicingItemsGrandTotal {
+  border-top: 1px solid var(--divider);
+  margin-top: 4px;
+  padding-top: 12px;
+}
+
+.invoicingItemsGrandTotal strong {
+  font-size: 1.25rem;
+}
+
 .invoiceCardHeader {
   align-items: start;
   display: flex;
@@ -2708,6 +2933,7 @@
   .detailGrid,
   .invoicingCustomerFlowGrid,
   .invoicingCustomerStepper,
+  .invoicingItemsLayout,
   .invoiceInlineGrid,
   .invoiceTotalsGrid,
   .invoiceDetailGrid,
@@ -2761,7 +2987,8 @@
   .invoicingCustomerStepHeader,
   .invoicingCustomerDirectoryHeader,
   .invoicingCustomerFormHeader,
-  .invoicingCustomerIdentityHeader {
+  .invoicingCustomerIdentityHeader,
+  .invoicingItemsContextMain {
     align-items: stretch;
     flex-direction: column;
   }
@@ -2794,6 +3021,24 @@
   .invoicingCustomerFactRow {
     grid-template-columns: 1fr;
     gap: 4px;
+  }
+
+  .invoicingItemsTotalsRail {
+    position: static;
+    top: auto;
+  }
+
+  .invoicingItemRow {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .invoicingItemTotal {
+    grid-column: 2;
+    text-align: left;
+  }
+
+  .invoicingItemsEstimate {
+    grid-template-columns: 1fr;
   }
 
   .invoicingSRIStatusTile .invoiceCardHeader,

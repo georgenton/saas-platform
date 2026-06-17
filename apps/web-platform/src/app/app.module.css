@@ -2188,10 +2188,9 @@
   align-items: center;
   column-gap: 14px;
   display: grid;
-  grid-template-columns: minmax(120px, 0.95fr) minmax(0, 1.5fr) minmax(
-      120px,
-      0.85fr
-    ) auto;
+  grid-template-columns:
+    minmax(120px, 0.95fr) minmax(0, 1.5fr) minmax(120px, 0.85fr)
+    auto;
 }
 
 .invoicingQueueHeader {
@@ -2326,6 +2325,172 @@
   display: grid;
   gap: 12px;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.invoicingSRILifecycle {
+  display: grid;
+  gap: 16px;
+}
+
+.invoicingSRILegalVerdict {
+  align-items: center;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--text-subtle);
+  border-radius: 8px;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  padding: 18px;
+}
+
+.invoicingSRILegalVerdict h3 {
+  color: var(--text-strong);
+  font-size: 1.25rem;
+  margin: 4px 0 0;
+}
+
+.invoicingSRILegalVerdict p {
+  color: var(--text);
+  line-height: 1.55;
+  margin: 6px 0 0;
+  max-width: 720px;
+}
+
+.invoicingSRILegalVerdictIcon {
+  align-items: center;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-strong);
+  display: inline-flex;
+  font-size: 1.25rem;
+  font-weight: 900;
+  height: 46px;
+  justify-content: center;
+  width: 46px;
+}
+
+.invoicingSRILegalVerdictMeta {
+  display: grid;
+  gap: 4px;
+  justify-items: end;
+  text-align: right;
+}
+
+.invoicingSRILegalVerdictMeta strong {
+  color: var(--text-strong);
+  font-family: var(--font-mono);
+  white-space: nowrap;
+}
+
+.invoicingSRILegalVerdictMeta small {
+  color: var(--text-muted);
+}
+
+.invoicingSRILegalVerdictNeutral {
+  background: var(--surface-raised);
+}
+
+.invoicingSRILegalVerdictSuccess {
+  background: var(--success-soft);
+  border-color: color-mix(in srgb, var(--success) 42%, var(--border) 58%);
+  border-left-color: var(--success);
+}
+
+.invoicingSRILegalVerdictWarning {
+  background: var(--warning-soft);
+  border-color: color-mix(in srgb, var(--warning) 42%, var(--border) 58%);
+  border-left-color: var(--warning);
+}
+
+.invoicingSRILegalVerdictDanger {
+  background: var(--danger-soft);
+  border-color: color-mix(in srgb, var(--danger) 42%, var(--border) 58%);
+  border-left-color: var(--danger);
+}
+
+.invoicingSRIEvidenceCard {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 14px;
+  padding: 16px 18px;
+}
+
+.invoicingSRIEvidenceGrid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.invoicingSRIEvidenceGrid > div {
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px;
+}
+
+.invoicingSRIEvidenceGrid span {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.invoicingSRIEvidenceGrid strong {
+  color: var(--text-strong);
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.invoicingSRIAdvancedDisclosure {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.invoicingSRIAdvancedDisclosureTrigger {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--text);
+  cursor: pointer;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  padding: 14px 16px;
+  text-align: left;
+  width: 100%;
+}
+
+.invoicingSRIAdvancedDisclosureTrigger strong {
+  color: var(--text-strong);
+  display: block;
+}
+
+.invoicingSRIAdvancedDisclosureTrigger small {
+  color: var(--text-muted);
+  display: block;
+  line-height: 1.45;
+  margin-top: 3px;
+}
+
+.invoicingSRIAdvancedIcon {
+  align-items: center;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-muted);
+  display: inline-flex;
+  font-weight: 900;
+  height: 34px;
+  justify-content: center;
+  width: 34px;
 }
 
 .invoicingSRIStatusTriad {
@@ -3237,6 +3402,7 @@
   .invoicingSRIStatusTriad,
   .invoicingSRIOverview,
   .invoicingSRICopyGrid,
+  .invoicingSRIEvidenceGrid,
   .invoicingSRICompactRow,
   .invoicingSettingsHealthStrip,
   .invoicingSettingsPillarGrid,
@@ -3341,6 +3507,26 @@
   .invoicingSRINextStepHeader {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .invoicingSRILegalVerdict {
+    align-items: stretch;
+    grid-template-columns: 1fr;
+  }
+
+  .invoicingSRILegalVerdictMeta {
+    justify-items: start;
+    text-align: left;
+  }
+
+  .invoicingSRIAdvancedDisclosureTrigger {
+    align-items: stretch;
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .invoicingSRIAdvancedDisclosureTrigger > :last-child {
+    grid-column: 2;
+    justify-self: start;
   }
 
   .invoicingSettingsVerdict {

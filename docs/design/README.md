@@ -5,9 +5,19 @@ integrated into `apps/web-platform`.
 
 ## Working Agreement
 
-Claude Design produces visual/interface deliveries. The SaaS Platform backend,
-OpenAPI contract and frontend handoff docs remain the source of truth for
-behavior.
+Claude Design is the source of truth for the product presentation layer:
+visual hierarchy, layout, spacing, typography treatment, mood behavior,
+component composition, desktop/mobile patterns and interaction choreography.
+
+The SaaS Platform backend, OpenAPI contract and frontend handoff docs remain
+the source of truth for behavior: endpoints, data fields, permissions,
+validations, state transitions and product guardrails.
+
+When a current app component conflicts with an approved Claude Design slice,
+prefer replacing the app presentation with a production React implementation of
+the Claude Design surface. Keep existing API calls, TanStack Query bindings,
+handlers and domain constraints behind that surface. The current app UI is not
+the design authority once a Claude Design slice exists for that area.
 
 Do not paste a Claude Design ZIP directly into the app source. Every delivery
 must first land under `docs/design/claude-design/<slice>/` for review.
@@ -50,7 +60,8 @@ Recommended slice folders:
    folder.
 5. Review the design against OpenAPI and handoff guardrails.
 6. Convert mock JSON to real API calls.
-7. Integrate into `apps/web-platform` incrementally.
+7. Rebuild production UI from the approved Claude Design components/patterns
+   rather than cosmetically wrapping old app surfaces.
 8. Run build, tests and browser checks.
 
 ## Review Checklist

@@ -198,7 +198,8 @@
   margin-bottom: 18px;
 }
 
-.pageProductWorkspaceActive > section:not([data-product-workspace='invoicing']) {
+.pageProductWorkspaceActive
+  > section:not([data-product-workspace='invoicing']) {
   display: none;
 }
 
@@ -2933,6 +2934,98 @@
   gap: 16px;
 }
 
+.invoicingSettingsWorkbench {
+  align-items: start;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
+}
+
+.invoicingSettingsMainColumn {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.invoicingSettingsSideRail {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  position: sticky;
+  top: 96px;
+}
+
+.invoicingSettingsRailCard {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow-sm);
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.invoicingSettingsRailTitle {
+  color: var(--text-strong);
+  line-height: 1.35;
+}
+
+.invoicingSettingsRailCopy {
+  color: var(--text-muted);
+  line-height: 1.55;
+  margin: 0;
+}
+
+.invoicingSettingsSectionNav {
+  display: grid;
+  gap: 8px;
+}
+
+.invoicingSettingsSectionNav a {
+  align-items: center;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  display: grid;
+  gap: 10px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  min-height: 48px;
+  padding: 9px 10px;
+  text-decoration: none;
+  transition:
+    background var(--transition-base),
+    border-color var(--transition-base),
+    box-shadow var(--transition-base);
+}
+
+.invoicingSettingsSectionNav a:hover {
+  background: var(--surface-hover);
+  border-color: var(--border-strong);
+}
+
+.invoicingSettingsSectionNav a > span:first-child {
+  color: var(--text-subtle);
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.invoicingSettingsSectionNav a strong {
+  color: var(--text-strong);
+  font-size: 0.9rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.invoicingSettingsSectionNavActive {
+  background: var(--primary-soft) !important;
+  border-color: var(--primary) !important;
+  box-shadow: var(--focus-ring-shadow);
+}
+
 .invoicingSettingsReadinessHeader {
   display: grid;
   gap: 16px;
@@ -3113,6 +3206,26 @@
 .invoicingSettingsGapList p {
   line-height: 1.45;
   margin: 0;
+}
+
+.invoicingSettingsTechnicalDisclosure {
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+}
+
+.invoicingSettingsTechnicalDisclosure summary {
+  color: var(--text-strong);
+  cursor: pointer;
+  font-weight: 800;
+  list-style-position: inside;
+}
+
+.invoicingSettingsTechnicalDisclosure > .detailCard {
+  margin-top: 12px;
 }
 
 .operatorBrief {
@@ -3573,6 +3686,7 @@
   .invoiceKpiGrid,
   .invoicingReadinessRibbon,
   .invoicingWorkspaceLayout,
+  .invoicingSettingsWorkbench,
   .invoicingSRIStatusTriad,
   .invoicingSRIOverview,
   .invoicingSRICopyGrid,
@@ -3732,6 +3846,10 @@
   .invoicingSettingsVerdict {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .invoicingSettingsSideRail {
+    position: static;
   }
 
   .invoicingStagePreviewHeader {

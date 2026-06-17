@@ -142,632 +142,700 @@ export function InvoicingWorkspaceSettings({
         readinessView={readinessView}
       />
 
-      <div
-        className={`${styles.detailCard} ${styles.invoicingSettingsSectionCard} ${
-          readinessView.recommendedSection === 'issuer'
-            ? styles.invoicingSettingsSectionCardHighlighted
-            : ''
-        }`}
-        id="invoicing-issuer-profile"
-      >
-        <div className={styles.sectionHeading}>
-          <div>
-            <span className={styles.label}>Electronic issuer</span>
-            <h3>Perfil fiscal del emisor</h3>
-          </div>
-          <StatusBadge status={readinessView.issuer} />
-        </div>
-
-        <form className={styles.stack} onSubmit={issuerForm.onSubmit}>
-          <div className={styles.invoiceInlineGrid}>
-            <label className={styles.field}>
-              <span>Razon social</span>
-              <input
-                onChange={(event) =>
-                  issuerForm.onLegalNameChange(event.target.value)
-                }
-                placeholder="Mi Empresa S.A."
-                value={issuerForm.legalName}
-              />
-            </label>
-            <label className={styles.field}>
-              <span>Nombre comercial</span>
-              <input
-                onChange={(event) =>
-                  issuerForm.onCommercialNameChange(event.target.value)
-                }
-                placeholder="Mi Empresa"
-                value={issuerForm.commercialName}
-              />
-            </label>
-          </div>
-
-          <div className={styles.invoiceInlineGrid}>
-            <label className={styles.field}>
-              <span>RUC</span>
-              <input
-                maxLength={13}
-                onChange={(event) => issuerForm.onTaxIdChange(event.target.value)}
-                placeholder="1790012345001"
-                value={issuerForm.taxId}
-              />
-            </label>
-            <label className={styles.field}>
-              <span>Ambiente</span>
-              <select
-                className={styles.selectField}
-                onChange={(event) =>
-                  issuerForm.onEnvironmentChange(
-                    event.target.value === 'production' ? 'production' : 'test',
-                  )
-                }
-                value={issuerForm.environment}
-              >
-                <option value="test">Pruebas</option>
-                <option value="production">Produccion</option>
-              </select>
-            </label>
-          </div>
-
-          {extractedCertificateTaxId ? (
-            <div className={styles.detailCard}>
-              <span className={styles.muted}>RUC extraido del certificado</span>
-              <strong>{extractedCertificateTaxId}</strong>
-              <p>
-                {issuerForm.taxIdMatchesCertificate === true
-                  ? 'El perfil fiscal actual ya coincide con el certificado inspeccionado.'
-                  : issuerForm.taxIdMatchesCertificate === false
-                    ? 'El RUC del perfil fiscal no coincide con el certificado. Antes de probar CELCER conviene alinearlos.'
-                    : 'Todavia falta completar el RUC del perfil fiscal para contrastarlo contra el certificado.'}
-              </p>
-              <button
-                className={styles.secondaryButton}
-                disabled={issuerForm.taxId.trim() === extractedCertificateTaxId}
-                onClick={() =>
-                  issuerForm.onTaxIdChange(extractedCertificateTaxId)
-                }
-                type="button"
-              >
-                Usar RUC del certificado
-              </button>
-              <button
-                className={styles.secondaryButton}
-                disabled={
-                  !canSyncIssuerTaxId ||
-                  actionLoading === 'sync-issuer-profile-tax-id'
-                }
-                onClick={handleSyncIssuerProfileTaxIdFromSignature}
-                type="button"
-              >
-                {actionLoading === 'sync-issuer-profile-tax-id'
-                  ? 'Alineando...'
-                  : 'Alinear y guardar'}
-              </button>
+      <div className={styles.invoicingSettingsWorkbench}>
+        <div className={styles.invoicingSettingsMainColumn}>
+          <div
+            className={`${styles.detailCard} ${styles.invoicingSettingsSectionCard} ${
+              readinessView.recommendedSection === 'issuer'
+                ? styles.invoicingSettingsSectionCardHighlighted
+                : ''
+            }`}
+            id="invoicing-issuer-profile"
+          >
+            <div className={styles.sectionHeading}>
+              <div>
+                <span className={styles.label}>01 · Identidad fiscal</span>
+                <h3>Perfil fiscal del emisor</h3>
+                <p className={styles.muted}>
+                  Base legal de la emision: RUC, razon social, direcciones y
+                  obligaciones visibles para SRI.
+                </p>
+              </div>
+              <StatusBadge status={readinessView.issuer} />
             </div>
-          ) : null}
 
-          <div className={styles.invoiceInlineGrid}>
-            <label className={styles.field}>
-              <span>Contribuyente especial</span>
-              <input
-                onChange={(event) =>
-                  issuerForm.onSpecialTaxpayerCodeChange(event.target.value)
-                }
-                placeholder="5368"
-                value={issuerForm.specialTaxpayerCode}
-              />
-            </label>
-            <label className={styles.field}>
-              <span>RIMPE</span>
-              <input
-                onChange={(event) =>
-                  issuerForm.onRimpeTaxpayerTypeChange(event.target.value)
-                }
-                placeholder="Negocio popular / Emprendedor"
-                value={issuerForm.rimpeTaxpayerType}
-              />
-            </label>
-          </div>
-
-          <label className={styles.checkboxField}>
-            <input
-              checked={issuerForm.accountingObligated}
-              onChange={(event) =>
-                issuerForm.onAccountingObligatedChange(event.target.checked)
-              }
-              type="checkbox"
-            />
-            <span>Obligado a llevar contabilidad</span>
-          </label>
-
-          <label className={styles.field}>
-            <span>Direccion matriz</span>
-            <input
-              onChange={(event) =>
-                issuerForm.onMatrixAddressChange(event.target.value)
-              }
-              placeholder="Av. Principal y Calle Secundaria"
-              value={issuerForm.matrixAddress}
-            />
-          </label>
-
-          <label className={styles.field}>
-            <span>Direccion establecimiento</span>
-            <input
-              onChange={(event) =>
-                issuerForm.onEstablishmentAddressChange(event.target.value)
-              }
-              placeholder="Sucursal matriz o punto de emision"
-              value={issuerForm.establishmentAddress}
-            />
-          </label>
-
-          <button
-            className={styles.primaryButton}
-            disabled={
-              !issuerForm.legalName.trim() ||
-              !issuerForm.taxId.trim() ||
-              !issuerForm.matrixAddress.trim() ||
-              !issuerForm.establishmentAddress.trim() ||
-              actionLoading === 'upsert-issuer-profile'
-            }
-            type="submit"
-          >
-            {actionLoading === 'upsert-issuer-profile'
-              ? 'Guardando perfil...'
-              : 'Guardar perfil fiscal'}
-          </button>
-        </form>
-      </div>
-
-      <div
-        className={`${styles.detailCard} ${styles.invoicingSettingsSectionCard} ${
-          readinessView.recommendedSection === 'numbering'
-            ? styles.invoicingSettingsSectionCardHighlighted
-            : ''
-        }`}
-      >
-        <div className={styles.sectionHeading}>
-          <div>
-            <span className={styles.label}>Ecuador numbering</span>
-            <h3>Serie y secuencial</h3>
-          </div>
-          <StatusBadge status={readinessView.numbering} />
-        </div>
-
-        <div className={styles.invoicingSettingsNumberPreview}>
-          <span>{numberingForm.establishmentCode || '000'}</span>
-          <span>{numberingForm.emissionPointCode || '000'}</span>
-          <span>
-            {numberingForm.previewNumber
-              ? numberingForm.previewNumber.split('-')[2]
-              : numberingForm.nextSequence.padStart(9, '0')}
-          </span>
-        </div>
-
-        <form className={styles.stack} onSubmit={numberingForm.onSubmit}>
-          <div className={styles.invoiceInlineGrid}>
-            <label className={styles.field}>
-              <span>CodDoc</span>
-              <input
-                maxLength={2}
-                onChange={(event) =>
-                  numberingForm.onDocumentCodeChange(event.target.value)
-                }
-                placeholder="01"
-                value={numberingForm.documentCode}
-              />
-            </label>
-            <label className={styles.field}>
-              <span>Estab</span>
-              <input
-                maxLength={3}
-                onChange={(event) =>
-                  numberingForm.onEstablishmentCodeChange(event.target.value)
-                }
-                placeholder="001"
-                value={numberingForm.establishmentCode}
-              />
-            </label>
-            <label className={styles.field}>
-              <span>PtoEmi</span>
-              <input
-                maxLength={3}
-                onChange={(event) =>
-                  numberingForm.onEmissionPointCodeChange(event.target.value)
-                }
-                placeholder="002"
-                value={numberingForm.emissionPointCode}
-              />
-            </label>
-          </div>
-
-          <label className={styles.field}>
-            <span>Siguiente secuencial</span>
-            <input
-              min="1"
-              onChange={(event) =>
-                numberingForm.onNextSequenceChange(event.target.value)
-              }
-              placeholder="31"
-              type="number"
-              value={numberingForm.nextSequence}
-            />
-          </label>
-
-          <button
-            className={styles.primaryButton}
-            disabled={
-              !numberingForm.documentCode.trim() ||
-              !numberingForm.establishmentCode.trim() ||
-              !numberingForm.emissionPointCode.trim() ||
-              !numberingForm.nextSequence.trim() ||
-              actionLoading === 'upsert-invoice-numbering'
-            }
-            type="submit"
-          >
-            {actionLoading === 'upsert-invoice-numbering'
-              ? 'Guardando numeracion...'
-              : 'Guardar numeracion'}
-          </button>
-
-          <p className={styles.muted}>
-            {numberingForm.previewNumber
-              ? `Proxima factura sugerida: ${numberingForm.previewNumber}`
-              : 'Si dejas el numero vacio al crear la factura, se usara esta configuracion automaticamente.'}
-          </p>
-        </form>
-      </div>
-
-      <div
-        className={`${styles.detailCard} ${styles.invoicingSettingsSectionCard} ${
-          readinessView.recommendedSection === 'signature'
-            ? styles.invoicingSettingsSectionCardHighlighted
-            : ''
-        }`}
-        id="invoicing-signature-settings"
-      >
-        <div className={styles.sectionHeading}>
-          <div>
-            <span className={styles.label}>Electronic signature</span>
-            <h3>Configuracion de firma</h3>
-          </div>
-          <StatusBadge status={readinessView.signature} />
-        </div>
-
-        <SignatureHealthStrip signatureForm={signatureForm} />
-
-        <form className={styles.stack} onSubmit={signatureForm.onSubmit}>
-          <div className={styles.invoiceInlineGrid}>
-            <label className={styles.field}>
-              <span>Provider</span>
-              <select
-                className={styles.selectField}
-                onChange={(event) =>
-                  signatureForm.onProviderChange(
-                    event.target.value === 'xades_pkcs12'
-                      ? 'xades_pkcs12'
-                      : 'stub_local',
-                  )
-                }
-                value={signatureForm.provider}
-              >
-                <option value="stub_local">stub_local</option>
-                <option value="xades_pkcs12">xades_pkcs12</option>
-              </select>
-            </label>
-            <label className={styles.field}>
-              <span>Storage mode</span>
-              <select
-                className={styles.selectField}
-                onChange={(event) =>
-                  signatureForm.onStorageModeChange(
-                    event.target.value === 'secret_ref'
-                      ? 'secret_ref'
-                      : 'stub_inline',
-                  )
-                }
-                value={signatureForm.storageMode}
-              >
-                <option value="stub_inline">stub_inline</option>
-                <option value="secret_ref">secret_ref</option>
-              </select>
-            </label>
-          </div>
-
-          <div className={styles.invoiceInlineGrid}>
-            <label className={styles.field}>
-              <span>Nombre del certificado</span>
-              <input
-                onChange={(event) =>
-                  signatureForm.onCertificateLabelChange(event.target.value)
-                }
-                placeholder="TOKEN BCE pruebas / Firma Legal"
-                value={signatureForm.certificateLabel}
-              />
-            </label>
-            <label className={styles.field}>
-              <span>Subject name</span>
-              <input
-                onChange={(event) =>
-                  signatureForm.onSubjectNameChange(event.target.value)
-                }
-                placeholder="CN=Empresa S.A., O=Empresa"
-                value={signatureForm.subjectName}
-              />
-            </label>
-          </div>
-
-          <div className={styles.invoiceInlineGrid}>
-            <label className={styles.field}>
-              <span>Fingerprint</span>
-              <input
-                onChange={(event) =>
-                  signatureForm.onCertificateFingerprintChange(
-                    event.target.value,
-                  )
-                }
-                placeholder="AA:BB:CC:DD..."
-                value={signatureForm.certificateFingerprint}
-              />
-            </label>
-            <label className={styles.field}>
-              <span>Estado del material</span>
-              <input
-                disabled
-                value={
-                  signatureForm.materialConfigured ? 'Configurado' : 'Incompleto'
-                }
-              />
-            </label>
-          </div>
-
-          {signatureForm.provider === 'xades_pkcs12' ? (
-            <>
+            <form className={styles.stack} onSubmit={issuerForm.onSubmit}>
               <div className={styles.invoiceInlineGrid}>
                 <label className={styles.field}>
-                  <span>PKCS#12 secret ref</span>
+                  <span>Razon social</span>
                   <input
                     onChange={(event) =>
-                      signatureForm.onPkcs12SecretRefChange(event.target.value)
+                      issuerForm.onLegalNameChange(event.target.value)
                     }
-                    placeholder="vault://ec/signatures/tenant-123/pkcs12"
-                    value={signatureForm.pkcs12SecretRef}
+                    placeholder="Mi Empresa S.A."
+                    value={issuerForm.legalName}
                   />
                 </label>
                 <label className={styles.field}>
-                  <span>Password secret ref</span>
+                  <span>Nombre comercial</span>
                   <input
                     onChange={(event) =>
-                      signatureForm.onPasswordSecretRefChange(event.target.value)
+                      issuerForm.onCommercialNameChange(event.target.value)
                     }
-                    placeholder="vault://ec/signatures/tenant-123/password"
-                    value={signatureForm.passwordSecretRef}
+                    placeholder="Mi Empresa"
+                    value={issuerForm.commercialName}
+                  />
+                </label>
+              </div>
+
+              <div className={styles.invoiceInlineGrid}>
+                <label className={styles.field}>
+                  <span>RUC</span>
+                  <input
+                    maxLength={13}
+                    onChange={(event) =>
+                      issuerForm.onTaxIdChange(event.target.value)
+                    }
+                    placeholder="1790012345001"
+                    value={issuerForm.taxId}
+                  />
+                </label>
+                <label className={styles.field}>
+                  <span>Ambiente</span>
+                  <select
+                    className={styles.selectField}
+                    onChange={(event) =>
+                      issuerForm.onEnvironmentChange(
+                        event.target.value === 'production'
+                          ? 'production'
+                          : 'test',
+                      )
+                    }
+                    value={issuerForm.environment}
+                  >
+                    <option value="test">Pruebas</option>
+                    <option value="production">Produccion</option>
+                  </select>
+                </label>
+              </div>
+
+              {extractedCertificateTaxId ? (
+                <div className={styles.detailCard}>
+                  <span className={styles.muted}>
+                    RUC extraido del certificado
+                  </span>
+                  <strong>{extractedCertificateTaxId}</strong>
+                  <p>
+                    {issuerForm.taxIdMatchesCertificate === true
+                      ? 'El perfil fiscal actual ya coincide con el certificado inspeccionado.'
+                      : issuerForm.taxIdMatchesCertificate === false
+                        ? 'El RUC del perfil fiscal no coincide con el certificado. Antes de probar CELCER conviene alinearlos.'
+                        : 'Todavia falta completar el RUC del perfil fiscal para contrastarlo contra el certificado.'}
+                  </p>
+                  <button
+                    className={styles.secondaryButton}
+                    disabled={
+                      issuerForm.taxId.trim() === extractedCertificateTaxId
+                    }
+                    onClick={() =>
+                      issuerForm.onTaxIdChange(extractedCertificateTaxId)
+                    }
+                    type="button"
+                  >
+                    Usar RUC del certificado
+                  </button>
+                  <button
+                    className={styles.secondaryButton}
+                    disabled={
+                      !canSyncIssuerTaxId ||
+                      actionLoading === 'sync-issuer-profile-tax-id'
+                    }
+                    onClick={handleSyncIssuerProfileTaxIdFromSignature}
+                    type="button"
+                  >
+                    {actionLoading === 'sync-issuer-profile-tax-id'
+                      ? 'Alineando...'
+                      : 'Alinear y guardar'}
+                  </button>
+                </div>
+              ) : null}
+
+              <div className={styles.invoiceInlineGrid}>
+                <label className={styles.field}>
+                  <span>Contribuyente especial</span>
+                  <input
+                    onChange={(event) =>
+                      issuerForm.onSpecialTaxpayerCodeChange(event.target.value)
+                    }
+                    placeholder="5368"
+                    value={issuerForm.specialTaxpayerCode}
+                  />
+                </label>
+                <label className={styles.field}>
+                  <span>RIMPE</span>
+                  <input
+                    onChange={(event) =>
+                      issuerForm.onRimpeTaxpayerTypeChange(event.target.value)
+                    }
+                    placeholder="Negocio popular / Emprendedor"
+                    value={issuerForm.rimpeTaxpayerType}
                   />
                 </label>
               </div>
 
               <label className={styles.checkboxField}>
                 <input
-                  checked={signatureForm.hydrateMetadataFromPkcs12}
+                  checked={issuerForm.accountingObligated}
                   onChange={(event) =>
-                    signatureForm.onHydrateMetadataFromPkcs12Change(
-                      event.target.checked,
-                    )
+                    issuerForm.onAccountingObligatedChange(event.target.checked)
                   }
                   type="checkbox"
                 />
-                <span>
-                  Hidratar fingerprint y subject desde el PKCS#12 al guardar
-                </span>
+                <span>Obligado a llevar contabilidad</span>
               </label>
-            </>
-          ) : null}
 
-          <label className={styles.checkboxField}>
-            <input
-              checked={signatureForm.isActive}
-              onChange={(event) =>
-                signatureForm.onIsActiveChange(event.target.checked)
-              }
-              type="checkbox"
-            />
-            <span>Firma habilitada para el tenant</span>
-          </label>
+              <label className={styles.field}>
+                <span>Direccion matriz</span>
+                <input
+                  onChange={(event) =>
+                    issuerForm.onMatrixAddressChange(event.target.value)
+                  }
+                  placeholder="Av. Principal y Calle Secundaria"
+                  value={issuerForm.matrixAddress}
+                />
+              </label>
 
-          <button
-            className={styles.primaryButton}
-            disabled={
-              !signatureForm.certificateLabel.trim() ||
-              actionLoading === 'upsert-electronic-signature-settings'
-            }
-            type="submit"
-          >
-            {actionLoading === 'upsert-electronic-signature-settings'
-              ? 'Guardando firma...'
-              : 'Guardar firma electronica'}
-          </button>
+              <label className={styles.field}>
+                <span>Direccion establecimiento</span>
+                <input
+                  onChange={(event) =>
+                    issuerForm.onEstablishmentAddressChange(event.target.value)
+                  }
+                  placeholder="Sucursal matriz o punto de emision"
+                  value={issuerForm.establishmentAddress}
+                />
+              </label>
 
-          <p className={styles.muted}>
-            Esta configuracion separa metadatos visibles del material sensible.
-            Para `xades_pkcs12`, el sistema ya exige referencias al PKCS#12 y su
-            password antes de firmar, y ahora ya puede producir una firma
-            criptografica inicial aunque XAdES completo siga pendiente.
-          </p>
-
-          {signatureForm.inspection ? (
-            <SignatureInspectionCard inspection={signatureForm.inspection} />
-          ) : null}
-        </form>
-      </div>
-
-      <div
-        className={`${styles.detailCard} ${styles.invoicingSettingsSectionCard} ${
-          readinessView.recommendedSection === 'gateway'
-            ? styles.invoicingSettingsSectionCardHighlighted
-            : ''
-        }`}
-      >
-        <div className={styles.sectionHeading}>
-          <div>
-            <span className={styles.label}>Electronic submission</span>
-            <h3>Gateway SRI</h3>
+              <button
+                className={styles.primaryButton}
+                disabled={
+                  !issuerForm.legalName.trim() ||
+                  !issuerForm.taxId.trim() ||
+                  !issuerForm.matrixAddress.trim() ||
+                  !issuerForm.establishmentAddress.trim() ||
+                  actionLoading === 'upsert-issuer-profile'
+                }
+                type="submit"
+              >
+                {actionLoading === 'upsert-issuer-profile'
+                  ? 'Guardando perfil...'
+                  : 'Guardar perfil fiscal'}
+              </button>
+            </form>
           </div>
-          <StatusBadge status={readinessView.gateway} />
+
+          <div
+            className={`${styles.detailCard} ${styles.invoicingSettingsSectionCard} ${
+              readinessView.recommendedSection === 'numbering'
+                ? styles.invoicingSettingsSectionCardHighlighted
+                : ''
+            }`}
+            id="invoicing-numbering-settings"
+          >
+            <div className={styles.sectionHeading}>
+              <div>
+                <span className={styles.label}>02 · Numeracion Ecuador</span>
+                <h3>Serie y secuencial</h3>
+                <p className={styles.muted}>
+                  Ensambla el proximo numero de factura antes de crear
+                  borradores o enviar documentos.
+                </p>
+              </div>
+              <StatusBadge status={readinessView.numbering} />
+            </div>
+
+            <div className={styles.invoicingSettingsNumberPreview}>
+              <span>{numberingForm.establishmentCode || '000'}</span>
+              <span>{numberingForm.emissionPointCode || '000'}</span>
+              <span>
+                {numberingForm.previewNumber
+                  ? numberingForm.previewNumber.split('-')[2]
+                  : numberingForm.nextSequence.padStart(9, '0')}
+              </span>
+            </div>
+
+            <form className={styles.stack} onSubmit={numberingForm.onSubmit}>
+              <div className={styles.invoiceInlineGrid}>
+                <label className={styles.field}>
+                  <span>CodDoc</span>
+                  <input
+                    maxLength={2}
+                    onChange={(event) =>
+                      numberingForm.onDocumentCodeChange(event.target.value)
+                    }
+                    placeholder="01"
+                    value={numberingForm.documentCode}
+                  />
+                </label>
+                <label className={styles.field}>
+                  <span>Estab</span>
+                  <input
+                    maxLength={3}
+                    onChange={(event) =>
+                      numberingForm.onEstablishmentCodeChange(
+                        event.target.value,
+                      )
+                    }
+                    placeholder="001"
+                    value={numberingForm.establishmentCode}
+                  />
+                </label>
+                <label className={styles.field}>
+                  <span>PtoEmi</span>
+                  <input
+                    maxLength={3}
+                    onChange={(event) =>
+                      numberingForm.onEmissionPointCodeChange(
+                        event.target.value,
+                      )
+                    }
+                    placeholder="002"
+                    value={numberingForm.emissionPointCode}
+                  />
+                </label>
+              </div>
+
+              <label className={styles.field}>
+                <span>Siguiente secuencial</span>
+                <input
+                  min="1"
+                  onChange={(event) =>
+                    numberingForm.onNextSequenceChange(event.target.value)
+                  }
+                  placeholder="31"
+                  type="number"
+                  value={numberingForm.nextSequence}
+                />
+              </label>
+
+              <button
+                className={styles.primaryButton}
+                disabled={
+                  !numberingForm.documentCode.trim() ||
+                  !numberingForm.establishmentCode.trim() ||
+                  !numberingForm.emissionPointCode.trim() ||
+                  !numberingForm.nextSequence.trim() ||
+                  actionLoading === 'upsert-invoice-numbering'
+                }
+                type="submit"
+              >
+                {actionLoading === 'upsert-invoice-numbering'
+                  ? 'Guardando numeracion...'
+                  : 'Guardar numeracion'}
+              </button>
+
+              <p className={styles.muted}>
+                {numberingForm.previewNumber
+                  ? `Proxima factura sugerida: ${numberingForm.previewNumber}`
+                  : 'Si dejas el numero vacio al crear la factura, se usara esta configuracion automaticamente.'}
+              </p>
+            </form>
+          </div>
+
+          <div
+            className={`${styles.detailCard} ${styles.invoicingSettingsSectionCard} ${
+              readinessView.recommendedSection === 'signature'
+                ? styles.invoicingSettingsSectionCardHighlighted
+                : ''
+            }`}
+            id="invoicing-signature-settings"
+          >
+            <div className={styles.sectionHeading}>
+              <div>
+                <span className={styles.label}>03 · Firma electronica</span>
+                <h3>Configuracion de firma</h3>
+                <p className={styles.muted}>
+                  Material sensible, vigencia y prueba criptografica se revisan
+                  sin exponer secretos en pantalla.
+                </p>
+              </div>
+              <StatusBadge status={readinessView.signature} />
+            </div>
+
+            <SignatureHealthStrip signatureForm={signatureForm} />
+
+            <form className={styles.stack} onSubmit={signatureForm.onSubmit}>
+              <div className={styles.invoiceInlineGrid}>
+                <label className={styles.field}>
+                  <span>Provider</span>
+                  <select
+                    className={styles.selectField}
+                    onChange={(event) =>
+                      signatureForm.onProviderChange(
+                        event.target.value === 'xades_pkcs12'
+                          ? 'xades_pkcs12'
+                          : 'stub_local',
+                      )
+                    }
+                    value={signatureForm.provider}
+                  >
+                    <option value="stub_local">stub_local</option>
+                    <option value="xades_pkcs12">xades_pkcs12</option>
+                  </select>
+                </label>
+                <label className={styles.field}>
+                  <span>Storage mode</span>
+                  <select
+                    className={styles.selectField}
+                    onChange={(event) =>
+                      signatureForm.onStorageModeChange(
+                        event.target.value === 'secret_ref'
+                          ? 'secret_ref'
+                          : 'stub_inline',
+                      )
+                    }
+                    value={signatureForm.storageMode}
+                  >
+                    <option value="stub_inline">stub_inline</option>
+                    <option value="secret_ref">secret_ref</option>
+                  </select>
+                </label>
+              </div>
+
+              <div className={styles.invoiceInlineGrid}>
+                <label className={styles.field}>
+                  <span>Nombre del certificado</span>
+                  <input
+                    onChange={(event) =>
+                      signatureForm.onCertificateLabelChange(event.target.value)
+                    }
+                    placeholder="TOKEN BCE pruebas / Firma Legal"
+                    value={signatureForm.certificateLabel}
+                  />
+                </label>
+                <label className={styles.field}>
+                  <span>Subject name</span>
+                  <input
+                    onChange={(event) =>
+                      signatureForm.onSubjectNameChange(event.target.value)
+                    }
+                    placeholder="CN=Empresa S.A., O=Empresa"
+                    value={signatureForm.subjectName}
+                  />
+                </label>
+              </div>
+
+              <div className={styles.invoiceInlineGrid}>
+                <label className={styles.field}>
+                  <span>Fingerprint</span>
+                  <input
+                    onChange={(event) =>
+                      signatureForm.onCertificateFingerprintChange(
+                        event.target.value,
+                      )
+                    }
+                    placeholder="AA:BB:CC:DD..."
+                    value={signatureForm.certificateFingerprint}
+                  />
+                </label>
+                <label className={styles.field}>
+                  <span>Estado del material</span>
+                  <input
+                    disabled
+                    value={
+                      signatureForm.materialConfigured
+                        ? 'Configurado'
+                        : 'Incompleto'
+                    }
+                  />
+                </label>
+              </div>
+
+              {signatureForm.provider === 'xades_pkcs12' ? (
+                <>
+                  <div className={styles.invoiceInlineGrid}>
+                    <label className={styles.field}>
+                      <span>PKCS#12 secret ref</span>
+                      <input
+                        onChange={(event) =>
+                          signatureForm.onPkcs12SecretRefChange(
+                            event.target.value,
+                          )
+                        }
+                        placeholder="vault://ec/signatures/tenant-123/pkcs12"
+                        value={signatureForm.pkcs12SecretRef}
+                      />
+                    </label>
+                    <label className={styles.field}>
+                      <span>Password secret ref</span>
+                      <input
+                        onChange={(event) =>
+                          signatureForm.onPasswordSecretRefChange(
+                            event.target.value,
+                          )
+                        }
+                        placeholder="vault://ec/signatures/tenant-123/password"
+                        value={signatureForm.passwordSecretRef}
+                      />
+                    </label>
+                  </div>
+
+                  <label className={styles.checkboxField}>
+                    <input
+                      checked={signatureForm.hydrateMetadataFromPkcs12}
+                      onChange={(event) =>
+                        signatureForm.onHydrateMetadataFromPkcs12Change(
+                          event.target.checked,
+                        )
+                      }
+                      type="checkbox"
+                    />
+                    <span>
+                      Hidratar fingerprint y subject desde el PKCS#12 al guardar
+                    </span>
+                  </label>
+                </>
+              ) : null}
+
+              <label className={styles.checkboxField}>
+                <input
+                  checked={signatureForm.isActive}
+                  onChange={(event) =>
+                    signatureForm.onIsActiveChange(event.target.checked)
+                  }
+                  type="checkbox"
+                />
+                <span>Firma habilitada para el tenant</span>
+              </label>
+
+              <button
+                className={styles.primaryButton}
+                disabled={
+                  !signatureForm.certificateLabel.trim() ||
+                  actionLoading === 'upsert-electronic-signature-settings'
+                }
+                type="submit"
+              >
+                {actionLoading === 'upsert-electronic-signature-settings'
+                  ? 'Guardando firma...'
+                  : 'Guardar firma electronica'}
+              </button>
+
+              <p className={styles.muted}>
+                Esta configuracion separa metadatos visibles del material
+                sensible. Para `xades_pkcs12`, el sistema ya exige referencias
+                al PKCS#12 y su password antes de firmar, y ahora ya puede
+                producir una firma criptografica inicial aunque XAdES completo
+                siga pendiente.
+              </p>
+
+              {signatureForm.inspection ? (
+                <SignatureInspectionCard
+                  inspection={signatureForm.inspection}
+                />
+              ) : null}
+            </form>
+          </div>
+
+          <div
+            className={`${styles.detailCard} ${styles.invoicingSettingsSectionCard} ${
+              readinessView.recommendedSection === 'gateway'
+                ? styles.invoicingSettingsSectionCardHighlighted
+                : ''
+            }`}
+            id="invoicing-submission-settings"
+          >
+            <div className={styles.sectionHeading}>
+              <div>
+                <span className={styles.label}>04 · Gateway SRI</span>
+                <h3>Gateway SRI</h3>
+                <p className={styles.muted}>
+                  Ruta de recepcion/autorizacion y tier de sandbox. No autoriza
+                  facturas por si sola.
+                </p>
+              </div>
+              <StatusBadge status={readinessView.gateway} />
+            </div>
+
+            <form className={styles.stack} onSubmit={submissionForm.onSubmit}>
+              <div className={styles.invoiceInlineGrid}>
+                <label className={styles.field}>
+                  <span>Provider</span>
+                  <select
+                    className={styles.selectField}
+                    onChange={(event) =>
+                      submissionForm.onProviderChange(
+                        event.target.value === 'sri_offline_ws'
+                          ? 'sri_offline_ws'
+                          : 'stub_sri',
+                      )
+                    }
+                    value={submissionForm.provider}
+                  >
+                    <option value="stub_sri">stub_sri</option>
+                    <option value="sri_offline_ws">sri_offline_ws</option>
+                  </select>
+                </label>
+                <label className={styles.field}>
+                  <span>Ambiente</span>
+                  <select
+                    className={styles.selectField}
+                    onChange={(event) =>
+                      submissionForm.onEnvironmentChange(
+                        event.target.value === 'production'
+                          ? 'production'
+                          : 'test',
+                      )
+                    }
+                    value={submissionForm.environment}
+                  >
+                    <option value="test">Pruebas</option>
+                    <option value="production">Produccion</option>
+                  </select>
+                </label>
+              </div>
+
+              <div className={styles.invoiceInlineGrid}>
+                <label className={styles.field}>
+                  <span>Modo de transmision</span>
+                  <select
+                    className={styles.selectField}
+                    onChange={(event) =>
+                      submissionForm.onTransmissionModeChange(
+                        event.target.value === 'offline'
+                          ? 'offline'
+                          : 'sync_stub',
+                      )
+                    }
+                    value={submissionForm.transmissionMode}
+                  >
+                    <option value="sync_stub">sync_stub</option>
+                    <option value="offline">offline</option>
+                  </select>
+                </label>
+                <label className={styles.field}>
+                  <span>Timeout (ms)</span>
+                  <input
+                    min="1000"
+                    onChange={(event) =>
+                      submissionForm.onTimeoutMsChange(event.target.value)
+                    }
+                    type="number"
+                    value={submissionForm.timeoutMs}
+                  />
+                </label>
+              </div>
+
+              <div className={styles.invoiceInlineGrid}>
+                <label className={styles.field}>
+                  <span>Reception URL</span>
+                  <input
+                    onChange={(event) =>
+                      submissionForm.onReceptionUrlChange(event.target.value)
+                    }
+                    placeholder="https://celcer.sri.gob.ec/..."
+                    value={submissionForm.receptionUrl}
+                  />
+                </label>
+                <label className={styles.field}>
+                  <span>Authorization URL</span>
+                  <input
+                    onChange={(event) =>
+                      submissionForm.onAuthorizationUrlChange(
+                        event.target.value,
+                      )
+                    }
+                    placeholder="https://celcer.sri.gob.ec/..."
+                    value={submissionForm.authorizationUrl}
+                  />
+                </label>
+              </div>
+
+              <div className={styles.invoiceInlineGrid}>
+                <label className={styles.field}>
+                  <span>Credentials secret ref</span>
+                  <input
+                    onChange={(event) =>
+                      submissionForm.onCredentialsSecretRefChange(
+                        event.target.value,
+                      )
+                    }
+                    placeholder="vault://ec/sri/tenant-123"
+                    value={submissionForm.credentialsSecretRef}
+                  />
+                </label>
+                <label className={styles.field}>
+                  <span>Gateway readiness</span>
+                  <input
+                    disabled
+                    value={
+                      submissionForm.gatewayConfigured
+                        ? 'Configurado'
+                        : 'Incompleto'
+                    }
+                  />
+                </label>
+              </div>
+
+              <label className={styles.checkboxField}>
+                <input
+                  checked={submissionForm.isActive}
+                  onChange={(event) =>
+                    submissionForm.onIsActiveChange(event.target.checked)
+                  }
+                  type="checkbox"
+                />
+                <span>Envio electronico habilitado para el tenant</span>
+              </label>
+
+              <button
+                className={styles.primaryButton}
+                disabled={
+                  !submissionForm.timeoutMs.trim() ||
+                  actionLoading === 'upsert-electronic-submission-settings'
+                }
+                type="submit"
+              >
+                {actionLoading === 'upsert-electronic-submission-settings'
+                  ? 'Guardando gateway...'
+                  : 'Guardar gateway SRI'}
+              </button>
+
+              <p className={styles.muted}>
+                Este setting prepara la frontera real de recepcion y
+                autorizacion. En `stub_sri` todo queda local; en
+                `sri_offline_ws` ya empezamos a modelar URLs y, opcionalmente,
+                secretos por tenant sin cambiar el contrato del gateway.
+              </p>
+
+              {submissionForm.readiness ? (
+                <details
+                  className={styles.invoicingSettingsTechnicalDisclosure}
+                >
+                  <summary>
+                    Evidencia tecnica de sandbox y soporte documental
+                  </summary>
+                  <SandboxReadinessCard
+                    formatDate={formatDate}
+                    readiness={submissionForm.readiness}
+                  />
+                </details>
+              ) : null}
+            </form>
+          </div>
         </div>
 
-        {submissionForm.readiness ? (
-          <SriReadinessRail readiness={submissionForm.readiness} />
-        ) : null}
-
-        <form className={styles.stack} onSubmit={submissionForm.onSubmit}>
-          <div className={styles.invoiceInlineGrid}>
-            <label className={styles.field}>
-              <span>Provider</span>
-              <select
-                className={styles.selectField}
-                onChange={(event) =>
-                  submissionForm.onProviderChange(
-                    event.target.value === 'sri_offline_ws'
-                      ? 'sri_offline_ws'
-                      : 'stub_sri',
-                  )
-                }
-                value={submissionForm.provider}
-              >
-                <option value="stub_sri">stub_sri</option>
-                <option value="sri_offline_ws">sri_offline_ws</option>
-              </select>
-            </label>
-            <label className={styles.field}>
-              <span>Ambiente</span>
-              <select
-                className={styles.selectField}
-                onChange={(event) =>
-                  submissionForm.onEnvironmentChange(
-                    event.target.value === 'production' ? 'production' : 'test',
-                  )
-                }
-                value={submissionForm.environment}
-              >
-                <option value="test">Pruebas</option>
-                <option value="production">Produccion</option>
-              </select>
-            </label>
-          </div>
-
-          <div className={styles.invoiceInlineGrid}>
-            <label className={styles.field}>
-              <span>Modo de transmision</span>
-              <select
-                className={styles.selectField}
-                onChange={(event) =>
-                  submissionForm.onTransmissionModeChange(
-                    event.target.value === 'offline' ? 'offline' : 'sync_stub',
-                  )
-                }
-                value={submissionForm.transmissionMode}
-              >
-                <option value="sync_stub">sync_stub</option>
-                <option value="offline">offline</option>
-              </select>
-            </label>
-            <label className={styles.field}>
-              <span>Timeout (ms)</span>
-              <input
-                min="1000"
-                onChange={(event) =>
-                  submissionForm.onTimeoutMsChange(event.target.value)
-                }
-                type="number"
-                value={submissionForm.timeoutMs}
-              />
-            </label>
-          </div>
-
-          <div className={styles.invoiceInlineGrid}>
-            <label className={styles.field}>
-              <span>Reception URL</span>
-              <input
-                onChange={(event) =>
-                  submissionForm.onReceptionUrlChange(event.target.value)
-                }
-                placeholder="https://celcer.sri.gob.ec/..."
-                value={submissionForm.receptionUrl}
-              />
-            </label>
-            <label className={styles.field}>
-              <span>Authorization URL</span>
-              <input
-                onChange={(event) =>
-                  submissionForm.onAuthorizationUrlChange(event.target.value)
-                }
-                placeholder="https://celcer.sri.gob.ec/..."
-                value={submissionForm.authorizationUrl}
-              />
-            </label>
-          </div>
-
-          <div className={styles.invoiceInlineGrid}>
-            <label className={styles.field}>
-              <span>Credentials secret ref</span>
-              <input
-                onChange={(event) =>
-                  submissionForm.onCredentialsSecretRefChange(event.target.value)
-                }
-                placeholder="vault://ec/sri/tenant-123"
-                value={submissionForm.credentialsSecretRef}
-              />
-            </label>
-            <label className={styles.field}>
-              <span>Gateway readiness</span>
-              <input
-                disabled
-                value={
-                  submissionForm.gatewayConfigured ? 'Configurado' : 'Incompleto'
-                }
-              />
-            </label>
-          </div>
-
-          <label className={styles.checkboxField}>
-            <input
-              checked={submissionForm.isActive}
-              onChange={(event) =>
-                submissionForm.onIsActiveChange(event.target.checked)
-              }
-              type="checkbox"
-            />
-            <span>Envio electronico habilitado para el tenant</span>
-          </label>
-
-          <button
-            className={styles.primaryButton}
-            disabled={
-              !submissionForm.timeoutMs.trim() ||
-              actionLoading === 'upsert-electronic-submission-settings'
-            }
-            type="submit"
-          >
-            {actionLoading === 'upsert-electronic-submission-settings'
-              ? 'Guardando gateway...'
-              : 'Guardar gateway SRI'}
-          </button>
-
-          <p className={styles.muted}>
-            Este setting prepara la frontera real de recepcion y autorizacion.
-            En `stub_sri` todo queda local; en `sri_offline_ws` ya empezamos a
-            modelar URLs y, opcionalmente, secretos por tenant sin cambiar el
-            contrato del gateway.
-          </p>
-
+        <aside
+          aria-label="Resumen operativo de configuracion SRI"
+          className={styles.invoicingSettingsSideRail}
+        >
+          <SriSettingsSectionNav readinessView={readinessView} />
           {submissionForm.readiness ? (
-            <SandboxReadinessCard
-              formatDate={formatDate}
-              readiness={submissionForm.readiness}
-            />
-          ) : null}
-        </form>
+            <SriReadinessRail readiness={submissionForm.readiness} />
+          ) : (
+            <SriSettingsOperatorGuide />
+          )}
+        </aside>
       </div>
     </div>
   );
@@ -819,9 +887,10 @@ function SriRecommendedStep({
   readiness: ElectronicSandboxReadinessResponse | null;
   readinessView: SettingsReadinessViewModel;
 }) {
-  const status = readinessView.verdict.tone === 'success'
-    ? { label: 'Listo', tone: 'success' as const }
-    : { label: 'Siguiente paso', tone: readinessView.verdict.tone };
+  const status =
+    readinessView.verdict.tone === 'success'
+      ? { label: 'Listo', tone: 'success' as const }
+      : { label: 'Siguiente paso', tone: readinessView.verdict.tone };
 
   return (
     <div className={styles.invoicingSRINextStepCard}>
@@ -870,15 +939,19 @@ function SriReadinessRail({
           <span className={styles.label}>Checks</span>
           <div className={styles.invoicingSettingsCheckList}>
             {readiness.checks.map((check) => (
-              <div className={styles.invoicingSettingsCheckItem} key={check.key}>
+              <div
+                className={styles.invoicingSettingsCheckItem}
+                key={check.key}
+              >
                 <StatusBadge
                   status={{
                     label: check.status,
-                    tone: check.status === 'ready'
-                      ? 'success'
-                      : check.status === 'blocked'
-                        ? 'danger'
-                        : 'warning',
+                    tone:
+                      check.status === 'ready'
+                        ? 'success'
+                        : check.status === 'blocked'
+                          ? 'danger'
+                          : 'warning',
                   }}
                 />
                 <div>
@@ -906,12 +979,90 @@ function SriReadinessRail({
   );
 }
 
+function SriSettingsSectionNav({
+  readinessView,
+}: {
+  readinessView: SettingsReadinessViewModel;
+}) {
+  const sections: Array<{
+    href: string;
+    key: SettingsSectionKey;
+    label: string;
+    status: SettingsStatus;
+  }> = [
+    {
+      href: '#invoicing-issuer-profile',
+      key: 'issuer',
+      label: 'Emisor',
+      status: readinessView.issuer,
+    },
+    {
+      href: '#invoicing-numbering-settings',
+      key: 'numbering',
+      label: 'Numeracion',
+      status: readinessView.numbering,
+    },
+    {
+      href: '#invoicing-signature-settings',
+      key: 'signature',
+      label: 'Firma',
+      status: readinessView.signature,
+    },
+    {
+      href: '#invoicing-submission-settings',
+      key: 'gateway',
+      label: 'Gateway',
+      status: readinessView.gateway,
+    },
+  ];
+
+  return (
+    <div className={styles.invoicingSettingsRailCard}>
+      <span className={styles.label}>Mapa de preparacion</span>
+      <div className={styles.invoicingSettingsSectionNav}>
+        {sections.map((section, index) => (
+          <a
+            className={
+              readinessView.recommendedSection === section.key
+                ? styles.invoicingSettingsSectionNavActive
+                : ''
+            }
+            href={section.href}
+            key={section.key}
+          >
+            <span>{String(index + 1).padStart(2, '0')}</span>
+            <strong>{section.label}</strong>
+            <StatusBadge status={section.status} />
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SriSettingsOperatorGuide() {
+  return (
+    <div className={styles.invoicingSettingsRailCard}>
+      <span className={styles.label}>Guia operativa</span>
+      <strong className={styles.invoicingSettingsRailTitle}>
+        Completa la configuracion antes de probar sandbox
+      </strong>
+      <p className={styles.invoicingSettingsRailCopy}>
+        Esta pantalla prepara el terreno. La autorizacion SRI vive en el
+        documento puntual, cuando el XML se genera, se envia y el backend recibe
+        confirmacion real.
+      </p>
+    </div>
+  );
+}
+
 function SignatureHealthStrip({
   signatureForm,
 }: {
   signatureForm: InvoicingWorkspaceSettingsProps['signatureForm'];
 }) {
-  const validity = signatureForm.inspection?.inspection.certificateValidityStatus;
+  const validity =
+    signatureForm.inspection?.inspection.certificateValidityStatus;
   const daysUntilExpiry = signatureForm.inspection?.inspection.daysUntilExpiry;
 
   return (
@@ -1058,11 +1209,17 @@ function SignatureInspectionCard({
       <div className={styles.invoiceInlineGrid}>
         <div className={styles.field}>
           <span>Valid from</span>
-          <input disabled value={inspection.inspection.validFrom ?? 'No extraido'} />
+          <input
+            disabled
+            value={inspection.inspection.validFrom ?? 'No extraido'}
+          />
         </div>
         <div className={styles.field}>
           <span>Valid until</span>
-          <input disabled value={inspection.inspection.validUntil ?? 'No extraido'} />
+          <input
+            disabled
+            value={inspection.inspection.validUntil ?? 'No extraido'}
+          />
         </div>
       </div>
       <div className={styles.invoiceInlineGrid}>
@@ -1126,7 +1283,9 @@ function SandboxReadinessCard({
         />
         <ReadinessFact
           label="Local stub"
-          value={readiness.isReadyForLocalStubSubmission ? 'Listo' : 'Pendiente'}
+          value={
+            readiness.isReadyForLocalStubSubmission ? 'Listo' : 'Pendiente'
+          }
         />
         <ReadinessFact
           label="Remote presigned"
@@ -1174,12 +1333,16 @@ function SandboxReadinessCard({
         />
         <ReadinessFact
           label="Compatibilidad offline"
-          value={cryptoProofLabel(readiness.internalSignerOfflineCompatibilityStatus)}
+          value={cryptoProofLabel(
+            readiness.internalSignerOfflineCompatibilityStatus,
+          )}
           detail={readiness.internalSignerOfflineCompatibilityDetail}
         />
         <ReadinessFact
           label="Alineacion emisor-certificado"
-          value={issuerAlignmentLabel(readiness.internalSignerIssuerAlignmentStatus)}
+          value={issuerAlignmentLabel(
+            readiness.internalSignerIssuerAlignmentStatus,
+          )}
           detail={readiness.internalSignerIssuerAlignmentDetail}
           extra={
             readiness.internalSignerExtractedTaxId

@@ -30,6 +30,7 @@ export type AccessWorkspaceOption = {
 
 export type AccessGatewayModel = {
   advancedOpen: boolean;
+  apiBaseUrl: string;
   capabilities: string[];
   currentUserEmail: string | null;
   hasStoredToken: boolean;

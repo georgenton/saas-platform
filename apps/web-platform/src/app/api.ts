@@ -564,6 +564,31 @@ import {
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:3000/api';
 
+function buildRequestUrl(path: string) {
+  return `${API_BASE_URL}${path}`;
+}
+
+function buildNetworkError(path: string, error: unknown) {
+  const cause =
+    error instanceof Error && error.message
+      ? ` Detalle: ${error.message}.`
+      : '';
+
+  return new Error(
+    `No se pudo conectar con la API en ${buildRequestUrl(
+      path,
+    )}.${cause} En deploy revisa VITE_API_BASE_URL en Vercel y CORS_ORIGIN en Railway.`,
+  );
+}
+
+async function safeFetch(path: string, init: RequestInit): Promise<Response> {
+  try {
+    return await fetch(buildRequestUrl(path), init);
+  } catch (error) {
+    throw buildNetworkError(path, error);
+  }
+}
+
 const buildHeaders = (token: string, json = true): HeadersInit => ({
   Authorization: `Bearer ${token}`,
   ...(json ? { 'Content-Type': 'application/json' } : {}),
@@ -573,7 +598,7 @@ async function request<T>(
   path: string,
   options: RequestInit & { token: string },
 ): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await safeFetch(path, {
     ...options,
     headers: {
       ...buildHeaders(options.token, options.body !== undefined),
@@ -597,7 +622,7 @@ async function requestText(
   path: string,
   options: RequestInit & { token: string },
 ): Promise<string> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await safeFetch(path, {
     ...options,
     headers: {
       ...buildHeaders(options.token, options.body !== undefined),
@@ -631,7 +656,7 @@ async function requestDownload(
   fileName: string | null;
   contentType: string | null;
 }> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await safeFetch(path, {
     ...options,
     headers: {
       ...buildHeaders(options.token, options.body !== undefined),

@@ -3963,6 +3963,29 @@
   padding: 0 14px 14px;
 }
 
+.accessApiDiagnostic {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+}
+
+.accessApiDiagnostic span {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.accessApiDiagnostic code {
+  color: var(--text-strong);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+}
+
 .accessAdvancedActions {
   align-items: center;
   display: flex;

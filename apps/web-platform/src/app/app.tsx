@@ -21,6 +21,7 @@ import { useCommandCenterPlatformData } from '../features/command-center/queries
 import { useCommandCenterModel } from '../features/command-center/use-command-center-model';
 import {
   InvoicingDomainSection,
+  InvoicingWorkspaceAssist,
   InvoicingDocumentPreviewPanel,
   InvoicingElectronicStatusPanel,
   InvoicingInvoiceItemsPanel,
@@ -28,6 +29,7 @@ import {
   InvoicingPaymentsPanel,
   InvoicingTechnicalTracePanel,
   InvoicingWorkspaceOperations,
+  InvoicingWorkspaceReports,
 } from '../features/invoicing/invoicing-workspace';
 import {
   invoicingQueryKeys,
@@ -41600,219 +41602,23 @@ export function App() {
           }}
         >
           {invoicingReport ? (
-                <div className={styles.stack}>
-                  <div className={styles.sectionHeading}>
-                    <div>
-                      <span className={styles.label}>Reports</span>
-                      <h3>Resumen operativo</h3>
-                    </div>
-                    <small className={styles.muted}>
-                      Generado {formatDate(invoicingReport.generatedAt)}
-                    </small>
-                  </div>
-
-                  <div className={styles.invoiceKpiGrid}>
-                    <div className={styles.commercialCard}>
-                      <span className={styles.muted}>Customers</span>
-                      <strong>{invoicingReport.customerCount}</strong>
-                    </div>
-                    <div className={styles.commercialCard}>
-                      <span className={styles.muted}>Invoices</span>
-                      <strong>{invoicingReport.invoiceCount}</strong>
-                    </div>
-                    <div className={styles.commercialCard}>
-                      <span className={styles.muted}>Estados</span>
-                      <strong>{invoicingReport.statusBreakdown.length}</strong>
-                    </div>
-                    <div className={styles.commercialCard}>
-                      <span className={styles.muted}>Currencies</span>
-                      <strong>{invoicingReport.totalsByCurrency.length}</strong>
-                    </div>
-                  </div>
-
-                  <div className={styles.twoColumn}>
-                    <div className={styles.stack}>
-                      <div className={styles.sectionHeading}>
-                        <div>
-                          <span className={styles.label}>Status mix</span>
-                          <h3>Facturas por estado</h3>
-                        </div>
-                      </div>
-
-                      {invoicingReport.statusBreakdown.map((entry) => (
-                        <div className={styles.invoiceItemCard} key={entry.status}>
-                          <div className={styles.invoiceCardHeader}>
-                            <strong>{formatInvoiceStatus(entry.status)}</strong>
-                            <span className={styles.statusPill}>{entry.count}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className={styles.stack}>
-                      <div className={styles.sectionHeading}>
-                        <div>
-                          <span className={styles.label}>Currency totals</span>
-                          <h3>Totales por moneda</h3>
-                        </div>
-                      </div>
-
-                      {invoicingReport.totalsByCurrency.map((entry) => (
-                        <div className={styles.invoiceItemCard} key={entry.currency}>
-                          <div className={styles.invoiceCardHeader}>
-                            <strong>{entry.currency}</strong>
-                            <span className={styles.statusPill}>
-                              {formatMoney(entry.totalInCents, entry.currency)}
-                            </span>
-                          </div>
-                          <small>
-                            Subtotal:{' '}
-                            {formatMoney(entry.subtotalInCents, entry.currency)}
-                          </small>
-                          <small>
-                            Tax: {formatMoney(entry.taxInCents, entry.currency)}
-                          </small>
-                          <small>
-                            Outstanding:{' '}
-                            {formatMoney(
-                              entry.outstandingTotalInCents,
-                              entry.currency,
-                            )}
-                          </small>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className={styles.stack}>
-                    <div className={styles.sectionHeading}>
-                      <div>
-                        <span className={styles.label}>Monthly trend</span>
-                        <h3>Totales mensuales</h3>
-                      </div>
-                    </div>
-
-                    {invoicingReport.monthlyTotals.length === 0 ? (
-                      <div className={styles.emptyState}>
-                        <p>
-                          Todavia no hay actividad suficiente para reportes mensuales.
-                        </p>
-                      </div>
-                    ) : (
-                      <div className={styles.stack}>
-                        {invoicingReport.monthlyTotals.map((entry) => (
-                          <div
-                            className={styles.invoiceItemCard}
-                            key={`${entry.month}-${entry.currency}`}
-                          >
-                            <div className={styles.invoiceCardHeader}>
-                              <strong>
-                                {formatReportMonth(entry.month)} · {entry.currency}
-                              </strong>
-                              <span className={styles.statusPill}>
-                                {entry.invoiceCount} facturas
-                              </span>
-                            </div>
-                            <small>
-                              Total: {formatMoney(entry.totalInCents, entry.currency)}
-                            </small>
-                            <small>
-                              Tax: {formatMoney(entry.taxInCents, entry.currency)}
-                            </small>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ) : null}
+            <InvoicingWorkspaceReports
+              formatDate={formatDate}
+              formatInvoiceStatus={formatInvoiceStatus}
+              formatMoney={formatMoney}
+              formatReportMonth={formatReportMonth}
+              report={invoicingReport}
+            />
+          ) : null}
 
               {invoiceDocumentDraftingAssist ? (
-                <div className={styles.twoColumn}>
-                  <div className={styles.detailCard}>
-                    <div className={styles.sectionHeading}>
-                      <div>
-                        <span className={styles.label}>Invoicing Assist</span>
-                        <h3>Surface determinística para drafting documental</h3>
-                      </div>
-                      <span
-                        className={`${styles.statusPill} ${operationalStatusTone(
-                          invoiceDocumentDraftingAssist.summary.tone,
-                        )}`}
-                      >
-                        {operationalStatusLabel(
-                          invoiceDocumentDraftingAssist.summary.tone,
-                        )}
-                      </span>
-                    </div>
-
-                    <p>{invoiceDocumentDraftingAssist.summary.headline}</p>
-                    <small>{invoiceDocumentDraftingAssist.summary.detail}</small>
-
-                    <div className={styles.invoiceKpiGrid}>
-                      <div className={styles.commercialCard}>
-                        <span className={styles.muted}>Readiness</span>
-                        <strong>
-                          {invoiceDocumentDraftingAssist.summary.readinessStatus}
-                        </strong>
-                        <small>Estado base del carril tributario</small>
-                      </div>
-                      <div className={styles.commercialCard}>
-                        <span className={styles.muted}>Outstanding</span>
-                        <strong>
-                          {formatMoney(
-                            invoiceDocumentDraftingAssist.reportSnapshot
-                              .outstandingTotalInCents,
-                            invoicePortfolioCurrency,
-                          )}
-                        </strong>
-                        <small>Saldo pendiente agregado del tenant</small>
-                      </div>
-                      <div className={styles.commercialCard}>
-                        <span className={styles.muted}>Invoices</span>
-                        <strong>
-                          {invoiceDocumentDraftingAssist.reportSnapshot.invoiceCount}
-                        </strong>
-                        <small>Base documental ya registrada</small>
-                      </div>
-                      <div className={styles.commercialCard}>
-                        <span className={styles.muted}>Customers</span>
-                        <strong>
-                          {invoiceDocumentDraftingAssist.reportSnapshot.customerCount}
-                        </strong>
-                        <small>Contexto comercial disponible</small>
-                      </div>
-                    </div>
-
-                    <div className={styles.stack}>
-                      <div className={styles.sectionHeading}>
-                        <div>
-                          <span className={styles.label}>Checklist</span>
-                          <h3>Controles formales que la IA debe respetar</h3>
-                        </div>
-                      </div>
-                      {invoiceDocumentDraftingAssist.checklist.map((entry) => (
-                        <div className={styles.invoiceItemCard} key={entry.key}>
-                          <div className={styles.invoiceCardHeader}>
-                            <strong>{entry.label}</strong>
-                            <span
-                              className={`${styles.statusPill} ${operationalStatusTone(
-                                entry.status === 'blocked'
-                                  ? 'critical'
-                                  : entry.status === 'warning'
-                                    ? 'warning'
-                                    : 'healthy',
-                              )}`}
-                            >
-                              {entry.status}
-                            </span>
-                          </div>
-                          <small>{entry.detail}</small>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
+                <InvoicingWorkspaceAssist
+                  formatMoney={formatMoney}
+                  invoicePortfolioCurrency={invoicePortfolioCurrency}
+                  operationalStatusLabel={operationalStatusLabel}
+                  operationalStatusTone={operationalStatusTone}
+                  workspace={invoiceDocumentDraftingAssist}
+                >
                   <div className={styles.detailCard}>
                     <div className={styles.sectionHeading}>
                       <div>
@@ -42213,7 +42019,7 @@ export function App() {
                       </div>
                     )}
                   </div>
-                </div>
+                </InvoicingWorkspaceAssist>
               ) : null}
 
               <div className={styles.twoColumn}>

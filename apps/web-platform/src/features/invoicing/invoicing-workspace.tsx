@@ -1,7 +1,9 @@
 export { InvoicingDomainSection } from './invoicing-domain-section';
+export { InvoicingWorkspaceAssist } from './workspace-assist';
 export { InvoicingWorkspaceSummary } from './workspace-summary';
 export { Stepper, deriveStageFromInvoiceDetail } from './workspace-shared';
 export { InvoicingWorkspaceOperations } from './workspace-operations';
+export { InvoicingWorkspaceReports } from './workspace-reports';
 export {
   InvoicingElectronicStatusPanel,
   InvoicingTechnicalTracePanel,

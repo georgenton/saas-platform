@@ -1703,6 +1703,190 @@
   padding: 12px 14px;
 }
 
+.invoicingSettingsSurface {
+  display: grid;
+  gap: 16px;
+}
+
+.invoicingSettingsReadinessHeader {
+  display: grid;
+  gap: 16px;
+  overflow: hidden;
+  padding: 0;
+}
+
+.invoicingSettingsVerdict {
+  align-items: start;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 88%, var(--primary-soft) 12%) 0%, var(--surface-sunken) 100%);
+  border-left: 3px solid var(--primary);
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  padding: 18px;
+}
+
+.invoicingSettingsVerdict h3 {
+  color: var(--text-strong);
+  margin: 4px 0 0;
+}
+
+.invoicingSettingsVerdict p {
+  color: var(--text);
+  line-height: 1.55;
+  margin: 6px 0 0;
+  max-width: 68ch;
+}
+
+.invoicingSettingsPillarGrid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  padding: 0 18px 18px;
+}
+
+.invoicingSettingsPillarCard {
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 14px 16px;
+}
+
+.invoicingSettingsPillarCard > span:first-child {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.invoicingSettingsSectionCard {
+  position: relative;
+}
+
+.invoicingSettingsSectionCardHighlighted {
+  border-color: color-mix(in srgb, var(--primary) 56%, var(--border) 44%);
+  box-shadow: var(--focus-ring-shadow);
+}
+
+.invoicingSettingsSectionCardHighlighted::before {
+  background: var(--primary);
+  border-radius: 999px;
+  content: '';
+  height: calc(100% - 24px);
+  left: -1px;
+  position: absolute;
+  top: 12px;
+  width: 3px;
+}
+
+.invoicingSettingsNumberPreview {
+  align-items: center;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 16px;
+  padding: 14px 16px;
+}
+
+.invoicingSettingsNumberPreview span {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-strong);
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  font-weight: 800;
+  min-width: 0;
+  overflow: hidden;
+  padding: 10px 12px;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.invoicingSettingsHealthStrip,
+.invoicingSettingsReadinessRail {
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 14px 16px;
+}
+
+.invoicingSettingsHealthStrip {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.invoicingSettingsReadinessRail {
+  margin-bottom: 18px;
+}
+
+.invoicingSettingsTierList,
+.invoicingSettingsCheckList {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.invoicingSettingsTierRung,
+.invoicingSettingsCheckItem {
+  align-items: start;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: flex;
+  gap: 10px;
+  padding: 10px 12px;
+}
+
+.invoicingSettingsTierRung span:last-child {
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.invoicingSettingsCheckItem {
+  align-items: center;
+}
+
+.invoicingSettingsCheckItem div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.invoicingSettingsCheckItem strong {
+  color: var(--text-strong);
+  font-size: 0.9rem;
+}
+
+.invoicingSettingsCheckItem small {
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.invoicingSettingsGapList {
+  background: var(--warning-soft);
+  border: 1px solid var(--warning);
+  border-radius: 8px;
+  color: var(--warning);
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+}
+
+.invoicingSettingsGapList p {
+  line-height: 1.45;
+  margin: 0;
+}
+
 .operatorBrief {
   background: linear-gradient(180deg, rgba(255, 249, 239, 0.96) 0%, rgba(245, 238, 228, 0.88) 100%);
   border: 1px solid rgba(143, 86, 49, 0.14);
@@ -2096,6 +2280,8 @@
   .invoicingSRIOverview,
   .invoicingSRICopyGrid,
   .invoicingSRICompactRow,
+  .invoicingSettingsHealthStrip,
+  .invoicingSettingsPillarGrid,
   .identityBlock,
   .sessionStateGrid,
   .detailGrid,
@@ -2146,6 +2332,9 @@
   .invoicingSRIOverview,
   .invoicingSRICopyGrid,
   .invoicingSRICompactRow,
+  .invoicingSettingsHealthStrip,
+  .invoicingSettingsNumberPreview,
+  .invoicingSettingsPillarGrid,
   .selectorGrid,
   .identityBlock,
   .sessionStateGrid,
@@ -2185,6 +2374,11 @@
   }
 
   .invoicingSRINextStepHeader {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .invoicingSettingsVerdict {
     align-items: stretch;
     flex-direction: column;
   }

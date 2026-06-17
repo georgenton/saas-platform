@@ -5,6 +5,27 @@ import type {
   ElectronicSignatureMaterialInspectionResponse,
 } from '../../app/types';
 
+type SettingsSectionKey = 'issuer' | 'numbering' | 'signature' | 'gateway';
+type SettingsTone = 'success' | 'warning' | 'danger' | 'neutral';
+
+type SettingsStatus = {
+  label: string;
+  tone: SettingsTone;
+};
+
+type SettingsReadinessViewModel = {
+  gateway: SettingsStatus;
+  issuer: SettingsStatus;
+  numbering: SettingsStatus;
+  recommendedSection: SettingsSectionKey | null;
+  sandboxTier: SettingsStatus;
+  signature: SettingsStatus;
+  verdict: SettingsStatus & {
+    description: string;
+    title: string;
+  };
+};
+
 type InvoicingWorkspaceSettingsProps = {
   actionLoading: string | null;
   canSyncIssuerTaxId: boolean;
@@ -102,14 +123,39 @@ export function InvoicingWorkspaceSettings({
   signatureForm,
   submissionForm,
 }: InvoicingWorkspaceSettingsProps) {
+  const readinessView = buildSettingsReadinessView({
+    issuerForm,
+    numberingForm,
+    signatureForm,
+    submissionForm,
+  });
+
   return (
-    <>
-      <div className={styles.detailCard} id="invoicing-issuer-profile">
+    <div className={styles.invoicingSettingsSurface}>
+      <SriReadinessHeader
+        environment={issuerForm.environment}
+        readinessView={readinessView}
+      />
+
+      <SriRecommendedStep
+        readiness={submissionForm.readiness}
+        readinessView={readinessView}
+      />
+
+      <div
+        className={`${styles.detailCard} ${styles.invoicingSettingsSectionCard} ${
+          readinessView.recommendedSection === 'issuer'
+            ? styles.invoicingSettingsSectionCardHighlighted
+            : ''
+        }`}
+        id="invoicing-issuer-profile"
+      >
         <div className={styles.sectionHeading}>
           <div>
             <span className={styles.label}>Electronic issuer</span>
             <h3>Perfil fiscal del emisor</h3>
           </div>
+          <StatusBadge status={readinessView.issuer} />
         </div>
 
         <form className={styles.stack} onSubmit={issuerForm.onSubmit}>
@@ -274,12 +320,29 @@ export function InvoicingWorkspaceSettings({
         </form>
       </div>
 
-      <div className={styles.detailCard}>
+      <div
+        className={`${styles.detailCard} ${styles.invoicingSettingsSectionCard} ${
+          readinessView.recommendedSection === 'numbering'
+            ? styles.invoicingSettingsSectionCardHighlighted
+            : ''
+        }`}
+      >
         <div className={styles.sectionHeading}>
           <div>
             <span className={styles.label}>Ecuador numbering</span>
             <h3>Serie y secuencial</h3>
           </div>
+          <StatusBadge status={readinessView.numbering} />
+        </div>
+
+        <div className={styles.invoicingSettingsNumberPreview}>
+          <span>{numberingForm.establishmentCode || '000'}</span>
+          <span>{numberingForm.emissionPointCode || '000'}</span>
+          <span>
+            {numberingForm.previewNumber
+              ? numberingForm.previewNumber.split('-')[2]
+              : numberingForm.nextSequence.padStart(9, '0')}
+          </span>
         </div>
 
         <form className={styles.stack} onSubmit={numberingForm.onSubmit}>
@@ -356,13 +419,23 @@ export function InvoicingWorkspaceSettings({
         </form>
       </div>
 
-      <div className={styles.detailCard} id="invoicing-signature-settings">
+      <div
+        className={`${styles.detailCard} ${styles.invoicingSettingsSectionCard} ${
+          readinessView.recommendedSection === 'signature'
+            ? styles.invoicingSettingsSectionCardHighlighted
+            : ''
+        }`}
+        id="invoicing-signature-settings"
+      >
         <div className={styles.sectionHeading}>
           <div>
             <span className={styles.label}>Electronic signature</span>
             <h3>Configuracion de firma</h3>
           </div>
+          <StatusBadge status={readinessView.signature} />
         </div>
+
+        <SignatureHealthStrip signatureForm={signatureForm} />
 
         <form className={styles.stack} onSubmit={signatureForm.onSubmit}>
           <div className={styles.invoiceInlineGrid}>
@@ -528,13 +601,24 @@ export function InvoicingWorkspaceSettings({
         </form>
       </div>
 
-      <div className={styles.detailCard}>
+      <div
+        className={`${styles.detailCard} ${styles.invoicingSettingsSectionCard} ${
+          readinessView.recommendedSection === 'gateway'
+            ? styles.invoicingSettingsSectionCardHighlighted
+            : ''
+        }`}
+      >
         <div className={styles.sectionHeading}>
           <div>
             <span className={styles.label}>Electronic submission</span>
             <h3>Gateway SRI</h3>
           </div>
+          <StatusBadge status={readinessView.gateway} />
         </div>
+
+        {submissionForm.readiness ? (
+          <SriReadinessRail readiness={submissionForm.readiness} />
+        ) : null}
 
         <form className={styles.stack} onSubmit={submissionForm.onSubmit}>
           <div className={styles.invoiceInlineGrid}>
@@ -685,7 +769,222 @@ export function InvoicingWorkspaceSettings({
           ) : null}
         </form>
       </div>
-    </>
+    </div>
+  );
+}
+
+function SriReadinessHeader({
+  environment,
+  readinessView,
+}: {
+  environment: 'test' | 'production';
+  readinessView: SettingsReadinessViewModel;
+}) {
+  return (
+    <div
+      className={`${styles.detailCard} ${styles.invoicingSettingsReadinessHeader}`}
+    >
+      <div className={styles.invoicingSettingsVerdict}>
+        <div>
+          <span className={styles.label}>Preparacion SRI</span>
+          <h3>{readinessView.verdict.title}</h3>
+          <p>{readinessView.verdict.description}</p>
+        </div>
+        <div className={styles.badgeRow}>
+          <StatusBadge status={readinessView.verdict} />
+          <StatusBadge
+            status={{
+              label: environment === 'production' ? 'Produccion' : 'Pruebas',
+              tone: environment === 'production' ? 'success' : 'warning',
+            }}
+          />
+          <StatusBadge status={readinessView.sandboxTier} />
+        </div>
+      </div>
+
+      <div className={styles.invoicingSettingsPillarGrid}>
+        <PillarCard label="Emisor" status={readinessView.issuer} />
+        <PillarCard label="Numeracion" status={readinessView.numbering} />
+        <PillarCard label="Firma" status={readinessView.signature} />
+        <PillarCard label="Gateway" status={readinessView.gateway} />
+      </div>
+    </div>
+  );
+}
+
+function SriRecommendedStep({
+  readiness,
+  readinessView,
+}: {
+  readiness: ElectronicSandboxReadinessResponse | null;
+  readinessView: SettingsReadinessViewModel;
+}) {
+  const status = readinessView.verdict.tone === 'success'
+    ? { label: 'Listo', tone: 'success' as const }
+    : { label: 'Siguiente paso', tone: readinessView.verdict.tone };
+
+  return (
+    <div className={styles.invoicingSRINextStepCard}>
+      <div className={styles.invoicingSRINextStepHeader}>
+        <span className={styles.label}>Recomendacion</span>
+        <StatusBadge status={status} />
+      </div>
+      <strong className={styles.invoicingSRINextStepTitle}>
+        {recommendedSectionTitle(readinessView.recommendedSection)}
+      </strong>
+      <p className={styles.invoicingSRINextStepDescription}>
+        {readiness?.recommendedNextStep ??
+          'Completa los cuatro bloques para habilitar una revision operativa de emision electronica.'}
+      </p>
+    </div>
+  );
+}
+
+function SriReadinessRail({
+  readiness,
+}: {
+  readiness: ElectronicSandboxReadinessResponse;
+}) {
+  return (
+    <div className={styles.invoicingSettingsReadinessRail}>
+      <div>
+        <span className={styles.label}>Sandbox ladder</span>
+        <div className={styles.invoicingSettingsTierList}>
+          <TierRung
+            active={readiness.isReadyForLocalStubSubmission}
+            label="Validacion local"
+          />
+          <TierRung
+            active={readiness.isReadyForPresignedRemoteSandboxSubmission}
+            label="XML prefirmado remoto"
+          />
+          <TierRung
+            active={readiness.isReadyForRemoteSandboxSubmission}
+            label="Firma interna remota"
+          />
+        </div>
+      </div>
+
+      {readiness.checks.length > 0 ? (
+        <div>
+          <span className={styles.label}>Checks</span>
+          <div className={styles.invoicingSettingsCheckList}>
+            {readiness.checks.map((check) => (
+              <div className={styles.invoicingSettingsCheckItem} key={check.key}>
+                <StatusBadge
+                  status={{
+                    label: check.status,
+                    tone: check.status === 'ready'
+                      ? 'success'
+                      : check.status === 'blocked'
+                        ? 'danger'
+                        : 'warning',
+                  }}
+                />
+                <div>
+                  <strong>{check.label}</strong>
+                  <small>{check.detail}</small>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {readiness.blockers.length > 0 || readiness.warnings.length > 0 ? (
+        <div className={styles.invoicingSettingsGapList}>
+          <span className={styles.label}>Que falta</span>
+          {readiness.blockers.map((item) => (
+            <p key={`blocker-${item}`}>{item}</p>
+          ))}
+          {readiness.warnings.map((item) => (
+            <p key={`warning-${item}`}>{item}</p>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function SignatureHealthStrip({
+  signatureForm,
+}: {
+  signatureForm: InvoicingWorkspaceSettingsProps['signatureForm'];
+}) {
+  const validity = signatureForm.inspection?.inspection.certificateValidityStatus;
+  const daysUntilExpiry = signatureForm.inspection?.inspection.daysUntilExpiry;
+
+  return (
+    <div className={styles.invoicingSettingsHealthStrip}>
+      <ReadinessFact
+        label="Material"
+        value={signatureForm.materialConfigured ? 'Configurado' : 'Incompleto'}
+      />
+      <ReadinessFact
+        label="Vigencia"
+        value={validity ? certificateValidityLabel(validity) : 'Sin evidencia'}
+        detail={
+          daysUntilExpiry !== null && daysUntilExpiry !== undefined
+            ? `${daysUntilExpiry} dias restantes`
+            : null
+        }
+      />
+      <ReadinessFact
+        label="Prueba criptografica"
+        value={
+          signatureForm.inspection
+            ? cryptoProofLabel(
+                signatureForm.inspection.inspection.cryptographicProofStatus,
+              )
+            : 'Sin evidencia'
+        }
+      />
+    </div>
+  );
+}
+
+function PillarCard({
+  label,
+  status,
+}: {
+  label: string;
+  status: SettingsStatus;
+}) {
+  return (
+    <div className={styles.invoicingSettingsPillarCard}>
+      <span>{label}</span>
+      <StatusBadge status={status} />
+    </div>
+  );
+}
+
+function TierRung({ active, label }: { active: boolean; label: string }) {
+  return (
+    <div className={styles.invoicingSettingsTierRung}>
+      <span
+        className={`${styles.invoicingReadinessDot} ${
+          active
+            ? styles.invoicingReadinessDotSuccess
+            : styles.invoicingReadinessDotNeutral
+        }`}
+      />
+      <span>{label}</span>
+    </div>
+  );
+}
+
+function StatusBadge({ status }: { status: SettingsStatus }) {
+  const toneClass =
+    status.tone === 'success'
+      ? styles.statusPillSuccess
+      : status.tone === 'warning'
+        ? styles.statusPillWarning
+        : status.tone === 'danger'
+          ? styles.statusPillDanger
+          : '';
+
+  return (
+    <span className={`${styles.statusPill} ${toneClass}`}>{status.label}</span>
   );
 }
 
@@ -1060,5 +1359,242 @@ function remoteSriFeedbackLabel(readiness: ElectronicSandboxReadinessResponse) {
       return readiness.latestRemoteSriSubmissionSummary
         ? 'Registrado'
         : 'Sin historial remoto';
+  }
+}
+
+function buildSettingsReadinessView({
+  issuerForm,
+  numberingForm,
+  signatureForm,
+  submissionForm,
+}: Pick<
+  InvoicingWorkspaceSettingsProps,
+  'issuerForm' | 'numberingForm' | 'signatureForm' | 'submissionForm'
+>): SettingsReadinessViewModel {
+  const issuer = issuerStatus(issuerForm);
+  const numbering = numberingStatus(numberingForm);
+  const signature = signatureStatus(signatureForm);
+  const gateway = gatewayStatus(submissionForm);
+  const sandboxTier = sandboxTierStatus(submissionForm.readiness);
+  const verdict = readinessVerdict(submissionForm.readiness, sandboxTier);
+  const recommendedSection = recommendedSectionFor({
+    gateway,
+    issuer,
+    numbering,
+    sandboxTier,
+    signature,
+  });
+
+  return {
+    gateway,
+    issuer,
+    numbering,
+    recommendedSection,
+    sandboxTier,
+    signature,
+    verdict,
+  };
+}
+
+function issuerStatus(
+  issuerForm: InvoicingWorkspaceSettingsProps['issuerForm'],
+): SettingsStatus {
+  const complete =
+    Boolean(issuerForm.legalName.trim()) &&
+    Boolean(issuerForm.taxId.trim()) &&
+    Boolean(issuerForm.matrixAddress.trim()) &&
+    Boolean(issuerForm.establishmentAddress.trim());
+
+  return complete
+    ? { label: 'Configurado', tone: 'success' }
+    : { label: 'Por completar', tone: 'warning' };
+}
+
+function numberingStatus(
+  numberingForm: InvoicingWorkspaceSettingsProps['numberingForm'],
+): SettingsStatus {
+  const complete =
+    Boolean(numberingForm.documentCode.trim()) &&
+    Boolean(numberingForm.establishmentCode.trim()) &&
+    Boolean(numberingForm.emissionPointCode.trim()) &&
+    Boolean(numberingForm.nextSequence.trim());
+
+  return complete
+    ? { label: 'Configurada', tone: 'success' }
+    : { label: 'Por completar', tone: 'warning' };
+}
+
+function signatureStatus(
+  signatureForm: InvoicingWorkspaceSettingsProps['signatureForm'],
+): SettingsStatus {
+  if (!signatureForm.materialConfigured) {
+    return { label: 'No configurada', tone: 'neutral' };
+  }
+
+  const inspection = signatureForm.inspection?.inspection;
+
+  if (inspection?.certificateValidityStatus === 'expired') {
+    return { label: 'Caducada', tone: 'danger' };
+  }
+
+  if (inspection?.status === 'invalid') {
+    return { label: 'Con hallazgos', tone: 'danger' };
+  }
+
+  if (inspection?.certificateValidityStatus === 'expiring_soon') {
+    return { label: 'Por vencer', tone: 'warning' };
+  }
+
+  if (inspection?.certificateValidityStatus === 'not_yet_valid') {
+    return { label: 'Aun no vigente', tone: 'warning' };
+  }
+
+  if (!signatureForm.isActive) {
+    return { label: 'Deshabilitada', tone: 'neutral' };
+  }
+
+  return { label: 'Vigente', tone: 'success' };
+}
+
+function gatewayStatus(
+  submissionForm: InvoicingWorkspaceSettingsProps['submissionForm'],
+): SettingsStatus {
+  const complete =
+    submissionForm.gatewayConfigured &&
+    submissionForm.isActive &&
+    Boolean(submissionForm.authorizationUrl.trim());
+
+  return complete
+    ? { label: 'Configurado', tone: 'success' }
+    : { label: 'Por completar', tone: 'warning' };
+}
+
+function sandboxTierStatus(
+  readiness: ElectronicSandboxReadinessResponse | null,
+): SettingsStatus {
+  if (!readiness) {
+    return { label: 'Sin readiness', tone: 'neutral' };
+  }
+
+  if (readiness.isReadyForRemoteSandboxSubmission) {
+    return { label: 'Sandbox remoto interno', tone: 'success' };
+  }
+
+  if (readiness.isReadyForPresignedRemoteSandboxSubmission) {
+    return { label: 'Sandbox remoto prefirmado', tone: 'success' };
+  }
+
+  if (readiness.isReadyForLocalStubSubmission) {
+    return { label: 'Validacion local', tone: 'warning' };
+  }
+
+  return { label: 'Sin ruta de envio', tone: 'danger' };
+}
+
+function readinessVerdict(
+  readiness: ElectronicSandboxReadinessResponse | null,
+  sandboxTier: SettingsStatus,
+): SettingsReadinessViewModel['verdict'] {
+  if (!readiness) {
+    return {
+      description:
+        'Todavia no hay lectura de readiness. Los formularios se pueden revisar, pero no asumimos preparacion SRI.',
+      label: 'Sin lectura',
+      title: 'Readiness pendiente',
+      tone: 'neutral',
+    };
+  }
+
+  const remoteReady =
+    readiness.isReadyForRemoteSandboxSubmission ||
+    readiness.isReadyForPresignedRemoteSandboxSubmission;
+
+  if (remoteReady && readiness.warnings.length === 0) {
+    return {
+      description:
+        'El emisor, la numeracion, la firma y el gateway tienen evidencia suficiente para operar.',
+      label: 'Listo',
+      title: 'Listo para preparar emision',
+      tone: 'success',
+    };
+  }
+
+  if (remoteReady) {
+    return {
+      description:
+        'La ruta remota esta disponible, pero hay advertencias que conviene atender antes de operar a escala.',
+      label: 'Con advertencias',
+      title: 'Listo, con atencion pendiente',
+      tone: 'warning',
+    };
+  }
+
+  if (readiness.blockers.length > 0 || sandboxTier.tone === 'danger') {
+    return {
+      description:
+        'Hay bloqueos reales en la preparacion electronica. Atiende el siguiente paso recomendado antes de emitir.',
+      label: 'Bloqueado',
+      title: 'Emision electronica bloqueada',
+      tone: 'danger',
+    };
+  }
+
+  return {
+    description:
+      'La validacion local puede estar disponible, pero falta completar la ruta remota o alguna evidencia clave.',
+    label: 'Incompleto',
+    title: 'Falta completar preparacion',
+    tone: 'warning',
+  };
+}
+
+function recommendedSectionFor({
+  gateway,
+  issuer,
+  numbering,
+  sandboxTier,
+  signature,
+}: {
+  gateway: SettingsStatus;
+  issuer: SettingsStatus;
+  numbering: SettingsStatus;
+  sandboxTier: SettingsStatus;
+  signature: SettingsStatus;
+}): SettingsSectionKey | null {
+  if (signature.tone === 'danger' || signature.tone === 'neutral') {
+    return 'signature';
+  }
+
+  if (issuer.tone !== 'success') {
+    return 'issuer';
+  }
+
+  if (numbering.tone !== 'success') {
+    return 'numbering';
+  }
+
+  if (gateway.tone !== 'success' || sandboxTier.tone !== 'success') {
+    return 'gateway';
+  }
+
+  if (signature.tone === 'warning') {
+    return 'signature';
+  }
+
+  return null;
+}
+
+function recommendedSectionTitle(section: SettingsSectionKey | null): string {
+  switch (section) {
+    case 'issuer':
+      return 'Completa la identidad fiscal del emisor';
+    case 'numbering':
+      return 'Configura la serie y el secuencial de Ecuador';
+    case 'signature':
+      return 'Revisa la firma electronica y su evidencia';
+    case 'gateway':
+      return 'Completa el gateway y la ruta SRI';
+    default:
+      return 'Todo listo para continuar con facturas';
   }
 }

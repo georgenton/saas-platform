@@ -23,6 +23,7 @@ import {
   InvoicingDomainSection,
   InvoicingWorkspaceAiAssistantPanel,
   InvoicingWorkspaceAssist,
+  InvoicingCustomerDraftFlow,
   InvoicingDocumentPreviewPanel,
   InvoicingElectronicStatusPanel,
   InvoicingInvoiceItemsPanel,
@@ -41768,224 +41769,41 @@ export function App() {
                     }}
                   />
 
-                  <div className={styles.detailCard}>
-                    <div className={styles.sectionHeading}>
-                      <div>
-                        <span className={styles.label}>Customers</span>
-                        <h3>{customers.length} registrados</h3>
-                      </div>
-                    </div>
-
-                    <form className={styles.stack} onSubmit={handleCreateCustomer}>
-                      <label className={styles.field}>
-                        <span>Nombre del customer</span>
-                        <input
-                          onChange={(event) => setNewCustomerName(event.target.value)}
-                          placeholder="Acme Corp"
-                          value={newCustomerName}
-                        />
-                      </label>
-                      <div className={styles.invoiceInlineGrid}>
-                        <label className={styles.field}>
-                          <span>Email</span>
-                          <input
-                            onChange={(event) => setNewCustomerEmail(event.target.value)}
-                            placeholder="billing@acme.com"
-                            type="email"
-                            value={newCustomerEmail}
-                          />
-                        </label>
-                        <label className={styles.field}>
-                          <span>Tipo identificacion</span>
-                          <select
-                            className={styles.selectField}
-                            onChange={(event) =>
-                              setNewCustomerIdentificationType(
-                                event.target.value as '04' | '05' | '06' | '07' | '08',
-                              )
-                            }
-                            value={newCustomerIdentificationType}
-                          >
-                            <option value="04">04 · RUC</option>
-                            <option value="05">05 · Cedula</option>
-                            <option value="06">06 · Pasaporte</option>
-                            <option value="07">07 · Consumidor final</option>
-                            <option value="08">08 · Exterior</option>
-                          </select>
-                        </label>
-                      </div>
-                      <div className={styles.invoiceInlineGrid}>
-                        <label className={styles.field}>
-                          <span>Identificacion</span>
-                          <input
-                            onChange={(event) => setNewCustomerTaxId(event.target.value)}
-                            placeholder={
-                              newCustomerIdentificationType === '07'
-                                ? '9999999999999'
-                                : '0999999999'
-                            }
-                            value={newCustomerTaxId}
-                          />
-                        </label>
-                        <label className={styles.field}>
-                          <span>Direccion</span>
-                          <input
-                            onChange={(event) =>
-                              setNewCustomerBillingAddress(event.target.value)
-                            }
-                            placeholder="Direccion del comprador"
-                            value={newCustomerBillingAddress}
-                          />
-                        </label>
-                      </div>
-                      <button
-                        className={styles.primaryButton}
-                        disabled={
-                          !newCustomerName.trim() ||
-                          actionLoading === 'create-customer'
-                        }
-                        type="submit"
-                      >
-                        {actionLoading === 'create-customer'
-                          ? 'Creando customer...'
-                          : 'Crear customer'}
-                      </button>
-                      <p className={styles.muted}>
-                        Cada customer queda aislado por tenant y ahora tambien puede guardar la semantica Ecuador del comprador para reutilizarla en multiples facturas.
-                      </p>
-                    </form>
-
-                    {invoicingLoading ? (
-                      <p className={styles.muted}>Cargando customers...</p>
-                    ) : customers.length === 0 ? (
-                      <div className={styles.emptyState}>
-                        <p>Este tenant todavia no tiene customers registrados.</p>
-                      </div>
-                    ) : (
-                      <div className={styles.stack}>
-                        {customers.map((customer) => (
-                          <div className={styles.invoiceCard} key={customer.id}>
-                            <strong>{customer.name}</strong>
-                            <span>{customer.email ?? 'Sin email'}</span>
-                            <small>
-                              {customer.identificationType
-                                ? `${formatBuyerIdentificationType(
-                                    customer.identificationType,
-                                  )}: ${customer.identification ?? 'Sin identificacion'}`
-                                : customer.taxId ?? 'Sin tax id'}
-                            </small>
-                            <small>{customer.billingAddress ?? 'Sin direccion'}</small>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className={styles.detailCard} id="invoicing-create-invoice">
-                    <div className={styles.sectionHeading}>
-                      <div>
-                        <span className={styles.label}>Create invoice</span>
-                        <h3>Nueva factura</h3>
-                      </div>
-                    </div>
-
-                    <form className={styles.stack} onSubmit={handleCreateInvoice}>
-                      {customers.length === 0 ? (
-                        <div className={styles.emptyState}>
-                          <p>
-                            Primero necesitamos al menos un customer para poder emitir la primera factura.
-                          </p>
-                        </div>
-                      ) : null}
-
-                      <div className={styles.invoiceInlineGrid}>
-                        <label className={styles.field}>
-                          <span>Customer</span>
-                          <select
-                            className={styles.selectField}
-                            onChange={(event) => setNewInvoiceCustomerId(event.target.value)}
-                            value={newInvoiceCustomerId}
-                          >
-                            <option value="">Selecciona un customer</option>
-                            {customers.map((customer) => (
-                              <option key={customer.id} value={customer.id}>
-                                {customer.name}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                        <label className={styles.field}>
-                          <span>Numero</span>
-                          <input
-                            onChange={(event) => setNewInvoiceNumber(event.target.value)}
-                            placeholder={nextInvoiceNumberSuggestion}
-                            value={newInvoiceNumber}
-                          />
-                        </label>
-                      </div>
-
-                      <div className={styles.invoiceInlineGrid}>
-                        <label className={styles.field}>
-                          <span>Currency</span>
-                          <input
-                            maxLength={3}
-                            onChange={(event) => setNewInvoiceCurrency(event.target.value)}
-                            placeholder="USD"
-                            value={newInvoiceCurrency}
-                          />
-                        </label>
-                        <label className={styles.field}>
-                          <span>Status</span>
-                          <select
-                            className={styles.selectField}
-                            onChange={(event) => setNewInvoiceStatus(event.target.value)}
-                            value={newInvoiceStatus}
-                          >
-                            <option value="draft">draft</option>
-                            <option value="issued">issued</option>
-                            <option value="paid">paid</option>
-                            <option value="void">void</option>
-                          </select>
-                        </label>
-                      </div>
-
-                      <label className={styles.field}>
-                        <span>Due at</span>
-                        <input
-                          onChange={(event) => setNewInvoiceDueAt(event.target.value)}
-                          type="date"
-                          value={newInvoiceDueAt}
-                        />
-                      </label>
-
-                      <label className={styles.field}>
-                        <span>Notes</span>
-                        <textarea
-                          onChange={(event) => setNewInvoiceNotes(event.target.value)}
-                          placeholder="Notas opcionales para la factura"
-                          value={newInvoiceNotes}
-                        />
-                      </label>
-
-                      <button
-                        className={styles.primaryButton}
-                        disabled={
-                          customers.length === 0 ||
-                          !newInvoiceCustomerId ||
-                          !newInvoiceCurrency.trim() ||
-                          actionLoading === 'create-invoice'
-                        }
-                        type="submit"
-                      >
-                        {actionLoading === 'create-invoice'
-                          ? 'Creando factura...'
-                          : 'Crear factura'}
-                      </button>
-                      <p className={styles.muted}>
-                        Tip: usa estado <strong>draft</strong> para ir agregando items antes de pasarla a emitida. Si dejas el numero vacio y ya configuraste la numeracion Ecuador, se autogenerara.
-                      </p>
-                    </form>
-                  </div>
+                  <InvoicingCustomerDraftFlow
+                    actionLoading={actionLoading}
+                    customerForm={{
+                      billingAddress: newCustomerBillingAddress,
+                      email: newCustomerEmail,
+                      identificationType: newCustomerIdentificationType,
+                      name: newCustomerName,
+                      onBillingAddressChange: setNewCustomerBillingAddress,
+                      onEmailChange: setNewCustomerEmail,
+                      onIdentificationTypeChange: setNewCustomerIdentificationType,
+                      onNameChange: setNewCustomerName,
+                      onSubmit: handleCreateCustomer,
+                      onTaxIdChange: setNewCustomerTaxId,
+                      taxId: newCustomerTaxId,
+                    }}
+                    customers={customers}
+                    formatBuyerIdentificationType={formatBuyerIdentificationType}
+                    invoiceForm={{
+                      currency: newInvoiceCurrency,
+                      customerId: newInvoiceCustomerId,
+                      dueAt: newInvoiceDueAt,
+                      notes: newInvoiceNotes,
+                      number: newInvoiceNumber,
+                      onCurrencyChange: setNewInvoiceCurrency,
+                      onCustomerIdChange: setNewInvoiceCustomerId,
+                      onDueAtChange: setNewInvoiceDueAt,
+                      onNotesChange: setNewInvoiceNotes,
+                      onNumberChange: setNewInvoiceNumber,
+                      onStatusChange: setNewInvoiceStatus,
+                      onSubmit: handleCreateInvoice,
+                      status: newInvoiceStatus,
+                    }}
+                    invoicingLoading={invoicingLoading}
+                    nextInvoiceNumberSuggestion={nextInvoiceNumberSuggestion}
+                  />
 
                   <div className={styles.detailCard}>
                     <div className={styles.sectionHeading}>

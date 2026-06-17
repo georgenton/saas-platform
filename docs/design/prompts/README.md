@@ -8,6 +8,7 @@ Current sequence:
 1. `00-platform-shell.md`
 2. `01-access-login-gateway.md`
 3. `05-invoicing-settings-sri.md`
+4. `06-invoicing-customer-draft-flow.md`
 
 After Claude Design exports a ZIP, place it under:
 

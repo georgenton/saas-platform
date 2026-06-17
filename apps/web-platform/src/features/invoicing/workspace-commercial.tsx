@@ -43,6 +43,47 @@ type InvoicingInvoiceItemsPanelProps = {
   taxRates: TaxRateResponse[];
 };
 
+function centsToCurrencyInput(cents: string): string {
+  if (!cents.trim()) {
+    return '';
+  }
+
+  const value = Number(cents);
+
+  if (!Number.isFinite(value)) {
+    return '';
+  }
+
+  return (value / 100).toFixed(2);
+}
+
+function currencyInputToCents(input: string): string {
+  const normalized = input.replace(/\s/g, '').replace(',', '.');
+
+  if (!normalized) {
+    return '';
+  }
+
+  const value = Number(normalized);
+
+  if (!Number.isFinite(value) || value < 0) {
+    return '';
+  }
+
+  return String(Math.round(value * 100));
+}
+
+function formatInvoiceStatus(status: string): string {
+  const labels: Record<string, string> = {
+    draft: 'Borrador',
+    issued: 'Emitida',
+    paid: 'Pagada',
+    void: 'Anulada',
+  };
+
+  return labels[status] ?? status;
+}
+
 export function InvoicingPaymentsPanel({
   actionLoading,
   formatDate,
@@ -225,146 +266,323 @@ export function InvoicingInvoiceItemsPanel({
   selectedInvoiceDetail,
   taxRates,
 }: InvoicingInvoiceItemsPanelProps) {
-  return (
-    <>
-      <div className={styles.stack}>
-        <div className={styles.sectionHeading}>
-          <div>
-            <span className={styles.label}>Invoice items</span>
-            <h3>{selectedInvoiceDetail.items.length} lineas</h3>
-          </div>
-        </div>
+  const activeTaxRates = taxRates.filter((taxRate) => taxRate.isActive);
+  const selectedTaxRate =
+    activeTaxRates.find((taxRate) => taxRate.id === newItemTaxRateId) ?? null;
+  const quantity = Math.max(0, Number.parseInt(newItemQuantity, 10) || 0);
+  const unitPriceInCents = Number.parseInt(newItemUnitPriceInCents, 10);
+  const hasLinePreview =
+    quantity > 0 && Number.isFinite(unitPriceInCents) && unitPriceInCents >= 0;
+  const previewSubtotalInCents = hasLinePreview
+    ? quantity * unitPriceInCents
+    : 0;
+  const previewTaxInCents =
+    hasLinePreview && selectedTaxRate
+      ? Math.round(
+          (previewSubtotalInCents * selectedTaxRate.percentage) / 100,
+        )
+      : 0;
+  const previewTotalInCents = previewSubtotalInCents + previewTaxInCents;
+  const canAddItems = selectedInvoiceDetail.status === 'draft';
 
-        {selectedInvoiceDetail.items.length === 0 ? (
-          <div className={styles.emptyState}>
-            <p>Esta factura todavia no tiene items.</p>
+  return (
+    <section className={styles.invoicingItemsFlow}>
+      <div className={styles.invoicingItemsContextCard}>
+        <div className={styles.invoicingItemsContextMain}>
+          <div>
+            <span className={styles.label}>Invoicing · Composicion</span>
+            <h3>{selectedInvoiceDetail.number}</h3>
+            <p>
+              {selectedInvoiceDetail.buyerName ?? 'Comprador sin nombre'} ·{' '}
+              {selectedInvoiceDetail.buyerIdentification ??
+                'Sin identificacion'}
+            </p>
           </div>
-        ) : (
-          <div className={styles.stack}>
-            {selectedInvoiceDetail.items.map((item) => (
-              <div className={styles.invoiceItemCard} key={item.id}>
-                <div className={styles.invoiceCardHeader}>
-                  <strong>
-                    #{item.position} · {item.description}
-                  </strong>
-                  <span className={styles.statusPill}>
-                    {formatMoney(
-                      item.lineTotalInCents,
-                      selectedInvoiceDetail.currency,
-                    )}
-                  </span>
-                </div>
-                <small>
-                  {item.quantity} x{' '}
-                  {formatMoney(
-                    item.unitPriceInCents,
-                    selectedInvoiceDetail.currency,
-                  )}
-                </small>
-                <small>
-                  Impuesto:{' '}
-                  {item.taxRateName && item.taxRatePercentage !== null
-                    ? `${item.taxRateName} (${formatPercentage(
-                        item.taxRatePercentage,
-                      )}%)`
-                    : 'Sin impuesto'}
-                </small>
-                <small>
-                  Tax line:{' '}
-                  {formatMoney(
-                    item.lineTaxInCents,
-                    selectedInvoiceDetail.currency,
-                  )}
-                </small>
-              </div>
-            ))}
-          </div>
-        )}
+          <span className={styles.statusPill}>
+            {formatInvoiceStatus(selectedInvoiceDetail.status)}
+          </span>
+        </div>
+        <div className={styles.invoicingItemsContextMeta}>
+          <span>
+            Moneda <strong>{selectedInvoiceDetail.currency}</strong>
+          </span>
+          <span>
+            Items <strong>{selectedInvoiceDetail.items.length}</strong>
+          </span>
+          <span>
+            Estado electronico{' '}
+            <strong>
+              {selectedInvoiceDetail.electronicStatus ?? 'Sin envio'}
+            </strong>
+          </span>
+        </div>
+        <p className={styles.muted}>
+          Aqui solo compones la factura. XML, RIDE, firma y envio al SRI vienen
+          despues en sus propias pantallas.
+        </p>
       </div>
 
-      <form
-        className={styles.stack}
-        onSubmit={(event) => {
-          event.preventDefault();
-          onCreateInvoiceItem();
-        }}
-      >
-        <div className={styles.sectionHeading}>
-          <div>
-            <span className={styles.label}>Add item</span>
-            <h3>Nueva linea</h3>
+      <div className={styles.invoicingItemsLayout}>
+        <div className={styles.stack}>
+          <section className={styles.invoicingItemsCard}>
+            <div className={styles.sectionHeading}>
+              <div>
+                <span className={styles.label}>Lineas de la factura</span>
+                <h3>
+                  {selectedInvoiceDetail.items.length === 1
+                    ? '1 linea'
+                    : `${selectedInvoiceDetail.items.length} lineas`}
+                </h3>
+              </div>
+            </div>
+
+            {selectedInvoiceDetail.items.length === 0 ? (
+              <div className={styles.invoicingItemsEmptyState}>
+                <strong>Empieza a componer la factura</strong>
+                <p>
+                  Agrega la primera linea con lo que estas cobrando. Veras el
+                  subtotal y el impuesto formarse antes de guardar.
+                </p>
+              </div>
+            ) : (
+              <div className={styles.invoicingItemsList}>
+                {selectedInvoiceDetail.items.map((item) => (
+                  <div className={styles.invoicingItemRow} key={item.id}>
+                    <span className={styles.invoicingItemPosition}>
+                      {item.position}
+                    </span>
+                    <div>
+                      <strong>{item.description}</strong>
+                      <small>
+                        {item.quantity} x{' '}
+                        {formatMoney(
+                          item.unitPriceInCents,
+                          selectedInvoiceDetail.currency,
+                        )}
+                      </small>
+                      <small>
+                        Impuesto:{' '}
+                        {item.taxRateName && item.taxRatePercentage !== null
+                          ? `${item.taxRateName} (${formatPercentage(
+                              item.taxRatePercentage,
+                            )}%)`
+                          : 'Sin impuesto'}{' '}
+                        · IVA{' '}
+                        {formatMoney(
+                          item.lineTaxInCents,
+                          selectedInvoiceDetail.currency,
+                        )}
+                      </small>
+                    </div>
+                    <strong className={styles.invoicingItemTotal}>
+                      {formatMoney(
+                        item.lineTotalInCents,
+                        selectedInvoiceDetail.currency,
+                      )}
+                    </strong>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {!canAddItems ? (
+            <section className={styles.invoicingItemsCard}>
+              <div className={styles.invoicingCustomerInfoNote}>
+                <strong>Esta factura ya no es un borrador.</strong>
+                <span>
+                  Las lineas quedan fijas cuando la factura cambia de estado.
+                  Los ajustes posteriores se resuelven con notas de credito o
+                  debito en otra superficie.
+                </span>
+              </div>
+            </section>
+          ) : (
+            <form
+              className={styles.invoicingItemsCard}
+              onSubmit={(event) => {
+                event.preventDefault();
+                onCreateInvoiceItem();
+              }}
+            >
+              <div className={styles.sectionHeading}>
+                <div>
+                  <span className={styles.label}>Agregar linea</span>
+                  <h3>Servicio o producto</h3>
+                </div>
+              </div>
+
+              {activeTaxRates.length === 0 ? (
+                <div className={styles.invoicingItemsWarning}>
+                  <strong>No hay impuestos activos</strong>
+                  <p>
+                    Puedes agregar la linea como sin impuesto o activar tasas en
+                    configuracion antes de continuar.
+                  </p>
+                </div>
+              ) : null}
+
+              <label className={styles.field}>
+                <span>Descripcion</span>
+                <input
+                  onChange={(event) =>
+                    onNewItemDescriptionChange(event.target.value)
+                  }
+                  placeholder="Servicio de logistica mensual"
+                  value={newItemDescription}
+                />
+              </label>
+
+              <div className={styles.invoiceInlineGrid}>
+                <label className={styles.field}>
+                  <span>Cantidad</span>
+                  <input
+                    min="1"
+                    onChange={(event) =>
+                      onNewItemQuantityChange(event.target.value)
+                    }
+                    type="number"
+                    value={newItemQuantity}
+                  />
+                </label>
+                <label className={styles.field}>
+                  <span>Precio unitario</span>
+                  <input
+                    inputMode="decimal"
+                    onChange={(event) =>
+                      onNewItemUnitPriceInCentsChange(
+                        currencyInputToCents(event.target.value),
+                      )
+                    }
+                    placeholder="120.00"
+                    value={centsToCurrencyInput(newItemUnitPriceInCents)}
+                  />
+                  <small className={styles.fieldHint}>
+                    En {selectedInvoiceDetail.currency}; se guarda internamente
+                    en centavos.
+                  </small>
+                </label>
+              </div>
+
+              <label className={styles.field}>
+                <span>Impuesto</span>
+                <select
+                  className={styles.selectField}
+                  onChange={(event) =>
+                    onNewItemTaxRateIdChange(event.target.value)
+                  }
+                  value={newItemTaxRateId}
+                >
+                  <option value="">Sin impuesto</option>
+                  {activeTaxRates.map((taxRate) => (
+                    <option key={taxRate.id} value={taxRate.id}>
+                      {taxRate.name} ({formatPercentage(taxRate.percentage)}%)
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <div className={styles.invoicingItemsEstimate}>
+                <span>Estimado de la linea</span>
+                <strong>
+                  {hasLinePreview
+                    ? formatMoney(
+                        previewTotalInCents,
+                        selectedInvoiceDetail.currency,
+                      )
+                    : '--'}
+                </strong>
+                <small>
+                  Subtotal{' '}
+                  {hasLinePreview
+                    ? formatMoney(
+                        previewSubtotalInCents,
+                        selectedInvoiceDetail.currency,
+                      )
+                    : '--'}{' '}
+                  · IVA{' '}
+                  {hasLinePreview
+                    ? formatMoney(
+                        previewTaxInCents,
+                        selectedInvoiceDetail.currency,
+                      )
+                    : '--'}
+                </small>
+              </div>
+
+              <div className={styles.inlineActionRow}>
+                <button
+                  className={styles.primaryButton}
+                  disabled={
+                    !newItemDescription.trim() ||
+                    !newItemUnitPriceInCents.trim() ||
+                    actionLoading === 'create-invoice-item'
+                  }
+                  type="submit"
+                >
+                  {actionLoading === 'create-invoice-item'
+                    ? 'Agregando linea...'
+                    : 'Agregar linea'}
+                </button>
+                <p className={styles.muted}>
+                  El estimado guia la captura. El total oficial lo recalcula el
+                  backend al guardar la linea.
+                </p>
+              </div>
+            </form>
+          )}
+        </div>
+
+        <aside className={styles.invoicingItemsTotalsRail}>
+          <div className={styles.invoicingItemsTotalsCard}>
+            <div className={styles.sectionHeading}>
+              <div>
+                <span className={styles.label}>Totales</span>
+                <h3>Resumen</h3>
+              </div>
+            </div>
+            <div className={styles.invoicingItemsTotalsList}>
+              <span>
+                Subtotal{' '}
+                <strong>
+                  {formatMoney(
+                    selectedInvoiceDetail.totals.subtotalInCents,
+                    selectedInvoiceDetail.currency,
+                  )}
+                </strong>
+              </span>
+              <span>
+                IVA / impuesto{' '}
+                <strong>
+                  {formatMoney(
+                    selectedInvoiceDetail.totals.taxInCents,
+                    selectedInvoiceDetail.currency,
+                  )}
+                </strong>
+              </span>
+              <span className={styles.invoicingItemsGrandTotal}>
+                Total{' '}
+                <strong>
+                  {formatMoney(
+                    selectedInvoiceDetail.totals.totalInCents,
+                    selectedInvoiceDetail.currency,
+                  )}
+                </strong>
+              </span>
+            </div>
+            <p className={styles.muted}>
+              Totales calculados por el backend al guardar cada linea.
+            </p>
           </div>
-        </div>
-
-        <label className={styles.field}>
-          <span>Descripcion</span>
-          <input
-            onChange={(event) => onNewItemDescriptionChange(event.target.value)}
-            placeholder="Servicio mensual"
-            value={newItemDescription}
-          />
-        </label>
-
-        <div className={styles.invoiceInlineGrid}>
-          <label className={styles.field}>
-            <span>Quantity</span>
-            <input
-              min="1"
-              onChange={(event) => onNewItemQuantityChange(event.target.value)}
-              type="number"
-              value={newItemQuantity}
-            />
-          </label>
-          <label className={styles.field}>
-            <span>Unit price (cents)</span>
-            <input
-              min="0"
-              onChange={(event) =>
-                onNewItemUnitPriceInCentsChange(event.target.value)
-              }
-              placeholder="2500"
-              type="number"
-              value={newItemUnitPriceInCents}
-            />
-          </label>
-        </div>
-
-        <label className={styles.field}>
-          <span>Impuesto</span>
-          <select
-            className={styles.selectField}
-            onChange={(event) => onNewItemTaxRateIdChange(event.target.value)}
-            value={newItemTaxRateId}
-          >
-            <option value="">Sin impuesto</option>
-            {taxRates
-              .filter((taxRate) => taxRate.isActive)
-              .map((taxRate) => (
-                <option key={taxRate.id} value={taxRate.id}>
-                  {taxRate.name} ({formatPercentage(taxRate.percentage)}%)
-                </option>
-              ))}
-          </select>
-        </label>
-
-        <button
-          className={styles.primaryButton}
-          disabled={
-            !newItemDescription.trim() ||
-            !newItemUnitPriceInCents.trim() ||
-            actionLoading === 'create-invoice-item'
-          }
-          type="submit"
-        >
-          {actionLoading === 'create-invoice-item'
-            ? 'Agregando item...'
-            : 'Agregar item'}
-        </button>
-        <p className={styles.muted}>
-          El backend calcula `lineTotalInCents`, `lineTaxInCents` y reordena la
-          posicion automaticamente.
-        </p>
-      </form>
-    </>
+          <div className={styles.invoicingCustomerSRIReassurance}>
+            <strong>Despues de componer</strong>
+            <p>
+              Cuando las lineas esten listas, sigue la revision del documento y
+              el XML/RIDE en sus propias pantallas.
+            </p>
+          </div>
+        </aside>
+      </div>
+    </section>
   );
 }

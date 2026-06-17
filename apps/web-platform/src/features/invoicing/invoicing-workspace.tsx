@@ -1,5 +1,6 @@
 export { InvoicingDomainSection } from './invoicing-domain-section';
 export { InvoicingWorkspaceAssist } from './workspace-assist';
+export { InvoicingWorkspaceAiAssistantPanel } from './workspace-ai-assistant';
 export { InvoicingWorkspaceSummary } from './workspace-summary';
 export { Stepper, deriveStageFromInvoiceDetail } from './workspace-shared';
 export { InvoicingWorkspaceOperations } from './workspace-operations';

@@ -21,6 +21,7 @@ import { useCommandCenterPlatformData } from '../features/command-center/queries
 import { useCommandCenterModel } from '../features/command-center/use-command-center-model';
 import {
   InvoicingDomainSection,
+  InvoicingWorkspaceAiAssistantPanel,
   InvoicingWorkspaceAssist,
   InvoicingDocumentPreviewPanel,
   InvoicingElectronicStatusPanel,
@@ -41619,406 +41620,54 @@ export function App() {
                   operationalStatusTone={operationalStatusTone}
                   workspace={invoiceDocumentDraftingAssist}
                 >
-                  <div className={styles.detailCard}>
-                    <div className={styles.sectionHeading}>
-                      <div>
-                        <span className={styles.label}>AI Capability Platform</span>
-                        <h3>Invoice Document Assistant</h3>
-                      </div>
-                      {activeInvoiceAiAgent ? (
-                        <span
-                          className={`${styles.statusPill} ${aiAgentAvailabilityTone(
-                            activeInvoiceAiAgent.availability,
-                          )}`}
-                        >
-                          {aiAgentAvailabilityLabel(activeInvoiceAiAgent.availability)}
-                        </span>
-                      ) : null}
-                    </div>
-
-                    {invoiceAssistantAiEnvelope ? (
-                      <div className={styles.stack}>
-                        <p className={styles.muted}>
-                          <strong>{invoiceAssistantAiEnvelope.agent.title}</strong>{' '}
-                          recibe este contrato determinístico y se mantiene en modo
-                          sugerencia. Ayuda a explicar, revisar y ordenar, pero no
-                          firma ni envía documentos.
-                        </p>
-                        <div className={styles.badgeRow}>
-                          {activeInvoiceAiPrimarySurface ? (
-                            <span className={styles.badge}>
-                              Surface {activeInvoiceAiPrimarySurface.key}
-                            </span>
-                          ) : null}
-                          <span className={styles.badge}>
-                            Prompt pack{' '}
-                            {activeInvoiceAiPromptPack?.key ??
-                              invoiceAssistantAiEnvelope.promptPack.key}
-                          </span>
-                          <span className={styles.badge}>
-                            Mode {invoiceAssistantAiEnvelope.mode}
-                          </span>
-                        </div>
-                        <p className={styles.muted}>
-                          <strong>
-                            {activeInvoiceAiPromptPack?.objective ??
-                              invoiceAssistantAiEnvelope.promptPack.objective}
-                          </strong>
-                        </p>
-
-                        <div className={styles.actionRow}>
-                          <button
-                            className={styles.primaryButton}
-                            disabled={
-                              !canReadInvoicingReports ||
-                              actionLoading === 'prepare-invoice-ai-suggestion-run'
-                            }
-                            onClick={() =>
-                              void aiDedicatedSuggestionRunActionHandlers[
-                                'invoice-document-assistant'
-                              ]?.prepare?.()
-                            }
-                            type="button"
-                          >
-                            {actionLoading === 'prepare-invoice-ai-suggestion-run'
-                              ? 'Preparando...'
-                              : 'Preparar handoff AI'}
-                          </button>
-                        </div>
-
-                        <div className={styles.stack}>
-                          <div className={styles.sectionHeading}>
-                            <div>
-                              <span className={styles.label}>Tool access</span>
-                              <h3>Herramientas permitidas y bloqueadas</h3>
-                            </div>
-                          </div>
-                          {activeInvoiceAiToolAccess.map((entry) => (
-                            <div className={styles.invoiceItemCard} key={entry.tool.key}>
-                              <div className={styles.invoiceCardHeader}>
-                                <strong>{entry.tool.title}</strong>
-                                <span className={styles.statusPill}>
-                                  {entry.accessLevel}
-                                </span>
-                              </div>
-                              <small>{entry.rationale}</small>
-                            </div>
-                          ))}
-                        </div>
-
-                        <div className={styles.stack}>
-                          <div className={styles.sectionHeading}>
-                            <div>
-                              <span className={styles.label}>Suggestion runs</span>
-                              <h3>Historial auditable reciente</h3>
-                            </div>
-                          </div>
-                          {activeInvoiceAiSuggestionRuns.length === 0 ? (
-                            <div className={styles.emptyState}>
-                              <p>Todavia no hay handoffs auditables para este agente.</p>
-                            </div>
-                          ) : (
-                            activeInvoiceAiSuggestionRuns.slice(0, 3).map((entry) => {
-                              const hasPendingApproval =
-                                entry.approvalSummary.status === 'pending';
-                              const hasApprovedApproval =
-                                entry.approvalSummary.status === 'approved';
-
-                              return (
-                                <div className={styles.invoiceItemCard} key={entry.id}>
-                                  <div className={styles.invoiceCardHeader}>
-                                    <strong>{entry.promptPackKey}</strong>
-                                    <span className={styles.statusPill}>
-                                      {entry.status}
-                                    </span>
-                                  </div>
-                                  <small>{entry.summary}</small>
-                                  <small>
-                                    Outputs: {entry.suggestedOutputKeys.join(', ')}
-                                  </small>
-                                  <small>
-                                    Approval: {humanizeKey(entry.approvalSummary.status)}
-                                    {entry.approvalSummary.latestRequestedAt
-                                      ? ` · ${formatDate(
-                                          entry.approvalSummary.latestReviewedAt ??
-                                            entry.approvalSummary
-                                              .latestRequestedAt,
-                                        )}`
-                                      : ''}
-                                  </small>
-                                  <div className={styles.actionRow}>
-                                    <button
-                                      className={styles.ghostButton}
-                                      disabled={
-                                        actionLoading ===
-                                        `load-invoice-ai-run-detail:${entry.id}`
-                                      }
-                                      onClick={() =>
-                                        void aiDedicatedSuggestionRunActionHandlers[
-                                          'invoice-document-assistant'
-                                        ]?.openDetail?.(entry.id)
-                                      }
-                                      type="button"
-                                    >
-                                      {actionLoading ===
-                                      `load-invoice-ai-run-detail:${entry.id}`
-                                        ? 'Cargando detalle...'
-                                        : 'Ver detalle'}
-                                    </button>
-                                    <button
-                                      className={styles.secondaryButton}
-                                      disabled={
-                                        hasPendingApproval ||
-                                        hasApprovedApproval ||
-                                        actionLoading ===
-                                          `request-invoice-ai-approval:${entry.id}`
-                                      }
-                                      onClick={() =>
-                                        void aiDedicatedSuggestionRunActionHandlers[
-                                          'invoice-document-assistant'
-                                        ]?.requestApproval?.(entry.id)
-                                      }
-                                      type="button"
-                                    >
-                                      {actionLoading ===
-                                      `request-invoice-ai-approval:${entry.id}`
-                                        ? 'Solicitando...'
-                                        : hasPendingApproval
-                                          ? 'Revision pendiente'
-                                          : hasApprovedApproval
-                                            ? 'Revision aprobada'
-                                          : 'Pedir revision'}
-                                    </button>
-                                  </div>
-                                </div>
-                              );
-                            })
-                          )}
-                        </div>
-                        {selectedInvoiceAiSuggestionRunDetail ? (
-                          <div className={styles.stack}>
-                            <div className={styles.sectionHeading}>
-                              <div>
-                                <span className={styles.label}>
-                                  Selected handoff
-                                </span>
-                                <h3>Timeline de aprobación</h3>
-                              </div>
-                            </div>
-                            <div className={styles.invoiceItemCard}>
-                              <div className={styles.invoiceCardHeader}>
-                                <strong>
-                                  {selectedInvoiceAiSuggestionRunDetail.promptPackKey}
-                                </strong>
-                                <span className={styles.statusPill}>
-                                  {humanizeKey(
-                                    selectedInvoiceAiSuggestionRunDetail
-                                      .approvalSummary.status,
-                                  )}
-                                </span>
-                              </div>
-                              <small>
-                                {selectedInvoiceAiSuggestionRunDetail.summary}
-                              </small>
-                              <small>
-                                Outputs:{' '}
-                                {selectedInvoiceAiSuggestionRunDetail.suggestedOutputKeys.join(
-                                  ', ',
-                                )}
-                              </small>
-                              {selectedInvoiceAiSuggestionRunDetail.approvalRequests
-                                .length === 0 ? (
-                                <small className={styles.muted}>
-                                  Todavía no hay approval requests para este
-                                  handoff.
-                                </small>
-                              ) : (
-                                selectedInvoiceAiSuggestionRunDetail.approvalRequests.map(
-                                  (entry) => (
-                                    <div
-                                      className={styles.invoiceItemCard}
-                                      key={entry.id}
-                                    >
-                                      <div className={styles.invoiceCardHeader}>
-                                        <strong>{entry.policyKey}</strong>
-                                        <span className={styles.statusPill}>
-                                          {humanizeKey(entry.status)}
-                                        </span>
-                                      </div>
-                                      <small>
-                                        Solicitada {formatDate(entry.createdAt)}
-                                        {entry.reviewedAt
-                                          ? ` · revisada ${formatDate(
-                                              entry.reviewedAt,
-                                            )}`
-                                          : ''}
-                                      </small>
-                                      {entry.rationale ? (
-                                        <small>{entry.rationale}</small>
-                                      ) : null}
-                                      {entry.reviewNote ? (
-                                        <small>{entry.reviewNote}</small>
-                                      ) : null}
-                                    </div>
-                                  ),
-                                )
-                              )}
-                            </div>
-                          </div>
-                        ) : null}
-
-                        <div className={styles.stack}>
-                          <div className={styles.sectionHeading}>
-                            <div>
-                              <span className={styles.label}>Approval policy</span>
-                              <h3>Guardrails vigentes</h3>
-                            </div>
-                          </div>
-                          {activeInvoiceAiApprovalPolicies.length === 0 ? (
-                            <div className={styles.emptyState}>
-                              <p>Este agente todavía no expone políticas de revisión.</p>
-                            </div>
-                          ) : (
-                            activeInvoiceAiApprovalPolicies.map((entry) => (
-                              <div className={styles.invoiceItemCard} key={entry.policyKey}>
-                                <div className={styles.invoiceCardHeader}>
-                                  <strong>{entry.title}</strong>
-                                  <span className={styles.statusPill}>
-                                    {entry.scope}
-                                  </span>
-                                </div>
-                                <small>{entry.reviewGuidance}</small>
-                              </div>
-                            ))
-                          )}
-                        </div>
-
-                        <div className={styles.stack}>
-                          <div className={styles.sectionHeading}>
-                            <div>
-                              <span className={styles.label}>Approval queue</span>
-                              <h3>Revisión humana obligatoria</h3>
-                            </div>
-                          </div>
-                          <div className={styles.actionRow}>
-                            {(
-                              [
-                                'all',
-                                'pending',
-                                'approved',
-                                'rejected',
-                              ] as const
-                            ).map((filter) => (
-                              <button
-                                key={filter}
-                                className={
-                                  invoiceAiApprovalStatusFilter === filter
-                                    ? styles.secondaryButton
-                                    : styles.ghostButton
-                                }
-                                onClick={() => {
-                                  setInvoiceAiApprovalStatusFilter(filter);
-                                }}
-                                type="button"
-                              >
-                                {filter === 'all' ? 'Todas' : humanizeKey(filter)}
-                              </button>
-                            ))}
-                          </div>
-                          {invoiceAssistantAiApprovalRequests.length === 0 ? (
-                            <div className={styles.emptyState}>
-                              <p>
-                                No hay approvals en estado{' '}
-                                {invoiceAiApprovalStatusFilter === 'all'
-                                  ? 'visible'
-                                  : humanizeKey(invoiceAiApprovalStatusFilter)}
-                                .
-                              </p>
-                            </div>
-                          ) : (
-                            invoiceAssistantAiApprovalRequests.slice(0, 3).map((entry) => (
-                              <div className={styles.invoiceItemCard} key={entry.id}>
-                                <div className={styles.invoiceCardHeader}>
-                                  <strong>{entry.policyKey}</strong>
-                                  <span className={styles.statusPill}>
-                                    {entry.status}
-                                  </span>
-                                </div>
-                                <small>{entry.summary}</small>
-                                <small>
-                                  Solicitada {formatDate(entry.createdAt)}
-                                  {entry.reviewedAt
-                                    ? ` · revisada ${formatDate(entry.reviewedAt)}`
-                                    : ''}
-                                </small>
-                                <div className={styles.actionRow}>
-                                  <button
-                                    className={styles.ghostButton}
-                                    disabled={
-                                      actionLoading ===
-                                      `load-invoice-ai-run-detail:${entry.suggestionRunId}`
-                                    }
-                                    onClick={() =>
-                                      void aiDedicatedSuggestionRunActionHandlers[
-                                        'invoice-document-assistant'
-                                      ]?.openDetail?.(entry.suggestionRunId)
-                                    }
-                                    type="button"
-                                  >
-                                    {actionLoading ===
-                                    `load-invoice-ai-run-detail:${entry.suggestionRunId}`
-                                      ? 'Cargando handoff...'
-                                      : 'Ver handoff'}
-                                  </button>
-                                </div>
-                                {entry.status === 'pending' ? (
-                                  <div className={styles.actionRow}>
-                                    <button
-                                      className={styles.secondaryButton}
-                                      disabled={
-                                        actionLoading ===
-                                        `review-invoice-ai-approval:${entry.id}`
-                                      }
-                                      onClick={() =>
-                                        void aiDedicatedSuggestionRunActionHandlers[
-                                          'invoice-document-assistant'
-                                        ]?.reviewApproval?.(entry.id, 'approved')
-                                      }
-                                      type="button"
-                                    >
-                                      Aprobar
-                                    </button>
-                                    <button
-                                      className={styles.dangerButton}
-                                      disabled={
-                                        actionLoading ===
-                                        `review-invoice-ai-approval:${entry.id}`
-                                      }
-                                      onClick={() =>
-                                        void aiDedicatedSuggestionRunActionHandlers[
-                                          'invoice-document-assistant'
-                                        ]?.reviewApproval?.(entry.id, 'rejected')
-                                      }
-                                      type="button"
-                                    >
-                                      Rechazar
-                                    </button>
-                                  </div>
-                                ) : null}
-                              </div>
-                            ))
-                          )}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className={styles.emptyState}>
-                        <p>
-                          Cuando el envelope AI esté disponible, aquí veremos el
-                          handoff auditable del agente documental.
-                        </p>
-                      </div>
-                    )}
-                  </div>
+                  <InvoicingWorkspaceAiAssistantPanel
+                    actionLoading={actionLoading}
+                    activeAgent={activeInvoiceAiAgent}
+                    approvalPolicies={activeInvoiceAiApprovalPolicies}
+                    approvalRequests={invoiceAssistantAiApprovalRequests}
+                    availabilityLabel={aiAgentAvailabilityLabel}
+                    availabilityTone={aiAgentAvailabilityTone}
+                    canReadInvoicingReports={canReadInvoicingReports}
+                    envelope={invoiceAssistantAiEnvelope}
+                    formatDate={formatDate}
+                    humanizeKey={humanizeKey}
+                    onFilterChange={setInvoiceAiApprovalStatusFilter}
+                    onOpenSuggestionRunDetail={(runId) => {
+                      void aiDedicatedSuggestionRunActionHandlers[
+                        'invoice-document-assistant'
+                      ]?.openDetail?.(runId);
+                    }}
+                    onPrepareHandoff={() => {
+                      void aiDedicatedSuggestionRunActionHandlers[
+                        'invoice-document-assistant'
+                      ]?.prepare?.();
+                    }}
+                    onRequestApproval={(runId) => {
+                      void aiDedicatedSuggestionRunActionHandlers[
+                        'invoice-document-assistant'
+                      ]?.requestApproval?.(runId);
+                    }}
+                    onReviewApproval={(requestId, decision) => {
+                      void aiDedicatedSuggestionRunActionHandlers[
+                        'invoice-document-assistant'
+                      ]?.reviewApproval?.(requestId, decision);
+                    }}
+                    primarySurfaceKey={activeInvoiceAiPrimarySurface?.key ?? null}
+                    promptPack={
+                      activeInvoiceAiPromptPack
+                        ? {
+                            key: activeInvoiceAiPromptPack.key,
+                            objective: activeInvoiceAiPromptPack.objective,
+                          }
+                        : null
+                    }
+                    selectedSuggestionRunDetail={
+                      selectedInvoiceAiSuggestionRunDetail
+                    }
+                    statusFilter={invoiceAiApprovalStatusFilter}
+                    suggestionRuns={activeInvoiceAiSuggestionRuns}
+                    toolAccess={activeInvoiceAiToolAccess}
+                  />
                 </InvoicingWorkspaceAssist>
               ) : null}
 

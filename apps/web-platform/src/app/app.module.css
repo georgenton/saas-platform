@@ -2353,6 +2353,226 @@
   text-overflow: ellipsis;
 }
 
+.invoicingCloseoutStack {
+  display: grid;
+  gap: 16px;
+}
+
+.invoicingCloseoutHero,
+.invoicingCloseoutCard,
+.invoicingCloseoutEvidence {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+}
+
+.invoicingCloseoutHero {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface-raised) 90%, var(--primary-soft) 10%) 0%,
+    var(--surface-raised) 100%
+  );
+}
+
+.invoicingCloseoutHeroSuccess {
+  border-color: color-mix(in srgb, var(--success) 34%, var(--border) 66%);
+}
+
+.invoicingCloseoutHeroWarning {
+  border-color: color-mix(in srgb, var(--warning) 34%, var(--border) 66%);
+}
+
+.invoicingCloseoutHeroDanger {
+  border-color: color-mix(in srgb, var(--danger) 34%, var(--border) 66%);
+}
+
+.invoicingCloseoutHeroInfo {
+  border-color: color-mix(in srgb, var(--info) 34%, var(--border) 66%);
+}
+
+.invoicingCloseoutHeroMain {
+  align-items: flex-start;
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+}
+
+.invoicingCloseoutHeroMain h3 {
+  color: var(--text-strong);
+  font-size: 1.45rem;
+  margin: 4px 0 0;
+}
+
+.invoicingCloseoutHeroMain p,
+.invoicingCloseoutEvidence p {
+  color: var(--text-muted);
+  line-height: 1.55;
+  margin: 6px 0 0;
+  max-width: 760px;
+}
+
+.invoicingCloseoutTriad,
+.invoicingCloseoutSettlementGrid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.invoicingCloseoutTriadCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 14px;
+}
+
+.invoicingCloseoutTriadCard strong {
+  color: var(--text-strong);
+}
+
+.invoicingCloseoutTriadCard small {
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.invoicingCloseoutTriadCard .statusPill {
+  justify-self: start;
+}
+
+.invoicingCloseoutNextStep {
+  background: var(--surface-sunken);
+  border: 1px solid var(--divider);
+  border-radius: 8px;
+  display: grid;
+  gap: 4px;
+  padding: 14px;
+}
+
+.invoicingCloseoutNextStep span,
+.invoicingCloseoutSettlementGrid span {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.invoicingCloseoutNextStep strong {
+  color: var(--text-strong);
+  line-height: 1.45;
+}
+
+.invoicingCloseoutDeliverySummary {
+  background: var(--surface-sunken);
+  border: 1px solid var(--divider);
+  border-radius: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  padding: 12px 14px;
+}
+
+.invoicingCloseoutDeliverySummary span {
+  color: var(--text-muted);
+}
+
+.invoicingCloseoutDeliverySummary strong {
+  color: var(--text-strong);
+}
+
+.invoicingCloseoutSettlementGrid > div {
+  background: var(--surface-sunken);
+  border: 1px solid var(--divider);
+  border-radius: 8px;
+  display: grid;
+  gap: 5px;
+  padding: 14px;
+}
+
+.invoicingCloseoutSettlementGrid strong {
+  color: var(--text-strong);
+  font-size: 1.12rem;
+}
+
+.invoicingCloseoutProgress {
+  background: var(--surface-sunken);
+  border-radius: 999px;
+  height: 10px;
+  overflow: hidden;
+}
+
+.invoicingCloseoutProgress span {
+  background: linear-gradient(
+    90deg,
+    var(--primary),
+    color-mix(in srgb, var(--primary) 64%, var(--success) 36%)
+  );
+  display: block;
+  height: 100%;
+}
+
+.invoicingCloseoutQuickActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.invoicingCloseoutPaymentList {
+  display: grid;
+  gap: 12px;
+}
+
+.invoicingCloseoutPaymentRow {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.invoicingCloseoutPaymentRowReversed {
+  background: var(--surface-sunken);
+  border-style: dashed;
+  opacity: 0.82;
+}
+
+.invoicingCloseoutPaymentMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+}
+
+.invoicingCloseoutPaymentMeta small,
+.invoicingCloseoutPaymentRow small {
+  color: var(--text-muted);
+}
+
+.invoicingCloseoutReverseAction {
+  align-items: center;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.invoicingCloseoutReverseAction input {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  min-height: 40px;
+  padding: 0 12px;
+}
+
+.invoicingCloseoutEvidence {
+  background: var(--surface-sunken);
+  border-style: dashed;
+}
+
 .invoicingDocumentNumberingGrid {
   display: grid;
   gap: 12px;
@@ -3945,6 +4165,8 @@
   .invoicingSRICompactRow,
   .invoicingSettingsHealthStrip,
   .invoicingSettingsPillarGrid,
+  .invoicingCloseoutTriad,
+  .invoicingCloseoutSettlementGrid,
   .identityBlock,
   .sessionStateGrid,
   .detailGrid,
@@ -4035,6 +4257,9 @@
   .invoicingDocumentReviewLayout,
   .invoicingDocumentReviewIdentityGrid,
   .invoicingDocumentNumberingGrid,
+  .invoicingCloseoutTriad,
+  .invoicingCloseoutSettlementGrid,
+  .invoicingCloseoutReverseAction,
   .invoiceInlineGrid,
   .invoiceTotalsGrid,
   .invoiceDetailGrid,
@@ -4070,6 +4295,11 @@
   }
 
   .invoicingSRINextStepHeader {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .invoicingCloseoutHeroMain {
     align-items: stretch;
     flex-direction: column;
   }

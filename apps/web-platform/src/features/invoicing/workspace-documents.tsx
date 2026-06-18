@@ -1,9 +1,20 @@
 import styles from '../../app/app.module.css';
 import type {
   InvoiceDocumentResponse,
+  InvoiceDetailResponse,
   InvoiceElectronicArtifactsResponse,
   InvoiceRideResponse,
 } from '../../app/types';
+import {
+  deriveCloseoutNextStep,
+  deriveCloseoutVerdict,
+  deriveDeliveryCloseoutMeta,
+  deriveDeliveryCloseoutStatus,
+  derivePaymentCloseoutMeta,
+  derivePaymentCloseoutStatus,
+  deriveSriCloseoutStatus,
+  type InvoicingCloseoutTone,
+} from './closeout';
 import { canPrintRideAsAuthorized } from './documents/authorization';
 import {
   deriveDocumentReadiness,
@@ -28,11 +39,14 @@ type InvoicingDocumentPreviewPanelProps = {
 
 type InvoicingNotificationsPanelProps = {
   actionLoading: string | null;
+  formatElectronicStatus: (value: string | null) => string;
+  formatMoney: (valueInCents: number, currency: string) => string;
   invoiceEmailMessage: string;
   invoiceEmailRecipient: string;
   onInvoiceEmailMessageChange: (value: string) => void;
   onInvoiceEmailRecipientChange: (value: string) => void;
   onSendInvoiceEmail: () => void;
+  selectedInvoiceDetail: InvoiceDetailResponse;
 };
 
 type Tone = 'danger' | 'info' | 'neutral' | 'success' | 'warning';
@@ -96,6 +110,49 @@ function ReadinessCheckPill({ check }: { check: DocumentReadinessCheck }) {
         <strong>{check.label}</strong>
         <small>{check.ok ? 'Completo' : 'Por revisar'}</small>
       </div>
+    </div>
+  );
+}
+
+function closeoutToneClass(tone: InvoicingCloseoutTone): string {
+  if (tone === 'success') {
+    return styles.statusPillSuccess;
+  }
+
+  if (tone === 'warning') {
+    return styles.statusPillWarning;
+  }
+
+  if (tone === 'danger') {
+    return styles.statusPillDanger;
+  }
+
+  if (tone === 'info') {
+    return styles.statusPillInfo;
+  }
+
+  return '';
+}
+
+function CloseoutStatusCard({
+  detail,
+  label,
+  tone,
+  title,
+}: {
+  detail: string;
+  label: string;
+  tone: InvoicingCloseoutTone;
+  title: string;
+}) {
+  return (
+    <div className={styles.invoicingCloseoutTriadCard}>
+      <span className={styles.label}>{title}</span>
+      <strong>{label}</strong>
+      <small>{detail}</small>
+      <span className={`${styles.statusPill} ${closeoutToneClass(tone)}`}>
+        {label}
+      </span>
     </div>
   );
 }
@@ -606,16 +663,94 @@ export function InvoicingDocumentPreviewPanel({
 
 export function InvoicingNotificationsPanel({
   actionLoading,
+  formatElectronicStatus,
+  formatMoney,
   invoiceEmailMessage,
   invoiceEmailRecipient,
   onInvoiceEmailMessageChange,
   onInvoiceEmailRecipientChange,
   onSendInvoiceEmail,
+  selectedInvoiceDetail,
 }: InvoicingNotificationsPanelProps) {
+  const deliveryStatus = deriveDeliveryCloseoutStatus({
+    isSending: actionLoading === 'send-invoice-email',
+    recipientEmail: invoiceEmailRecipient,
+  });
+  const deliveryMeta = deriveDeliveryCloseoutMeta(deliveryStatus);
+  const paymentStatus = derivePaymentCloseoutStatus(selectedInvoiceDetail);
+  const paymentMeta = derivePaymentCloseoutMeta(selectedInvoiceDetail);
+  const sriMeta = deriveSriCloseoutStatus(selectedInvoiceDetail);
+  const verdict = deriveCloseoutVerdict({
+    deliveryStatus,
+    invoice: selectedInvoiceDetail,
+    paymentStatus,
+  });
+  const nextStep = deriveCloseoutNextStep({
+    deliveryStatus,
+    invoice: selectedInvoiceDetail,
+    paymentStatus,
+  });
+  const canSendEmail =
+    selectedInvoiceDetail.status !== 'draft' &&
+    selectedInvoiceDetail.status !== 'void' &&
+    deliveryStatus !== 'no_email' &&
+    actionLoading !== 'send-invoice-email';
+
   return (
-    <div className={styles.documentPreview}>
+    <div className={styles.invoicingCloseoutStack}>
+      <section
+        className={`${styles.invoicingCloseoutHero} ${
+          verdict.tone === 'success'
+            ? styles.invoicingCloseoutHeroSuccess
+            : verdict.tone === 'warning'
+              ? styles.invoicingCloseoutHeroWarning
+              : verdict.tone === 'danger'
+                ? styles.invoicingCloseoutHeroDanger
+                : verdict.tone === 'info'
+                  ? styles.invoicingCloseoutHeroInfo
+                  : ''
+        }`}
+      >
+        <div className={styles.invoicingCloseoutHeroMain}>
+          <div>
+            <span className={styles.label}>Invoicing · Cierre operativo</span>
+            <h3>{verdict.label}</h3>
+            <p>{verdict.detail}</p>
+          </div>
+          <span className={`${styles.statusPill} ${closeoutToneClass(verdict.tone)}`}>
+            {formatElectronicStatus(selectedInvoiceDetail.electronicStatus)}
+          </span>
+        </div>
+
+        <div className={styles.invoicingCloseoutTriad}>
+          <CloseoutStatusCard
+            detail={sriMeta.detail}
+            label={sriMeta.label}
+            title="SRI"
+            tone={sriMeta.tone}
+          />
+          <CloseoutStatusCard
+            detail={deliveryMeta.detail}
+            label={deliveryMeta.label}
+            title="Entrega"
+            tone={deliveryMeta.tone}
+          />
+          <CloseoutStatusCard
+            detail={paymentMeta.detail}
+            label={paymentMeta.label}
+            title="Pago"
+            tone={paymentMeta.tone}
+          />
+        </div>
+
+        <div className={styles.invoicingCloseoutNextStep}>
+          <span>Proximo paso recomendado</span>
+          <strong>{nextStep}</strong>
+        </div>
+      </section>
+
       <form
-        className={styles.stack}
+        className={styles.invoicingCloseoutCard}
         onSubmit={(event) => {
           event.preventDefault();
           onSendInvoiceEmail();
@@ -623,10 +758,17 @@ export function InvoicingNotificationsPanel({
       >
         <div className={styles.sectionHeading}>
           <div>
-            <span className={styles.label}>Notifications</span>
-            <h3>Enviar factura por email</h3>
+            <span className={styles.label}>Entrega al cliente</span>
+            <h3>Compartir comprobante</h3>
           </div>
+          <span className={`${styles.statusPill} ${closeoutToneClass(deliveryMeta.tone)}`}>
+            {deliveryMeta.label}
+          </span>
         </div>
+        <p className={styles.muted}>
+          Enviar el email no cambia el estado en el SRI ni registra el pago.
+          Solo deja encaminada la entrega operativa al cliente.
+        </p>
 
         <label className={styles.field}>
           <span>Destinatario</span>
@@ -634,10 +776,15 @@ export function InvoicingNotificationsPanel({
             onChange={(event) =>
               onInvoiceEmailRecipientChange(event.target.value)
             }
-            placeholder="billing@customer.dev"
+            placeholder="cobranzas@cliente.ec"
             type="email"
             value={invoiceEmailRecipient}
           />
+          {deliveryStatus === 'no_email' ? (
+            <small className={styles.fieldHint}>
+              Esta factura no tiene un correo de cliente confirmado.
+            </small>
+          ) : null}
         </label>
 
         <label className={styles.field}>
@@ -646,14 +793,29 @@ export function InvoicingNotificationsPanel({
             onChange={(event) =>
               onInvoiceEmailMessageChange(event.target.value)
             }
-            placeholder="Te compartimos la factura del periodo."
+            placeholder="Te compartimos el comprobante y el detalle del saldo."
             value={invoiceEmailMessage}
           />
         </label>
 
+        <div className={styles.invoicingCloseoutDeliverySummary}>
+          <span>
+            Saldo actual{' '}
+            <strong>
+              {formatMoney(
+                selectedInvoiceDetail.settlement.balanceDueInCents,
+                selectedInvoiceDetail.currency,
+              )}
+            </strong>
+          </span>
+          <span>
+            Documento <strong>{selectedInvoiceDetail.number}</strong>
+          </span>
+        </div>
+
         <button
           className={styles.primaryButton}
-          disabled={actionLoading === 'send-invoice-email'}
+          disabled={!canSendEmail}
           type="submit"
         >
           {actionLoading === 'send-invoice-email'

@@ -1,5 +1,9 @@
 import styles from '../../app/app.module.css';
 import type { InvoiceDetailResponse, TaxRateResponse } from '../../app/types';
+import {
+  derivePaymentCloseoutMeta,
+  type InvoicingCloseoutTone,
+} from './closeout';
 import { centsToCurrencyInput, currencyInputToCents } from './items/money';
 
 type InvoicingPaymentsPanelProps = {
@@ -52,6 +56,26 @@ function formatInvoiceStatus(status: string): string {
   return labels[status] ?? status;
 }
 
+function closeoutToneClass(tone: InvoicingCloseoutTone): string {
+  if (tone === 'success') {
+    return styles.statusPillSuccess;
+  }
+
+  if (tone === 'warning') {
+    return styles.statusPillWarning;
+  }
+
+  if (tone === 'danger') {
+    return styles.statusPillDanger;
+  }
+
+  if (tone === 'info') {
+    return styles.statusPillInfo;
+  }
+
+  return '';
+}
+
 export function InvoicingPaymentsPanel({
   actionLoading,
   formatDate,
@@ -73,75 +97,95 @@ export function InvoicingPaymentsPanel({
   paymentReversalReason,
   selectedInvoiceDetail,
 }: InvoicingPaymentsPanelProps) {
+  const paymentMeta = derivePaymentCloseoutMeta(selectedInvoiceDetail);
+  const balanceDueInCents = selectedInvoiceDetail.settlement.balanceDueInCents;
+  const paymentAmountInCents = Number(newPaymentAmountInCents);
+  const hasPaymentAmount = newPaymentAmountInCents.trim().length > 0;
+  const paymentAmountIsInvalid =
+    hasPaymentAmount &&
+    (!Number.isFinite(paymentAmountInCents) || paymentAmountInCents <= 0);
+  const paymentAmountExceedsBalance =
+    Number.isFinite(paymentAmountInCents) &&
+    paymentAmountInCents > balanceDueInCents;
+  const canRegisterPayment =
+    selectedInvoiceDetail.status !== 'draft' &&
+    selectedInvoiceDetail.status !== 'void' &&
+    balanceDueInCents > 0 &&
+    !paymentAmountIsInvalid &&
+    !paymentAmountExceedsBalance &&
+    hasPaymentAmount &&
+    actionLoading !== 'create-invoice-payment';
+  const paidRatio =
+    selectedInvoiceDetail.totals.totalInCents > 0
+      ? Math.min(
+          100,
+          Math.round(
+            (selectedInvoiceDetail.settlement.paidInCents /
+              selectedInvoiceDetail.totals.totalInCents) *
+              100,
+          ),
+        )
+      : 0;
+
   return (
-    <>
-      <div className={styles.stack}>
+    <div className={styles.invoicingCloseoutStack}>
+      <section className={styles.invoicingCloseoutCard}>
         <div className={styles.sectionHeading}>
           <div>
-            <span className={styles.label}>Payments</span>
-            <h3>{selectedInvoiceDetail.payments.length} pagos</h3>
+            <span className={styles.label}>Saldo y cobro</span>
+            <h3>{paymentMeta.label}</h3>
+          </div>
+          <span className={`${styles.statusPill} ${closeoutToneClass(paymentMeta.tone)}`}>
+            {formatMoney(balanceDueInCents, selectedInvoiceDetail.currency)} por
+            cobrar
+          </span>
+        </div>
+        <p className={styles.muted}>
+          Registrar un pago no genera asientos contables ni concilia con el
+          banco. Solo actualiza el saldo operativo de esta factura.
+        </p>
+
+        <div className={styles.invoicingCloseoutSettlementGrid}>
+          <div>
+            <span>Total</span>
+            <strong>
+              {formatMoney(
+                selectedInvoiceDetail.totals.totalInCents,
+                selectedInvoiceDetail.currency,
+              )}
+            </strong>
+          </div>
+          <div>
+            <span>Pagado</span>
+            <strong>
+              {formatMoney(
+                selectedInvoiceDetail.settlement.paidInCents,
+                selectedInvoiceDetail.currency,
+              )}
+            </strong>
+          </div>
+          <div>
+            <span>Saldo</span>
+            <strong>
+              {formatMoney(balanceDueInCents, selectedInvoiceDetail.currency)}
+            </strong>
           </div>
         </div>
 
-        {selectedInvoiceDetail.payments.length === 0 ? (
-          <div className={styles.emptyState}>
-            <p>Esta factura todavia no tiene pagos registrados.</p>
-          </div>
-        ) : (
-          <div className={styles.stack}>
-            {selectedInvoiceDetail.payments.map((payment) => (
-              <div className={styles.invoiceItemCard} key={payment.id}>
-                <div className={styles.invoiceCardHeader}>
-                  <strong>{payment.method}</strong>
-                  <span className={styles.statusPill}>
-                    {formatMoney(payment.amountInCents, payment.currency)}
-                  </span>
-                </div>
-                <small>Estado: {formatPaymentStatus(payment.status)}</small>
-                <small>Fecha: {formatDate(payment.paidAt)}</small>
-                <small>
-                  Referencia: {payment.reference ?? 'Sin referencia'}
-                </small>
-                <small>{payment.notes ?? 'Sin notas'}</small>
-                {payment.reversedAt ? (
-                  <small>
-                    Revertido: {formatDate(payment.reversedAt)}
-                    {payment.reversalReason
-                      ? ` · ${payment.reversalReason}`
-                      : ''}
-                  </small>
-                ) : null}
-                {payment.status === 'posted' ? (
-                  <button
-                    className={styles.secondaryButton}
-                    disabled={actionLoading === `reverse-payment:${payment.id}`}
-                    onClick={() => onReverseInvoicePayment(payment.id)}
-                    type="button"
-                  >
-                    {actionLoading === `reverse-payment:${payment.id}`
-                      ? 'Revirtiendo...'
-                      : 'Revertir pago'}
-                  </button>
-                ) : null}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <label className={styles.field}>
-        <span>Motivo de reversa</span>
-        <input
-          onChange={(event) =>
-            onPaymentReversalReasonChange(event.target.value)
-          }
-          placeholder="Pago duplicado, error de conciliacion, etc."
-          value={paymentReversalReason}
-        />
-      </label>
+        <div
+          aria-label={`Pago registrado ${paidRatio}%`}
+          className={styles.invoicingCloseoutProgress}
+          role="progressbar"
+          aria-valuemax={100}
+          aria-valuemin={0}
+          aria-valuenow={paidRatio}
+        >
+          <span style={{ width: `${paidRatio}%` }} />
+        </div>
+      </section>
 
       <form
-        className={styles.stack}
+        className={styles.invoicingCloseoutCard}
         onSubmit={(event) => {
           event.preventDefault();
           onCreateInvoicePayment();
@@ -149,23 +193,55 @@ export function InvoicingPaymentsPanel({
       >
         <div className={styles.sectionHeading}>
           <div>
-            <span className={styles.label}>Register payment</span>
-            <h3>Nuevo pago</h3>
+            <span className={styles.label}>Registro de pago</span>
+            <h3>Pago recibido</h3>
           </div>
+          <span className={styles.statusPill}>{selectedInvoiceDetail.currency}</span>
+        </div>
+
+        <div className={styles.invoicingCloseoutQuickActions}>
+          <button
+            className={styles.secondaryButton}
+            disabled={balanceDueInCents <= 0}
+            onClick={() => onNewPaymentAmountInCentsChange(String(balanceDueInCents))}
+            type="button"
+          >
+            Usar saldo completo
+          </button>
+          <button
+            className={styles.ghostButton}
+            disabled={balanceDueInCents <= 1}
+            onClick={() =>
+              onNewPaymentAmountInCentsChange(String(Math.round(balanceDueInCents / 2)))
+            }
+            type="button"
+          >
+            50%
+          </button>
         </div>
 
         <div className={styles.invoiceInlineGrid}>
           <label className={styles.field}>
-            <span>Monto (cents)</span>
+            <span>Monto recibido</span>
             <input
-              min="1"
+              inputMode="decimal"
               onChange={(event) =>
-                onNewPaymentAmountInCentsChange(event.target.value)
+                onNewPaymentAmountInCentsChange(
+                  currencyInputToCents(event.target.value),
+                )
               }
-              placeholder="6800"
-              type="number"
-              value={newPaymentAmountInCents}
+              placeholder="68.00"
+              value={centsToCurrencyInput(newPaymentAmountInCents)}
             />
+            {paymentAmountIsInvalid ? (
+              <small className={styles.fieldHint}>
+                Ingresa un monto mayor a cero.
+              </small>
+            ) : paymentAmountExceedsBalance ? (
+              <small className={styles.fieldHint}>
+                El monto no puede superar el saldo pendiente.
+              </small>
+            ) : null}
           </label>
           <label className={styles.field}>
             <span>Metodo</span>
@@ -209,12 +285,7 @@ export function InvoicingPaymentsPanel({
 
         <button
           className={styles.primaryButton}
-          disabled={
-            selectedInvoiceDetail.status === 'draft' ||
-            selectedInvoiceDetail.status === 'void' ||
-            selectedInvoiceDetail.settlement.balanceDueInCents === 0 ||
-            actionLoading === 'create-invoice-payment'
-          }
+          disabled={!canRegisterPayment}
           type="submit"
         >
           {actionLoading === 'create-invoice-payment'
@@ -222,7 +293,105 @@ export function InvoicingPaymentsPanel({
             : 'Registrar pago'}
         </button>
       </form>
-    </>
+
+      <section className={styles.invoicingCloseoutCard}>
+        <div className={styles.sectionHeading}>
+          <div>
+            <span className={styles.label}>Historial de pagos</span>
+            <h3>{selectedInvoiceDetail.payments.length} movimientos</h3>
+          </div>
+        </div>
+
+        {selectedInvoiceDetail.payments.length === 0 ? (
+          <div className={styles.emptyState}>
+            <p>Esta factura todavia no tiene pagos registrados.</p>
+          </div>
+        ) : (
+          <div className={styles.invoicingCloseoutPaymentList}>
+            {selectedInvoiceDetail.payments.map((payment) => (
+              <div
+                className={`${styles.invoicingCloseoutPaymentRow} ${
+                  payment.reversedAt
+                    ? styles.invoicingCloseoutPaymentRowReversed
+                    : ''
+                }`}
+                key={payment.id}
+              >
+                <div className={styles.invoiceCardHeader}>
+                  <div>
+                    <strong>{payment.method}</strong>
+                    <small>{formatDate(payment.paidAt)}</small>
+                  </div>
+                  <span
+                    className={`${styles.statusPill} ${
+                      payment.status === 'posted'
+                        ? styles.statusPillSuccess
+                        : payment.status === 'reversed'
+                          ? styles.statusPillWarning
+                          : ''
+                    }`}
+                  >
+                    {formatMoney(payment.amountInCents, payment.currency)}
+                  </span>
+                </div>
+                <div className={styles.invoicingCloseoutPaymentMeta}>
+                  <small>Estado: {formatPaymentStatus(payment.status)}</small>
+                  <small>
+                    Referencia: {payment.reference ?? 'Sin referencia'}
+                  </small>
+                  <small>{payment.notes ?? 'Sin notas'}</small>
+                </div>
+                {payment.reversedAt ? (
+                  <small>
+                    Revertido: {formatDate(payment.reversedAt)}
+                    {payment.reversalReason
+                      ? ` · ${payment.reversalReason}`
+                      : ''}
+                  </small>
+                ) : null}
+                {payment.status === 'posted' ? (
+                  <div className={styles.invoicingCloseoutReverseAction}>
+                    <input
+                      aria-label="Motivo de reversa"
+                      onChange={(event) =>
+                        onPaymentReversalReasonChange(event.target.value)
+                      }
+                      placeholder="Motivo de reversa"
+                      value={paymentReversalReason}
+                    />
+                    <button
+                      className={styles.secondaryButton}
+                      disabled={
+                        actionLoading === `reverse-payment:${payment.id}` ||
+                        !paymentReversalReason.trim()
+                      }
+                      onClick={() => onReverseInvoicePayment(payment.id)}
+                      type="button"
+                    >
+                      {actionLoading === `reverse-payment:${payment.id}`
+                        ? 'Revirtiendo...'
+                        : 'Revertir'}
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className={styles.invoicingCloseoutEvidence}>
+        <div>
+          <span className={styles.label}>Evidencia futura</span>
+          <h3>Listo para Tax Compliance y Accounting</h3>
+        </div>
+        <p>
+          Este cierre conserva la historia operativa de entrega y pago. La
+          declaracion tributaria, conciliacion bancaria y asiento contable se
+          conectaran en sus productos correspondientes.
+        </p>
+      </section>
+    </div>
   );
 }
 

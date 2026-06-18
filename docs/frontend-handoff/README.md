@@ -26,12 +26,13 @@ consume existing contracts before requesting new backend scope.
 7. `07-invoicing-items-flow.md`
 8. `08-invoicing-document-review.md`
 9. `09-invoicing-sri-submission-lifecycle.md`
-10. `03-ecommerce.md`
-11. `04-tax-compliance-ec.md`
-12. `05-accounting.md`
-13. `06-ai-console.md`
-14. `07-clinics.md`
-15. `08-growth.md`
+10. `10-invoicing-vercel-qa-runbook.md`
+11. `03-ecommerce.md`
+12. `04-tax-compliance-ec.md`
+13. `05-accounting.md`
+14. `06-ai-console.md`
+15. `07-clinics.md`
+16. `08-growth.md`
 
 ## Current Active Sequence
 
@@ -46,6 +47,8 @@ The current frontend priority is:
 7. Refine document review before deeper XML / RIDE and electronic lifecycle work
 8. Refine the SRI submission lifecycle before email delivery, payments and
    cross-product handoff into accounting / tax compliance
+9. Preserve the Vercel/Railway QA runbook as the minimum no-regression flow
+   before requesting the next Claude Design surface
 
 This order is intentional. The team should not continue polishing signed-in
 product surfaces as if the JWT textarea were the permanent entrance to the app.

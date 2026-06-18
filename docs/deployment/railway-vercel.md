@@ -117,6 +117,20 @@ Despues de cambiar `VITE_API_BASE_URL` hay que redeployar Vercel, porque Vite in
 11. Redeploy Railway.
 12. Probar frontend contra API desplegada.
 
+## QA remoto de Invoicing
+
+Despues de un deploy exitoso, usar
+`docs/frontend-handoff/10-invoicing-vercel-qa-runbook.md` como prueba manual
+minima para validar el recorrido:
+
+1. login/token en Vercel;
+2. Command Center;
+3. workspace de Invoicing;
+4. borrador de factura;
+5. lineas y totales;
+6. emision;
+7. intento de envio SRI con error legible si el XML aun no supera XSD.
+
 ## Riesgos actuales
 
 - La base nueva queda con esquema migrado, pero puede no tener tenant/usuario demo. Despues del primer deploy conviene crear un script de bootstrap para piloto.

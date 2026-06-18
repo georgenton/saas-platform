@@ -179,10 +179,18 @@ export function InvoicingDomainSection({
       ) : (
         <div className={styles.stack}>
           {effectiveError ? (
-            <p className={styles.errorBanner}>{effectiveError}</p>
+            <p className={styles.errorBanner} role="alert">
+              {effectiveError}
+            </p>
           ) : null}
           {invoicingActionMessage ? (
-            <p className={styles.successBanner}>{invoicingActionMessage}</p>
+            <p
+              aria-live="polite"
+              className={styles.successBanner}
+              role="status"
+            >
+              {invoicingActionMessage}
+            </p>
           ) : null}
 
           <div className={styles.productWorkspaceContext}>

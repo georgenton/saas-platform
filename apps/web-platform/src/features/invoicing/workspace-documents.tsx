@@ -4,6 +4,11 @@ import type {
   InvoiceElectronicArtifactsResponse,
   InvoiceRideResponse,
 } from '../../app/types';
+import { canPrintRideAsAuthorized } from './documents/authorization';
+import {
+  deriveDocumentReadiness,
+  type DocumentReadinessCheck,
+} from './documents/readiness';
 
 type InvoicingDocumentPreviewPanelProps = {
   actionLoading: string | null;
@@ -30,13 +35,6 @@ type InvoicingNotificationsPanelProps = {
   onSendInvoiceEmail: () => void;
 };
 
-type DocumentReadinessCheck = {
-  detail: string;
-  key: string;
-  label: string;
-  ok: boolean;
-};
-
 type Tone = 'danger' | 'info' | 'neutral' | 'success' | 'warning';
 
 const invoiceStatusLabels: Record<string, string> = {
@@ -50,57 +48,6 @@ const environmentLabels: Record<string, string> = {
   production: 'Producción',
   testing: 'Pruebas',
 };
-
-function deriveDocumentReadiness(
-  document: InvoiceDocumentResponse,
-): DocumentReadinessCheck[] {
-  return [
-    {
-      detail: document.issuer.taxId
-        ? 'RUC y ambiente configurados.'
-        : 'Falta RUC o ambiente del emisor.',
-      key: 'issuer',
-      label: 'Emisor',
-      ok: Boolean(
-        document.issuer.legalName &&
-          document.issuer.taxId &&
-          document.issuer.environment,
-      ),
-    },
-    {
-      detail:
-        (document.customer.identification ?? document.customer.taxId)
-          ? 'Comprador identificado.'
-          : 'Falta la identificación fiscal del comprador.',
-      key: 'buyer',
-      label: 'Comprador',
-      ok: Boolean(
-        document.customer.name &&
-          (document.customer.identification ?? document.customer.taxId),
-      ),
-    },
-    {
-      detail: 'Serie, punto de emisión y secuencial asignados.',
-      key: 'numbering',
-      label: 'Numeración',
-      ok: Boolean(
-        document.invoice.documentCode &&
-          document.invoice.establishmentCode &&
-          document.invoice.emissionPointCode &&
-          document.invoice.sequenceNumber !== null,
-      ),
-    },
-    {
-      detail:
-        document.lines.length > 0
-          ? `${document.lines.length} línea${document.lines.length === 1 ? '' : 's'} lista${document.lines.length === 1 ? '' : 's'}.`
-          : 'La factura no tiene líneas.',
-      key: 'lines',
-      label: 'Líneas y totales',
-      ok: document.lines.length > 0,
-    },
-  ];
-}
 
 function getElectronicTone(status: string | null): Tone {
   if (status === 'authorized') {
@@ -203,10 +150,10 @@ export function InvoicingDocumentPreviewPanel({
   const electronicTone = getElectronicTone(
     selectedInvoiceDocument.invoice.electronicStatus,
   );
-  const isAuthorizedRide = Boolean(
-    selectedInvoiceRide?.ride.canBePrintedAsAuthorized &&
-      selectedInvoiceDocument.invoice.electronicStatus === 'authorized',
-  );
+  const isAuthorizedRide = canPrintRideAsAuthorized({
+    document: selectedInvoiceDocument,
+    ride: selectedInvoiceRide,
+  });
   const currency = selectedInvoiceDocument.invoice.currency;
 
   return (
@@ -520,6 +467,13 @@ export function InvoicingDocumentPreviewPanel({
                   {selectedInvoiceArtifacts?.rideHtmlFileName ??
                     'Aún no generado'}
                 </small>
+                <em>
+                  {isAuthorizedRide
+                    ? 'Imprimible como comprobante autorizado'
+                    : selectedInvoiceRide
+                      ? 'Referencial / pendiente — no autorizado'
+                      : 'No disponible todavía'}
+                </em>
               </div>
               <div className={styles.invoicingDocumentActionGroup}>
                 <button
@@ -563,6 +517,11 @@ export function InvoicingDocumentPreviewPanel({
                 <small>
                   {selectedInvoiceArtifacts?.xmlFileName ?? 'Aún no generado'}
                 </small>
+                <em>
+                  {selectedInvoiceArtifacts?.canDownloadXml
+                    ? 'Disponible para descarga'
+                    : 'No disponible todavía'}
+                </em>
               </div>
               <button
                 className={styles.ghostButton}

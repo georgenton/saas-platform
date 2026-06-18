@@ -2455,6 +2455,16 @@
   white-space: nowrap;
 }
 
+.invoicingDocumentArtifactRow em {
+  color: var(--text-muted);
+  display: block;
+  font-size: 0.76rem;
+  font-style: normal;
+  font-weight: 750;
+  line-height: 1.35;
+  margin-top: 4px;
+}
+
 .invoicingDocumentArtifactRowUnavailable {
   opacity: 0.62;
 }

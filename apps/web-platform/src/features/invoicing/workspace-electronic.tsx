@@ -5,6 +5,11 @@ import type {
   InvoiceDetailResponse,
 } from '../../app/types';
 import { StatusPill } from '../../shared/design-system/status-pill';
+import {
+  getLegalStatusMeta,
+  getSriEvidenceValues,
+  isInvoiceElectronicallyAuthorized,
+} from './electronic/lifecycle';
 
 type InvoicingElectronicStatusPanelProps = {
   actionLoading: string | null;
@@ -45,50 +50,6 @@ type InvoicingTechnicalTracePanelProps = {
   formatDate: (value: string | null | undefined) => string;
   selectedInvoiceDetail: InvoiceDetailResponse;
 };
-
-type LegalStatusMeta = {
-  classSuffix: 'Danger' | 'Neutral' | 'Success' | 'Warning';
-  icon: string;
-  label: string;
-  legal: string;
-};
-
-function getLegalStatusMeta(status: string | null): LegalStatusMeta {
-  switch (status) {
-    case 'submitted':
-      return {
-        classSuffix: 'Warning',
-        icon: '↻',
-        label: 'Enviado al SRI',
-        legal:
-          'El SRI recibió el comprobante y lo está procesando. Enviado no significa autorizado; la validez legal llega solo con la autorización.',
-      };
-    case 'authorized':
-      return {
-        classSuffix: 'Success',
-        icon: '✓',
-        label: 'Autorizado por el SRI',
-        legal:
-          'El comprobante es legalmente válido. Conserva la clave de acceso y el número de autorización para soporte, contabilidad y tributación.',
-      };
-    case 'rejected':
-      return {
-        classSuffix: 'Danger',
-        icon: '!',
-        label: 'Devuelto por el SRI',
-        legal:
-          'El SRI devolvió el comprobante con observaciones. No es válido hasta corregir la causa y autorizarlo.',
-      };
-    default:
-      return {
-        classSuffix: 'Neutral',
-        icon: '→',
-        label: 'Pendiente de envío',
-        legal:
-          'El comprobante aún no se ha enviado al SRI. No tiene validez electrónica todavía.',
-      };
-  }
-}
 
 export function InvoicingElectronicStatusPanel({
   actionLoading,
@@ -138,10 +99,15 @@ export function InvoicingElectronicStatusPanel({
     [canSubmitElectronicDocument, selectedInvoiceDocumentSupport],
   );
 
-  const isAuthorized = selectedInvoiceDetail.electronicStatus === 'authorized';
+  const isAuthorized = isInvoiceElectronicallyAuthorized(selectedInvoiceDetail);
   const legalStatus = getLegalStatusMeta(
     selectedInvoiceDetail.electronicStatus,
   );
+  const evidenceValues = getSriEvidenceValues({
+    accessKey: invoiceAccessKey,
+    authorizationNumber: invoiceAuthorizationNumber,
+    isAuthorized,
+  });
   const nextStep = buildNextStep({
     actionLoading,
     canSubmitElectronicDocument,
@@ -222,16 +188,14 @@ export function InvoicingElectronicStatusPanel({
           </div>
           <div className={styles.invoicingSRICopyGrid}>
             <CopyValueCard
+              copyable={evidenceValues.accessKey.copyable}
               label="Clave de acceso"
-              value={invoiceAccessKey.trim() || 'Disponible al enviar'}
+              value={evidenceValues.accessKey.value}
             />
             <CopyValueCard
+              copyable={evidenceValues.authorizationNumber.copyable}
               label="No. autorización"
-              value={
-                isAuthorized
-                  ? invoiceAuthorizationNumber.trim() || 'Sin número registrado'
-                  : 'Disponible al autorizar'
-              }
+              value={evidenceValues.authorizationNumber.value}
             />
           </div>
           <div className={styles.invoicingSRIEvidenceGrid}>
@@ -1020,11 +984,19 @@ function SRIStageStepper({ status }: { status: string | null }) {
   );
 }
 
-function CopyValueCard({ label, value }: { label: string; value: string }) {
+function CopyValueCard({
+  copyable = true,
+  label,
+  value,
+}: {
+  copyable?: boolean;
+  label: string;
+  value: string;
+}) {
   const [copied, setCopied] = useState(false);
 
   async function handleCopy() {
-    if (!value || value === 'Sin número registrado') {
+    if (!copyable || !value) {
       return;
     }
 
@@ -1043,7 +1015,7 @@ function CopyValueCard({ label, value }: { label: string; value: string }) {
       <strong className={styles.invoicingSRICopyValue}>{value}</strong>
       <button
         className={styles.ghostButton}
-        disabled={!value || value === 'Sin número registrado'}
+        disabled={!copyable || !value}
         onClick={() => {
           void handleCopy();
         }}

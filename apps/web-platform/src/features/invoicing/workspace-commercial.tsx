@@ -1,8 +1,6 @@
 import styles from '../../app/app.module.css';
-import type {
-  InvoiceDetailResponse,
-  TaxRateResponse,
-} from '../../app/types';
+import type { InvoiceDetailResponse, TaxRateResponse } from '../../app/types';
+import { centsToCurrencyInput, currencyInputToCents } from './items/money';
 
 type InvoicingPaymentsPanelProps = {
   actionLoading: string | null;
@@ -42,36 +40,6 @@ type InvoicingInvoiceItemsPanelProps = {
   selectedInvoiceDetail: InvoiceDetailResponse;
   taxRates: TaxRateResponse[];
 };
-
-function centsToCurrencyInput(cents: string): string {
-  if (!cents.trim()) {
-    return '';
-  }
-
-  const value = Number(cents);
-
-  if (!Number.isFinite(value)) {
-    return '';
-  }
-
-  return (value / 100).toFixed(2);
-}
-
-function currencyInputToCents(input: string): string {
-  const normalized = input.replace(/\s/g, '').replace(',', '.');
-
-  if (!normalized) {
-    return '';
-  }
-
-  const value = Number(normalized);
-
-  if (!Number.isFinite(value) || value < 0) {
-    return '';
-  }
-
-  return String(Math.round(value * 100));
-}
 
 function formatInvoiceStatus(status: string): string {
   const labels: Record<string, string> = {
@@ -131,12 +99,16 @@ export function InvoicingPaymentsPanel({
                 </div>
                 <small>Estado: {formatPaymentStatus(payment.status)}</small>
                 <small>Fecha: {formatDate(payment.paidAt)}</small>
-                <small>Referencia: {payment.reference ?? 'Sin referencia'}</small>
+                <small>
+                  Referencia: {payment.reference ?? 'Sin referencia'}
+                </small>
                 <small>{payment.notes ?? 'Sin notas'}</small>
                 {payment.reversedAt ? (
                   <small>
                     Revertido: {formatDate(payment.reversedAt)}
-                    {payment.reversalReason ? ` · ${payment.reversalReason}` : ''}
+                    {payment.reversalReason
+                      ? ` · ${payment.reversalReason}`
+                      : ''}
                   </small>
                 ) : null}
                 {payment.status === 'posted' ? (
@@ -160,7 +132,9 @@ export function InvoicingPaymentsPanel({
       <label className={styles.field}>
         <span>Motivo de reversa</span>
         <input
-          onChange={(event) => onPaymentReversalReasonChange(event.target.value)}
+          onChange={(event) =>
+            onPaymentReversalReasonChange(event.target.value)
+          }
           placeholder="Pago duplicado, error de conciliacion, etc."
           value={paymentReversalReason}
         />
@@ -207,7 +181,9 @@ export function InvoicingPaymentsPanel({
           <label className={styles.field}>
             <span>Referencia</span>
             <input
-              onChange={(event) => onNewPaymentReferenceChange(event.target.value)}
+              onChange={(event) =>
+                onNewPaymentReferenceChange(event.target.value)
+              }
               placeholder="TRX-001"
               value={newPaymentReference}
             />
@@ -278,19 +254,31 @@ export function InvoicingInvoiceItemsPanel({
     : 0;
   const previewTaxInCents =
     hasLinePreview && selectedTaxRate
-      ? Math.round(
-          (previewSubtotalInCents * selectedTaxRate.percentage) / 100,
-        )
+      ? Math.round((previewSubtotalInCents * selectedTaxRate.percentage) / 100)
       : 0;
   const previewTotalInCents = previewSubtotalInCents + previewTaxInCents;
   const canAddItems = selectedInvoiceDetail.status === 'draft';
+  const electronicStatus =
+    selectedInvoiceDetail.electronicStatus ?? 'Documento no emitido al SRI';
 
   return (
     <section className={styles.invoicingItemsFlow}>
+      <div className={styles.invoicingItemsPageHeader}>
+        <div>
+          <span className={styles.label}>Invoicing · Composicion</span>
+          <h2>Lineas y totales</h2>
+          <p>
+            Agrega lo que estas cobrando y mira como se forman el subtotal, el
+            IVA y el total sin lenguaje contable complicado.
+          </p>
+        </div>
+        <span className={styles.statusPill}>Guia rapida</span>
+      </div>
+
       <div className={styles.invoicingItemsContextCard}>
         <div className={styles.invoicingItemsContextMain}>
+          <span className={styles.invoicingItemsContextIcon}>#</span>
           <div>
-            <span className={styles.label}>Invoicing · Composicion</span>
             <h3>{selectedInvoiceDetail.number}</h3>
             <p>
               {selectedInvoiceDetail.buyerName ?? 'Comprador sin nombre'} ·{' '}
@@ -310,16 +298,16 @@ export function InvoicingInvoiceItemsPanel({
             Items <strong>{selectedInvoiceDetail.items.length}</strong>
           </span>
           <span>
-            Estado electronico{' '}
-            <strong>
-              {selectedInvoiceDetail.electronicStatus ?? 'Sin envio'}
-            </strong>
+            Estado electronico <strong>{electronicStatus}</strong>
           </span>
         </div>
-        <p className={styles.muted}>
-          Aqui solo compones la factura. XML, RIDE, firma y envio al SRI vienen
-          despues en sus propias pantallas.
-        </p>
+        <div className={styles.invoicingItemsQuietContext}>
+          <strong>Contexto SRI</strong>
+          <span>
+            Aqui solo compones la factura. XML, RIDE, firma y envio al SRI
+            vienen despues en sus propias pantallas.
+          </span>
+        </div>
       </div>
 
       <div className={styles.invoicingItemsLayout}>
@@ -334,6 +322,17 @@ export function InvoicingInvoiceItemsPanel({
                     : `${selectedInvoiceDetail.items.length} lineas`}
                 </h3>
               </div>
+              <span
+                className={
+                  selectedInvoiceDetail.items.length
+                    ? styles.statusPill
+                    : styles.statusPillInfo
+                }
+              >
+                {selectedInvoiceDetail.items.length
+                  ? 'En composicion'
+                  : 'Sin lineas'}
+              </span>
             </div>
 
             {selectedInvoiceDetail.items.length === 0 ? (
@@ -361,7 +360,9 @@ export function InvoicingInvoiceItemsPanel({
                         )}
                       </small>
                       <small>
-                        Impuesto:{' '}
+                        <span className={styles.invoicingItemTaxTag}>
+                          Impuesto{' '}
+                        </span>
                         {item.taxRateName && item.taxRatePercentage !== null
                           ? `${item.taxRateName} (${formatPercentage(
                               item.taxRatePercentage,
@@ -410,6 +411,7 @@ export function InvoicingInvoiceItemsPanel({
                   <span className={styles.label}>Agregar linea</span>
                   <h3>Servicio o producto</h3>
                 </div>
+                <span className={styles.statusPill}>Draft</span>
               </div>
 
               {activeTaxRates.length === 0 ? (
@@ -447,19 +449,21 @@ export function InvoicingInvoiceItemsPanel({
                 </label>
                 <label className={styles.field}>
                   <span>Precio unitario</span>
-                  <input
-                    inputMode="decimal"
-                    onChange={(event) =>
-                      onNewItemUnitPriceInCentsChange(
-                        currencyInputToCents(event.target.value),
-                      )
-                    }
-                    placeholder="120.00"
-                    value={centsToCurrencyInput(newItemUnitPriceInCents)}
-                  />
+                  <div className={styles.currencyInputShell}>
+                    <span>$</span>
+                    <input
+                      inputMode="decimal"
+                      onChange={(event) =>
+                        onNewItemUnitPriceInCentsChange(
+                          currencyInputToCents(event.target.value),
+                        )
+                      }
+                      placeholder="120.00"
+                      value={centsToCurrencyInput(newItemUnitPriceInCents)}
+                    />
+                  </div>
                   <small className={styles.fieldHint}>
-                    En {selectedInvoiceDetail.currency}; se guarda internamente
-                    en centavos.
+                    En {selectedInvoiceDetail.currency}, impuestos aparte.
                   </small>
                 </label>
               </div>
@@ -484,30 +488,41 @@ export function InvoicingInvoiceItemsPanel({
 
               <div className={styles.invoicingItemsEstimate}>
                 <span>Estimado de la linea</span>
-                <strong>
-                  {hasLinePreview
-                    ? formatMoney(
-                        previewTotalInCents,
-                        selectedInvoiceDetail.currency,
-                      )
-                    : '--'}
-                </strong>
-                <small>
-                  Subtotal{' '}
-                  {hasLinePreview
-                    ? formatMoney(
-                        previewSubtotalInCents,
-                        selectedInvoiceDetail.currency,
-                      )
-                    : '--'}{' '}
-                  · IVA{' '}
-                  {hasLinePreview
-                    ? formatMoney(
-                        previewTaxInCents,
-                        selectedInvoiceDetail.currency,
-                      )
-                    : '--'}
-                </small>
+                <div>
+                  <small>
+                    Subtotal{' '}
+                    <strong>
+                      {hasLinePreview
+                        ? formatMoney(
+                            previewSubtotalInCents,
+                            selectedInvoiceDetail.currency,
+                          )
+                        : '--'}
+                    </strong>
+                  </small>
+                  <small>
+                    IVA{' '}
+                    <strong>
+                      {hasLinePreview
+                        ? formatMoney(
+                            previewTaxInCents,
+                            selectedInvoiceDetail.currency,
+                          )
+                        : '--'}
+                    </strong>
+                  </small>
+                  <small>
+                    Total{' '}
+                    <strong>
+                      {hasLinePreview
+                        ? formatMoney(
+                            previewTotalInCents,
+                            selectedInvoiceDetail.currency,
+                          )
+                        : '--'}
+                    </strong>
+                  </small>
+                </div>
               </div>
 
               <div className={styles.inlineActionRow}>
@@ -540,6 +555,7 @@ export function InvoicingInvoiceItemsPanel({
                 <span className={styles.label}>Totales</span>
                 <h3>Resumen</h3>
               </div>
+              <span className={styles.statusPillSuccess}>Backend</span>
             </div>
             <div className={styles.invoicingItemsTotalsList}>
               <span>
@@ -570,9 +586,9 @@ export function InvoicingInvoiceItemsPanel({
                 </strong>
               </span>
             </div>
-            <p className={styles.muted}>
+            <div className={styles.invoicingItemsTotalsFooter}>
               Totales calculados por el backend al guardar cada linea.
-            </p>
+            </div>
           </div>
           <div className={styles.invoicingCustomerSRIReassurance}>
             <strong>Despues de componer</strong>

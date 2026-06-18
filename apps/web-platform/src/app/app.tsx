@@ -42680,6 +42680,8 @@ export function App() {
                         {selectedInvoiceDocument && canSendInvoiceNotifications ? (
                           <InvoicingNotificationsPanel
                             actionLoading={actionLoading}
+                            formatElectronicStatus={formatElectronicStatus}
+                            formatMoney={formatMoney}
                             invoiceEmailMessage={invoiceEmailMessage}
                             invoiceEmailRecipient={invoiceEmailRecipient}
                             onInvoiceEmailMessageChange={setInvoiceEmailMessage}
@@ -42689,6 +42691,7 @@ export function App() {
                             onSendInvoiceEmail={() => {
                               void handleSendInvoiceEmail();
                             }}
+                            selectedInvoiceDetail={selectedInvoiceDetail}
                           />
                         ) : null}
 

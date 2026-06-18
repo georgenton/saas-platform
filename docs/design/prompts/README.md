@@ -11,6 +11,7 @@ Current sequence:
 4. `06-invoicing-customer-draft-flow.md`
 5. `07-invoicing-items-flow.md`
 6. `08-invoicing-document-review.md`
+7. `10-invoicing-payment-email-delivery-closeout.md`
 
 After Claude Design exports a ZIP, place it under:
 

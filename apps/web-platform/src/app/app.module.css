@@ -17,6 +17,7 @@
 .sidebar {
   background: var(--sidebar-bg);
   border-right: 1px solid var(--sidebar-border);
+  box-sizing: border-box;
   color: var(--sidebar-fg);
   display: flex;
   flex-direction: column;
@@ -67,6 +68,7 @@
 .sidebarNav {
   display: grid;
   gap: 8px;
+  min-width: 0;
 }
 
 .sidebarNavItem {
@@ -4088,13 +4090,18 @@
   }
 
   .sidebar {
+    max-width: 100%;
     min-height: 0;
+    overflow: hidden;
     position: relative;
+    width: 100%;
   }
 
   .sidebarNav {
     display: flex;
     gap: 10px;
+    max-width: 100%;
+    min-width: 0;
     overflow-x: auto;
     padding-bottom: 4px;
   }

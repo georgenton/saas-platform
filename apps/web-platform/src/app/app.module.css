@@ -203,6 +203,10 @@
   display: none;
 }
 
+.pageProductWorkspaceActive .shellOverview {
+  display: none;
+}
+
 .pageProductWorkspaceActive [data-product-workspace='invoicing'] {
   margin-top: 0;
 }
@@ -309,6 +313,16 @@
   justify-content: center;
   text-decoration: none;
   white-space: nowrap;
+}
+
+.productWorkspaceSubviewHeading {
+  outline: none;
+  scroll-margin-top: 120px;
+}
+
+.productWorkspaceSubviewHeading:focus-visible {
+  border-radius: 8px;
+  box-shadow: var(--focus-ring-shadow);
 }
 
 .productWorkspaceActions {

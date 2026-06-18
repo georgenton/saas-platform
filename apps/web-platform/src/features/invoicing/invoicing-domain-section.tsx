@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import styles from '../../app/app.module.css';
 import type {
   InvoicingWorkspaceFoundationModel,
@@ -99,11 +99,26 @@ export function InvoicingDomainSection({
   onRefresh,
 }: InvoicingDomainSectionProps) {
   const subviewContext = INVOICING_SUBVIEW_CONTEXT[activeSubview];
+  const subviewHeadingRef = useRef<HTMLDivElement | null>(null);
+  const subviewHeadingId = `invoicing-${activeSubview}-heading`;
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      subviewHeadingRef.current?.focus({ preventScroll: true });
+      subviewHeadingRef.current?.scrollIntoView({
+        block: 'start',
+        behavior: 'smooth',
+      });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [activeSubview]);
 
   return (
     <section
       className={styles.adminPanel}
       data-product-workspace="invoicing"
+      data-product-workspace-subview={activeSubview}
       id="invoicing-domain"
     >
       <div className={styles.productWorkspaceHero}>
@@ -140,10 +155,15 @@ export function InvoicingDomainSection({
         ))}
       </nav>
 
-      <div className={styles.sectionHeading}>
+      <div
+        aria-labelledby={subviewHeadingId}
+        className={`${styles.sectionHeading} ${styles.productWorkspaceSubviewHeading}`}
+        ref={subviewHeadingRef}
+        tabIndex={-1}
+      >
         <div>
           <span className={styles.label}>{subviewContext.eyebrow}</span>
-          <h2>{subviewContext.title}</h2>
+          <h2 id={subviewHeadingId}>{subviewContext.title}</h2>
         </div>
         {emptyState === 'ready' ? (
           <button

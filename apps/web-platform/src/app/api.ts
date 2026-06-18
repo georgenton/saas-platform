@@ -594,6 +594,32 @@ const buildHeaders = (token: string, json = true): HeadersInit => ({
   ...(json ? { 'Content-Type': 'application/json' } : {}),
 });
 
+function formatApiErrorMessage(body: string, fallback: string): string {
+  if (!body.trim()) {
+    return fallback;
+  }
+
+  try {
+    const parsed = JSON.parse(body) as unknown;
+
+    if (parsed && typeof parsed === 'object' && 'message' in parsed) {
+      const message = (parsed as { message?: unknown }).message;
+
+      if (Array.isArray(message)) {
+        return message.filter(Boolean).join(' ');
+      }
+
+      if (typeof message === 'string' && message.trim()) {
+        return message;
+      }
+    }
+  } catch {
+    return body;
+  }
+
+  return body;
+}
+
 async function request<T>(
   path: string,
   options: RequestInit & { token: string },
@@ -608,7 +634,12 @@ async function request<T>(
 
   if (!response.ok) {
     const message = await response.text();
-    throw new Error(message || `Request failed with status ${response.status}`);
+    throw new Error(
+      formatApiErrorMessage(
+        message,
+        `Request failed with status ${response.status}`,
+      ),
+    );
   }
 
   if (response.status === 204) {
@@ -633,7 +664,12 @@ async function requestText(
   const text = await response.text();
 
   if (!response.ok) {
-    throw new Error(text || `Request failed with status ${response.status}`);
+    throw new Error(
+      formatApiErrorMessage(
+        text,
+        `Request failed with status ${response.status}`,
+      ),
+    );
   }
 
   return text;
@@ -667,7 +703,12 @@ async function requestDownload(
   const content = await response.text();
 
   if (!response.ok) {
-    throw new Error(content || `Request failed with status ${response.status}`);
+    throw new Error(
+      formatApiErrorMessage(
+        content,
+        `Request failed with status ${response.status}`,
+      ),
+    );
   }
 
   return {

@@ -7,8 +7,12 @@ import {
 } from 'react';
 import styles from '../../app/app.module.css';
 import type { CustomerResponse } from '../../app/types';
+import {
+  BUYER_IDENTIFICATION_TYPES,
+  getBuyerIdentificationType,
+  type BuyerIdentificationType,
+} from './customers/identification';
 
-type BuyerIdentificationType = '04' | '05' | '06' | '07' | '08';
 type CustomerDraftFlowStep = 'buyer' | 'identity' | 'draft';
 
 type InvoicingCustomerDraftFlowProps = {
@@ -47,47 +51,6 @@ type InvoicingCustomerDraftFlowProps = {
   };
 };
 
-const BUYER_IDENTIFICATION_TYPES: Record<
-  BuyerIdentificationType,
-  {
-    label: string;
-    shortLabel: string;
-    hint: string;
-    placeholder: string;
-  }
-> = {
-  '04': {
-    label: 'RUC',
-    shortLabel: 'RUC',
-    hint: 'Empresa o negocio con RUC',
-    placeholder: '1790012345001',
-  },
-  '05': {
-    label: 'Cedula',
-    shortLabel: 'Cedula',
-    hint: 'Persona natural ecuatoriana',
-    placeholder: '0102030405',
-  },
-  '06': {
-    label: 'Pasaporte',
-    shortLabel: 'Pasaporte',
-    hint: 'Extranjero con pasaporte',
-    placeholder: 'AB1234567',
-  },
-  '07': {
-    label: 'Consumidor final',
-    shortLabel: 'Consumidor final',
-    hint: 'Venta sin identificar al comprador',
-    placeholder: '9999999999999',
-  },
-  '08': {
-    label: 'Exterior',
-    shortLabel: 'Exterior',
-    hint: 'Cliente fuera de Ecuador',
-    placeholder: 'EXT-000123',
-  },
-};
-
 const FLOW_STEPS: Array<{
   key: CustomerDraftFlowStep;
   label: string;
@@ -97,14 +60,6 @@ const FLOW_STEPS: Array<{
   { key: 'identity', label: 'Identidad fiscal', eyebrow: 'Paso 2' },
   { key: 'draft', label: 'Borrador', eyebrow: 'Paso 3' },
 ];
-
-function getBuyerIdentificationType(value: string | null | undefined) {
-  if (value && value in BUYER_IDENTIFICATION_TYPES) {
-    return BUYER_IDENTIFICATION_TYPES[value as BuyerIdentificationType];
-  }
-
-  return null;
-}
 
 function getBuyerIdentificationLabel(customer: CustomerResponse) {
   const type = getBuyerIdentificationType(customer.identificationType);
@@ -127,6 +82,7 @@ function getCustomerInitials(name: string) {
 function deriveFlowState(
   selectedCustomerId: string,
   currentStep: CustomerDraftFlowStep,
+  draftIsReady: boolean,
 ) {
   const done = new Set<CustomerDraftFlowStep>();
   const reachable = new Set<CustomerDraftFlowStep>(['buyer']);
@@ -138,6 +94,11 @@ function deriveFlowState(
   }
 
   if (currentStep === 'draft' && selectedCustomerId) {
+    done.add('identity');
+  }
+
+  if (draftIsReady) {
+    done.add('buyer');
     done.add('identity');
   }
 
@@ -200,7 +161,10 @@ function InvoicingCustomerStepper({
   reachable: Set<CustomerDraftFlowStep>;
 }) {
   return (
-    <div className={styles.invoicingCustomerStepper} aria-label="Flujo de factura">
+    <div
+      className={styles.invoicingCustomerStepper}
+      aria-label="Flujo de factura"
+    >
       {FLOW_STEPS.map((step, index) => {
         const isCurrent = currentStep === step.key;
         const isDone = done.has(step.key);
@@ -240,10 +204,9 @@ export function InvoicingCustomerDraftFlow({
   invoicingLoading,
   nextInvoiceNumberSuggestion,
 }: InvoicingCustomerDraftFlowProps) {
-  const [currentStep, setCurrentStep] =
-    useState<CustomerDraftFlowStep>(() =>
-      invoiceForm.customerId ? 'identity' : 'buyer',
-    );
+  const [currentStep, setCurrentStep] = useState<CustomerDraftFlowStep>(() =>
+    invoiceForm.customerId ? 'identity' : 'buyer',
+  );
   const hasCustomers = customers.length > 0;
   const selectedCustomer = useMemo(
     () =>
@@ -252,7 +215,14 @@ export function InvoicingCustomerDraftFlow({
     [customers, invoiceForm.customerId],
   );
   const idType = BUYER_IDENTIFICATION_TYPES[customerForm.identificationType];
-  const flowState = deriveFlowState(invoiceForm.customerId, currentStep);
+  const draftIsReady = Boolean(
+    invoiceForm.customerId && invoiceForm.currency.trim(),
+  );
+  const flowState = deriveFlowState(
+    invoiceForm.customerId,
+    currentStep,
+    draftIsReady,
+  );
 
   useEffect(() => {
     if (!invoiceForm.customerId && currentStep !== 'buyer') {
@@ -279,7 +249,10 @@ export function InvoicingCustomerDraftFlow({
             borrador. Sin envio al SRI todavia.
           </p>
         </div>
-        <span className={styles.statusPill}>Lane guiada</span>
+        <div className={styles.invoicingCustomerHeroMeta}>
+          <span className={styles.statusPill}>Lane guiada</span>
+          <small>No firma · no autoriza · no declara</small>
+        </div>
       </div>
 
       <InvoicingCustomerStepper
@@ -294,7 +267,11 @@ export function InvoicingCustomerDraftFlow({
           {currentStep === 'buyer' ? (
             <StepCard
               eyebrow="Paso 1 de 3"
-              title={hasCustomers ? 'Elige o crea el comprador' : 'Crea tu primer comprador'}
+              title={
+                hasCustomers
+                  ? 'Elige o crea el comprador'
+                  : 'Crea tu primer comprador'
+              }
               trailing={
                 <span className={styles.statusPill}>
                   {hasCustomers
@@ -322,7 +299,9 @@ export function InvoicingCustomerDraftFlow({
                         <button
                           className={[
                             styles.invoicingCustomerBuyerRow,
-                            selected ? styles.invoicingCustomerBuyerRowSelected : '',
+                            selected
+                              ? styles.invoicingCustomerBuyerRowSelected
+                              : '',
                           ]
                             .filter(Boolean)
                             .join(' ')}
@@ -335,7 +314,9 @@ export function InvoicingCustomerDraftFlow({
                           </span>
                           <span>
                             <strong>{customer.name}</strong>
-                            <small>{getBuyerIdentificationLabel(customer)}</small>
+                            <small>
+                              {getBuyerIdentificationLabel(customer)}
+                            </small>
                           </span>
                           <em>
                             {formatBuyerIdentificationType(
@@ -465,7 +446,9 @@ export function InvoicingCustomerDraftFlow({
             <StepCard
               eyebrow="Paso 2 de 3"
               title="Confirma la identidad fiscal"
-              trailing={<span className={styles.statusPillSuccess}>Revisar</span>}
+              trailing={
+                <span className={styles.statusPillSuccess}>Revisar</span>
+              }
             >
               {selectedCustomer ? (
                 <>
@@ -515,7 +498,8 @@ export function InvoicingCustomerDraftFlow({
                     <strong>Borrador, no SRI.</strong>
                     <span>
                       Estos datos identifican al comprador en la factura. El
-                      envio, firma y autorizacion electronica se manejan despues.
+                      envio, firma y autorizacion electronica se manejan
+                      despues.
                     </span>
                   </div>
                   <div className={styles.inlineActionRow}>
@@ -554,7 +538,9 @@ export function InvoicingCustomerDraftFlow({
             <StepCard
               eyebrow="Paso 3 de 3"
               title="Crear borrador de factura"
-              trailing={<span className={styles.statusPill}>Draft primero</span>}
+              trailing={
+                <span className={styles.statusPill}>Draft primero</span>
+              }
             >
               {!hasCustomers ? (
                 <div className={styles.emptyState}>
@@ -687,40 +673,17 @@ export function InvoicingCustomerDraftFlow({
         </div>
 
         <aside className={styles.invoicingCustomerFlowRail}>
-          <div className={styles.invoicingCustomerRailCard}>
-            <div className={styles.sectionHeading}>
-              <div>
-                <span className={styles.label}>Resumen del flujo</span>
-                <h3>Primera factura</h3>
-              </div>
-            </div>
-            <div className={styles.invoicingCustomerRailList}>
-              <FieldFact
-                label="Comprador"
-                value={
-                  selectedCustomer
-                    ? selectedCustomer.name
-                    : hasCustomers
-                      ? 'Ninguno elegido'
-                      : 'Sin compradores'
-                }
-              />
-              <FieldFact
-                label="Identidad"
-                mono
-                value={
-                  selectedCustomer
-                    ? getBuyerIdentificationLabel(selectedCustomer)
-                    : null
-                }
-              />
-              <FieldFact
-                label="Borrador"
-                mono
-                value={invoiceForm.number || nextInvoiceNumberSuggestion}
-              />
-            </div>
-          </div>
+          <FlowRail
+            currentStep={currentStep}
+            draftIsReady={draftIsReady}
+            flowState={flowState}
+            hasCustomers={hasCustomers}
+            invoiceCurrency={invoiceForm.currency}
+            invoiceNumber={invoiceForm.number}
+            invoiceStatus={invoiceForm.status}
+            nextInvoiceNumberSuggestion={nextInvoiceNumberSuggestion}
+            selectedCustomer={selectedCustomer}
+          />
           <div className={styles.invoicingCustomerSRIReassurance}>
             <strong>Esto no es una emision al SRI.</strong>
             <p>
@@ -731,5 +694,99 @@ export function InvoicingCustomerDraftFlow({
         </aside>
       </div>
     </section>
+  );
+}
+
+function FlowRail({
+  currentStep,
+  draftIsReady,
+  flowState,
+  hasCustomers,
+  invoiceCurrency,
+  invoiceNumber,
+  invoiceStatus,
+  nextInvoiceNumberSuggestion,
+  selectedCustomer,
+}: {
+  currentStep: CustomerDraftFlowStep;
+  draftIsReady: boolean;
+  flowState: ReturnType<typeof deriveFlowState>;
+  hasCustomers: boolean;
+  invoiceCurrency: string;
+  invoiceNumber: string;
+  invoiceStatus: string;
+  nextInvoiceNumberSuggestion: string;
+  selectedCustomer: CustomerResponse | null;
+}) {
+  const railItems: Array<{
+    key: CustomerDraftFlowStep;
+    label: string;
+    value: string;
+  }> = [
+    {
+      key: 'buyer',
+      label: 'Comprador',
+      value: selectedCustomer
+        ? selectedCustomer.name
+        : hasCustomers
+          ? 'Pendiente de elegir'
+          : 'Sin compradores',
+    },
+    {
+      key: 'identity',
+      label: 'Identidad fiscal',
+      value: selectedCustomer
+        ? getBuyerIdentificationLabel(selectedCustomer)
+        : 'Pendiente',
+    },
+    {
+      key: 'draft',
+      label: 'Borrador',
+      value: draftIsReady ? 'Listo para crear' : 'Pendiente',
+    },
+  ];
+
+  return (
+    <div className={styles.invoicingCustomerRailCard}>
+      <div>
+        <span className={styles.label}>Resumen del flujo</span>
+        <h3>Primera factura</h3>
+      </div>
+      <div className={styles.invoicingCustomerRailTimeline}>
+        {railItems.map((item, index) => {
+          const isDone = flowState.done.has(item.key);
+          const isCurrent = currentStep === item.key;
+
+          return (
+            <div
+              className={[
+                styles.invoicingCustomerRailTimelineItem,
+                isCurrent ? styles.invoicingCustomerRailTimelineItemActive : '',
+                isDone ? styles.invoicingCustomerRailTimelineItemDone : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+              key={item.key}
+            >
+              <span>{isDone ? 'OK' : index + 1}</span>
+              <div>
+                <strong>{item.label}</strong>
+                <small>{item.value}</small>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div className={styles.invoicingCustomerDraftPreview}>
+        <span className={styles.label}>Borrador a crear</span>
+        <strong className={styles.monoValue}>
+          {invoiceNumber || nextInvoiceNumberSuggestion}
+        </strong>
+        <div>
+          <span>{invoiceCurrency || 'USD'}</span>
+          <span>{invoiceStatus || 'draft'}</span>
+        </div>
+      </div>
+    </div>
   );
 }

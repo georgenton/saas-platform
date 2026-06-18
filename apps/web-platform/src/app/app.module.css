@@ -1429,6 +1429,20 @@
   max-width: 680px;
 }
 
+.invoicingCustomerHeroMeta {
+  align-items: flex-end;
+  display: grid;
+  gap: 6px;
+  justify-items: end;
+  min-width: max-content;
+}
+
+.invoicingCustomerHeroMeta small {
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
 .invoicingCustomerStepper {
   background: var(--surface-raised);
   border: 1px solid var(--border);
@@ -1733,18 +1747,113 @@
   display: grid;
   gap: 14px;
   position: sticky;
-  top: 14px;
+  top: 96px;
 }
 
 .invoicingCustomerRailCard {
   display: grid;
-  gap: 10px;
+  gap: 14px;
   padding: 16px;
 }
 
-.invoicingCustomerRailList .invoicingCustomerFactRow {
-  grid-template-columns: 1fr;
-  gap: 4px;
+.invoicingCustomerRailCard h3 {
+  color: var(--text-strong);
+  font-size: 1rem;
+  margin: 4px 0 0;
+}
+
+.invoicingCustomerRailTimeline {
+  display: grid;
+  gap: 8px;
+}
+
+.invoicingCustomerRailTimelineItem {
+  align-items: start;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: auto minmax(0, 1fr);
+  padding: 10px;
+}
+
+.invoicingCustomerRailTimelineItem > span:first-child {
+  align-items: center;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-muted);
+  display: inline-flex;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 800;
+  height: 24px;
+  justify-content: center;
+  width: 24px;
+}
+
+.invoicingCustomerRailTimelineItem strong {
+  color: var(--text-strong);
+  display: block;
+  font-size: 0.9rem;
+}
+
+.invoicingCustomerRailTimelineItem small {
+  color: var(--text-muted);
+  display: block;
+  line-height: 1.4;
+  margin-top: 2px;
+  overflow-wrap: anywhere;
+}
+
+.invoicingCustomerRailTimelineItemActive {
+  border-color: var(--primary);
+  box-shadow: var(--focus-ring-shadow);
+}
+
+.invoicingCustomerRailTimelineItemActive > span:first-child {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-contrast);
+}
+
+.invoicingCustomerRailTimelineItemDone > span:first-child {
+  background: var(--success);
+  border-color: var(--success);
+  color: #ffffff;
+}
+
+.invoicingCustomerDraftPreview {
+  background: var(--primary-soft);
+  border: 1px solid color-mix(in srgb, var(--primary) 42%, var(--border) 58%);
+  border-radius: 8px;
+  color: var(--on-primary-soft);
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+}
+
+.invoicingCustomerDraftPreview strong {
+  color: var(--on-primary-soft);
+  font-size: 1rem;
+  overflow-wrap: anywhere;
+}
+
+.invoicingCustomerDraftPreview div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.invoicingCustomerDraftPreview div span {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text);
+  font-size: 0.76rem;
+  font-weight: 800;
+  padding: 5px 8px;
 }
 
 .invoicingItemsFlow,
@@ -3669,6 +3778,10 @@
     justify-content: flex-start;
   }
 
+  .invoicingCustomerFlowRail {
+    position: static;
+  }
+
   .productWorkspaceContext {
     grid-template-columns: 1fr;
   }
@@ -3858,6 +3971,7 @@
   }
 
   .invoicingCustomerFlowHero,
+  .invoicingCustomerHeroMeta,
   .invoicingCustomerStepHeader,
   .invoicingCustomerDirectoryHeader,
   .invoicingCustomerFormHeader,
@@ -3872,6 +3986,11 @@
   .invoicingCustomerFormHeader small {
     max-width: none;
     text-align: left;
+  }
+
+  .invoicingCustomerHeroMeta {
+    align-items: start;
+    justify-items: start;
   }
 
   .invoicingCustomerStepButton {

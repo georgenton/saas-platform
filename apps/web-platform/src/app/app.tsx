@@ -4422,13 +4422,6 @@ export function App() {
   const [growthDrilldownTarget, setGrowthDrilldownTarget] =
     useState<GrowthDrilldownTarget | null>(null);
 
-  const selectedInvoiceDocumentSupport =
-    selectedInvoiceDetail && electronicSandboxReadiness
-      ? electronicSandboxReadiness.documentSupport.find(
-          (item) => item.documentCode === (selectedInvoiceDetail.documentCode ?? '01'),
-        ) ?? null
-      : null;
-
   const [newCustomerName, setNewCustomerName] = useState('');
   const [newCustomerEmail, setNewCustomerEmail] = useState('');
   const [newCustomerTaxId, setNewCustomerTaxId] = useState('');
@@ -4929,6 +4922,13 @@ export function App() {
       invoices.find((invoice) => invoice.id === selectedInvoiceId) ?? null,
     [invoices, selectedInvoiceId],
   );
+  const selectedInvoiceDocumentSupport =
+    selectedInvoiceDetail && electronicSandboxReadiness
+      ? electronicSandboxReadiness.documentSupport.find(
+          (item) =>
+            item.documentCode === (selectedInvoiceDetail.documentCode ?? '01'),
+        ) ?? null
+      : null;
   const customerNameById = useMemo(
     () =>
       new Map(customers.map((customer) => [customer.id, customer.name] as const)),

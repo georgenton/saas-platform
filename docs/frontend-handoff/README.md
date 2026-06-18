@@ -28,12 +28,13 @@ consume existing contracts before requesting new backend scope.
 9. `09-invoicing-sri-submission-lifecycle.md`
 10. `10-invoicing-vercel-qa-runbook.md`
 11. `11-invoicing-payment-email-delivery-closeout.md`
-12. `03-ecommerce.md`
-13. `04-tax-compliance-ec.md`
-14. `05-accounting.md`
-15. `06-ai-console.md`
-16. `07-clinics.md`
-17. `08-growth.md`
+12. `12-invoicing-operational-polish-qa.md`
+13. `03-ecommerce.md`
+14. `04-tax-compliance-ec.md`
+15. `05-accounting.md`
+16. `06-ai-console.md`
+17. `07-clinics.md`
+18. `08-growth.md`
 
 ## Current Active Sequence
 
@@ -52,6 +53,9 @@ The current frontend priority is:
    before requesting the next Claude Design surface
 10. Refine payment, email delivery and evidence closeout before moving into
     Tax Compliance / Accounting handoff screens
+11. Run one operational polish QA pass across Invoicing so Claude Design can
+    identify spacing, hierarchy, mobile and mood inconsistencies before the
+    frontend moves to another product
 
 This order is intentional. The team should not continue polishing signed-in
 product surfaces as if the JWT textarea were the permanent entrance to the app.

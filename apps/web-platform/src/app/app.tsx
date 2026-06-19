@@ -4801,48 +4801,105 @@ export function App() {
   const platformShellNavItems = useMemo(
     () => [
       {
+        group: 'core',
         href: '#platform-home',
+        iconLabel: 'D',
         label: 'Inicio',
         meta: session ? flowLabel(session.sessionState.recommendedFlow) : 'Operando',
         state: currentTenancy ? 'Activo' : 'Listo',
+        status: 'active',
       },
       {
+        group: 'core',
         href: '#tenant-workspace',
+        iconLabel: 'W',
         label: 'Workspace',
         meta: currentTenancy?.tenant.slug ?? 'Sin tenant',
         state: currentTenancy ? 'Activo' : 'Pendiente',
+        status: currentTenancy ? 'active' : 'available',
       },
       {
+        group: 'platform',
         href: '#tenant-admin',
+        iconLabel: 'T',
         label: 'Tenant admin',
         meta: canManageInvitations ? 'Invitaciones' : 'Solo lectura',
         state: canManageInvitations ? 'Operable' : 'Limitado',
+        status: canManageInvitations ? 'active' : 'limited',
       },
       {
+        group: 'commerce',
         href: '#growth-console',
+        iconLabel: 'G',
         label: 'Growth',
         meta: enabledProductKeys.has('growth') ? 'Producto activo' : 'No habilitado',
         state: canReadGrowthConversations ? 'Operable' : 'Limitado',
+        status: canReadGrowthConversations ? 'active' : 'limited',
       },
       {
+        group: 'platform',
         href: '#ai-console',
+        iconLabel: 'AI',
         label: 'AI Console',
         meta: 'Sugerencias y aprobaciones',
         state: canAccessTransversalAiConsole ? 'Operable' : 'Limitado',
+        status: canAccessTransversalAiConsole ? 'active' : 'limited',
       },
       {
+        group: 'finance',
         href: '#invoicing-domain',
+        iconLabel: 'F',
         label: 'Facturacion',
         meta: enabledProductKeys.has('invoicing') ? 'Producto activo' : 'No habilitado',
         state: enabledProductKeys.has('invoicing') ? 'Activo' : 'Disponible',
+        status: enabledProductKeys.has('invoicing') ? 'active' : 'available',
       },
       {
+        group: 'finance',
         href: '#tax-compliance-ec',
+        iconLabel: 'T',
         label: 'Impuestos EC',
         meta: enabledProductKeys.has('tax-compliance-ec')
           ? 'Producto activo'
           : 'Depende de evidencia',
         state: enabledProductKeys.has('tax-compliance-ec') ? 'Activo' : 'Disponible',
+        status: enabledProductKeys.has('tax-compliance-ec') ? 'active' : 'available',
+      },
+      {
+        group: 'finance',
+        href: '#accounting',
+        iconLabel: 'A',
+        label: 'Accounting',
+        meta: enabledProductKeys.has('accounting') ? 'Producto activo' : 'Backlog',
+        state: enabledProductKeys.has('accounting') ? 'Activo' : 'Bloqueado',
+        status: enabledProductKeys.has('accounting') ? 'active' : 'locked',
+      },
+      {
+        group: 'commerce',
+        href: '#ecommerce',
+        iconLabel: 'E',
+        label: 'Ecommerce',
+        meta: enabledProductKeys.has('ecommerce') ? 'Producto activo' : 'No habilitado',
+        state: enabledProductKeys.has('ecommerce') ? 'Activo' : 'Disponible',
+        status: enabledProductKeys.has('ecommerce') ? 'active' : 'available',
+      },
+      {
+        group: 'clinics',
+        href: '#medical-clinics',
+        iconLabel: 'M',
+        label: 'Medical Clinics',
+        meta: enabledProductKeys.has('medical-clinics') ? 'Producto activo' : 'No habilitado',
+        state: enabledProductKeys.has('medical-clinics') ? 'Activo' : 'Disponible',
+        status: enabledProductKeys.has('medical-clinics') ? 'active' : 'available',
+      },
+      {
+        group: 'clinics',
+        href: '#psychology-clinics',
+        iconLabel: 'P',
+        label: 'Psychology Clinics',
+        meta: enabledProductKeys.has('psychology-clinics') ? 'Producto activo' : 'No habilitado',
+        state: enabledProductKeys.has('psychology-clinics') ? 'Activo' : 'Backlog',
+        status: enabledProductKeys.has('psychology-clinics') ? 'active' : 'locked',
       },
     ],
     [
@@ -26454,6 +26511,7 @@ export function App() {
   return (
     <PlatformShell
       activeProductWorkspace={activeProductWorkspace}
+      activeHash={activeHash}
       apiBaseUrl={API_BASE_URL}
       headline={sessionHeadline}
       metrics={[

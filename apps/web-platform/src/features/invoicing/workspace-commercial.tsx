@@ -1,5 +1,7 @@
+import type { ReactNode } from 'react';
 import styles from '../../app/app.module.css';
 import type { InvoiceDetailResponse, TaxRateResponse } from '../../app/types';
+import { StatusPill } from '../../shared/design-system/status-pill';
 import {
   derivePaymentCloseoutMeta,
   type InvoicingCloseoutTone,
@@ -56,24 +58,31 @@ function formatInvoiceStatus(status: string): string {
   return labels[status] ?? status;
 }
 
-function closeoutToneClass(tone: InvoicingCloseoutTone): string {
-  if (tone === 'success') {
-    return styles.statusPillSuccess;
+function closeoutStatusPillTone(
+  tone: InvoicingCloseoutTone,
+): 'default' | 'success' | 'warning' | 'danger' {
+  if (tone === 'success' || tone === 'warning' || tone === 'danger') {
+    return tone;
   }
 
-  if (tone === 'warning') {
-    return styles.statusPillWarning;
-  }
+  return 'default';
+}
 
-  if (tone === 'danger') {
-    return styles.statusPillDanger;
-  }
-
-  if (tone === 'info') {
-    return styles.statusPillInfo;
-  }
-
-  return '';
+function CloseoutStatusPill({
+  children,
+  tone,
+}: {
+  children: ReactNode;
+  tone: InvoicingCloseoutTone;
+}) {
+  return (
+    <StatusPill
+      className={tone === 'info' ? styles.statusPillInfo : undefined}
+      tone={closeoutStatusPillTone(tone)}
+    >
+      {children}
+    </StatusPill>
+  );
 }
 
 export function InvoicingPaymentsPanel({
@@ -135,10 +144,10 @@ export function InvoicingPaymentsPanel({
             <span className={styles.label}>Saldo y cobro</span>
             <h3>{paymentMeta.label}</h3>
           </div>
-          <span className={`${styles.statusPill} ${closeoutToneClass(paymentMeta.tone)}`}>
+          <CloseoutStatusPill tone={paymentMeta.tone}>
             {formatMoney(balanceDueInCents, selectedInvoiceDetail.currency)} por
             cobrar
-          </span>
+          </CloseoutStatusPill>
         </div>
         <p className={styles.muted}>
           Registrar un pago no genera asientos contables ni concilia con el
@@ -196,7 +205,7 @@ export function InvoicingPaymentsPanel({
             <span className={styles.label}>Registro de pago</span>
             <h3>Pago recibido</h3>
           </div>
-          <span className={styles.statusPill}>{selectedInvoiceDetail.currency}</span>
+          <StatusPill>{selectedInvoiceDetail.currency}</StatusPill>
         </div>
 
         <div className={styles.invoicingCloseoutQuickActions}>
@@ -322,17 +331,17 @@ export function InvoicingPaymentsPanel({
                     <strong>{payment.method}</strong>
                     <small>{formatDate(payment.paidAt)}</small>
                   </div>
-                  <span
-                    className={`${styles.statusPill} ${
+                  <StatusPill
+                    tone={
                       payment.status === 'posted'
-                        ? styles.statusPillSuccess
+                        ? 'success'
                         : payment.status === 'reversed'
-                          ? styles.statusPillWarning
-                          : ''
-                    }`}
+                          ? 'warning'
+                          : 'default'
+                    }
                   >
                     {formatMoney(payment.amountInCents, payment.currency)}
-                  </span>
+                  </StatusPill>
                 </div>
                 <div className={styles.invoicingCloseoutPaymentMeta}>
                   <small>Estado: {formatPaymentStatus(payment.status)}</small>
@@ -360,7 +369,7 @@ export function InvoicingPaymentsPanel({
                       value={paymentReversalReason}
                     />
                     <button
-                      className={styles.secondaryButton}
+                      className={styles.ghostButton}
                       disabled={
                         actionLoading === `reverse-payment:${payment.id}` ||
                         !paymentReversalReason.trim()
@@ -370,7 +379,7 @@ export function InvoicingPaymentsPanel({
                     >
                       {actionLoading === `reverse-payment:${payment.id}`
                         ? 'Revirtiendo...'
-                        : 'Revertir'}
+                        : 'Revertir pago'}
                     </button>
                   </div>
                 ) : null}

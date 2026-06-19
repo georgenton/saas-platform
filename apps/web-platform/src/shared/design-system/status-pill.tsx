@@ -11,7 +11,7 @@ type StatusPillProps = HTMLAttributes<HTMLSpanElement> & {
 const statusClassByTone: Record<StatusPillTone, string> = {
   default: styles.statusPill,
   success: `${styles.statusPill} ${styles.statusPillSuccess}`,
-  warning: styles.statusPillWarning,
+  warning: `${styles.statusPill} ${styles.statusPillWarning}`,
   danger: `${styles.statusPill} ${styles.statusPillDanger}`,
 };
 

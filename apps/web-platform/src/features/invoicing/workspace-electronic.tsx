@@ -1054,18 +1054,18 @@ function statusPillTone(status: string | null) {
 
 function providerStatusTone(status: string) {
   if (
-    status.toLowerCase().includes('autoriz') ||
-    status.toLowerCase().includes('ok')
-  ) {
-    return 'success' as const;
-  }
-
-  if (
     status.toLowerCase().includes('rechaz') ||
     status.toLowerCase().includes('error') ||
     status.toLowerCase().includes('no autorizado')
   ) {
     return 'danger' as const;
+  }
+
+  if (
+    status.toLowerCase().includes('autoriz') ||
+    status.toLowerCase().includes('ok')
+  ) {
+    return 'success' as const;
   }
 
   if (

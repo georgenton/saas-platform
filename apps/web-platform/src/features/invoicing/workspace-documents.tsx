@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import styles from '../../app/app.module.css';
 import type {
   InvoiceDocumentResponse,
@@ -5,6 +6,7 @@ import type {
   InvoiceElectronicArtifactsResponse,
   InvoiceRideResponse,
 } from '../../app/types';
+import { StatusPill } from '../../shared/design-system/status-pill';
 import {
   deriveCloseoutNextStep,
   deriveCloseoutVerdict,
@@ -114,24 +116,31 @@ function ReadinessCheckPill({ check }: { check: DocumentReadinessCheck }) {
   );
 }
 
-function closeoutToneClass(tone: InvoicingCloseoutTone): string {
-  if (tone === 'success') {
-    return styles.statusPillSuccess;
+function closeoutStatusPillTone(
+  tone: InvoicingCloseoutTone,
+): 'default' | 'success' | 'warning' | 'danger' {
+  if (tone === 'success' || tone === 'warning' || tone === 'danger') {
+    return tone;
   }
 
-  if (tone === 'warning') {
-    return styles.statusPillWarning;
-  }
+  return 'default';
+}
 
-  if (tone === 'danger') {
-    return styles.statusPillDanger;
-  }
-
-  if (tone === 'info') {
-    return styles.statusPillInfo;
-  }
-
-  return '';
+function CloseoutStatusPill({
+  children,
+  tone,
+}: {
+  children: ReactNode;
+  tone: InvoicingCloseoutTone;
+}) {
+  return (
+    <StatusPill
+      className={tone === 'info' ? styles.statusPillInfo : undefined}
+      tone={closeoutStatusPillTone(tone)}
+    >
+      {children}
+    </StatusPill>
+  );
 }
 
 function CloseoutStatusCard({
@@ -150,9 +159,7 @@ function CloseoutStatusCard({
       <span className={styles.label}>{title}</span>
       <strong>{label}</strong>
       <small>{detail}</small>
-      <span className={`${styles.statusPill} ${closeoutToneClass(tone)}`}>
-        {label}
-      </span>
+      <CloseoutStatusPill tone={tone}>{label}</CloseoutStatusPill>
     </div>
   );
 }
@@ -717,9 +724,9 @@ export function InvoicingNotificationsPanel({
             <h3>{verdict.label}</h3>
             <p>{verdict.detail}</p>
           </div>
-          <span className={`${styles.statusPill} ${closeoutToneClass(verdict.tone)}`}>
+          <CloseoutStatusPill tone={verdict.tone}>
             {formatElectronicStatus(selectedInvoiceDetail.electronicStatus)}
-          </span>
+          </CloseoutStatusPill>
         </div>
 
         <div className={styles.invoicingCloseoutTriad}>
@@ -761,9 +768,9 @@ export function InvoicingNotificationsPanel({
             <span className={styles.label}>Entrega al cliente</span>
             <h3>Compartir comprobante</h3>
           </div>
-          <span className={`${styles.statusPill} ${closeoutToneClass(deliveryMeta.tone)}`}>
+          <CloseoutStatusPill tone={deliveryMeta.tone}>
             {deliveryMeta.label}
-          </span>
+          </CloseoutStatusPill>
         </div>
         <p className={styles.muted}>
           Enviar el email no cambia el estado en el SRI ni registra el pago.

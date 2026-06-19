@@ -3,7 +3,6 @@ import styles from '../../app/app.module.css';
 import { MoodSelector } from '../design-system';
 import type {
   PlatformMoodKey,
-  PlatformShellMetric,
   PlatformShellNavItem,
 } from './platform-shell.model';
 
@@ -21,15 +20,16 @@ const navGroups: Array<{
 type PlatformShellProps = {
   activeProductWorkspace?: 'invoicing' | null;
   activeHash?: string;
-  apiBaseUrl: string;
   children: ReactNode;
   headline: string;
-  metrics: PlatformShellMetric[];
   mood: PlatformMoodKey;
   navItems: PlatformShellNavItem[];
   onMoodChange: (mood: PlatformMoodKey) => void;
+  tenantRoleLabel?: string;
   tenantSlug: string;
+  tenantTaxId?: string | null;
   title: string;
+  userDisplayName?: string;
 };
 
 function ShellIcon({ label }: { label: string }) {
@@ -72,12 +72,42 @@ function ShellIcon({ label }: { label: string }) {
     );
   }
 
+  if (normalizedLabel === 'h') {
+    return (
+      <svg aria-hidden="true" viewBox="0 0 24 24">
+        <path d="M4 10.5 12 4l8 6.5" />
+        <path d="M6 9.5V20h12V9.5" />
+        <path d="M10 20v-6h4v6" />
+      </svg>
+    );
+  }
+
   if (normalizedLabel === 'w') {
     return (
       <svg aria-hidden="true" viewBox="0 0 24 24">
         <path d="M4 10.5 12 4l8 6.5" />
         <path d="M6 9.5V20h12V9.5" />
         <path d="M10 20v-6h4v6" />
+      </svg>
+    );
+  }
+
+  if (normalizedLabel === 'p') {
+    return (
+      <svg aria-hidden="true" viewBox="0 0 24 24">
+        <path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2" />
+        <circle cx="9.5" cy="7" r="4" />
+        <path d="M22 21v-2a4 4 0 0 0-3-3.8" />
+        <path d="M16 3.2a4 4 0 0 1 0 7.6" />
+      </svg>
+    );
+  }
+
+  if (normalizedLabel === 's') {
+    return (
+      <svg aria-hidden="true" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="3" />
+        <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9c.2.6.8 1 1.6 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z" />
       </svg>
     );
   }
@@ -122,14 +152,16 @@ function BellIcon() {
 export function PlatformShell({
   activeProductWorkspace = null,
   activeHash = '#platform-home',
-  apiBaseUrl,
   children,
   headline,
   mood,
   navItems,
   onMoodChange,
+  tenantRoleLabel = 'Owner',
   tenantSlug,
+  tenantTaxId = null,
   title,
+  userDisplayName,
 }: PlatformShellProps) {
   const pageClassName = activeProductWorkspace
     ? `${styles.page} ${styles.pageProductWorkspaceActive}`
@@ -207,16 +239,12 @@ export function PlatformShell({
           </a>
           <div className={styles.sidebarUser}>
             <span className={styles.sidebarUserAvatar} aria-hidden="true">
-              {title.slice(0, 2).toUpperCase()}
+              {(userDisplayName ?? title).slice(0, 2).toUpperCase()}
             </span>
             <span>
-              <strong>{title}</strong>
-              <small>Owner</small>
+              <strong>{userDisplayName ?? title}</strong>
+              <small>{tenantRoleLabel}</small>
             </span>
-          </div>
-          <div className={styles.sidebarApi}>
-            <span>API</span>
-            <strong>{apiBaseUrl}</strong>
           </div>
         </div>
       </aside>
@@ -233,7 +261,10 @@ export function PlatformShell({
               </span>
               <span>
                 <strong>{title}</strong>
-                <small>Owner · {tenantSlug}</small>
+                <small>
+                  {tenantRoleLabel} ·{' '}
+                  {tenantTaxId ? `RUC ${tenantTaxId}` : tenantSlug}
+                </small>
               </span>
               <span className={styles.topbarTenantChevron} aria-hidden="true">
                 <ChevronDownIcon />
@@ -243,7 +274,11 @@ export function PlatformShell({
               <span aria-hidden="true">
                 <ChevronRightIcon />
               </span>
-              {activeProductWorkspace === 'invoicing' ? 'Invoicing' : 'Dashboard'}
+              {activeProductWorkspace === 'invoicing'
+                ? 'Invoicing'
+                : activeHash === '#dashboard'
+                  ? 'Dashboard'
+                  : 'Command Center'}
             </span>
           </div>
 
@@ -281,7 +316,7 @@ export function PlatformShell({
               <span aria-hidden="true" className={styles.topbarNotificationDot} />
             </button>
             <span className={styles.topbarAvatar} aria-hidden="true">
-              {title
+              {(userDisplayName ?? title)
                 .split(/\s+/)
                 .filter(Boolean)
                 .slice(0, 2)

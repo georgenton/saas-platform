@@ -176,6 +176,81 @@ function getPaymentLabel(invoice: InvoiceSummaryResponse | null): string {
   return invoice.settlement.isFullyPaid ? 'Pagado' : 'Saldo abierto';
 }
 
+function getSriReadinessVerdict(
+  data: InvoicingWorkspaceQueryData | undefined,
+): {
+  description: string;
+  label: string;
+  tone: 'success' | 'warning' | 'danger' | 'neutral';
+} {
+  const readiness = data?.electronicSandboxReadiness;
+
+  if (!readiness) {
+    return {
+      description: 'La respuesta de readiness aun no esta disponible.',
+      label: 'Readiness pendiente',
+      tone: 'neutral',
+    };
+  }
+
+  if (
+    readiness.isReadyForRemoteSandboxSubmission &&
+    readiness.blockers.length === 0
+  ) {
+    return {
+      description:
+        readiness.warnings[0] ??
+        'Los controles principales permiten operar el carril remoto sandbox.',
+      label: readiness.warnings.length ? 'Listo con advertencias' : 'Listo',
+      tone: readiness.warnings.length ? 'warning' : 'success',
+    };
+  }
+
+  if (readiness.blockers.length > 0) {
+    return {
+      description: readiness.blockers[0],
+      label: 'Bloqueado',
+      tone: 'danger',
+    };
+  }
+
+  if (readiness.warnings.length > 0) {
+    return {
+      description: readiness.warnings[0],
+      label: 'Requiere revision',
+      tone: 'warning',
+    };
+  }
+
+  return {
+    description: readiness.recommendedNextStep,
+    label: 'En preparacion',
+    tone: 'neutral',
+  };
+}
+
+function getSriSandboxTier(data: InvoicingWorkspaceQueryData | undefined): string {
+  const readiness = data?.electronicSandboxReadiness;
+
+  if (!readiness) {
+    return 'Sin readiness';
+  }
+
+  if (readiness.isReadyForRemoteSandboxSubmission) {
+    return 'Sandbox remoto';
+  }
+
+  if (readiness.isReadyForPresignedRemoteSandboxSubmission) {
+    return 'Presigned remoto';
+  }
+
+  if (readiness.isReadyForLocalStubSubmission) {
+    return 'Stub local';
+  }
+
+  return 'Sin carril listo';
+}
+
 export function ClaudePlatformApp() {
   const [activeHash, setActiveHash] = useState(readInitialHash);
   const [mood, setMood] = useState<PlatformMoodKey>(readStoredPlatformMood);
@@ -879,61 +954,203 @@ type ClaudeInvoicingSettingsProps = {
 };
 
 function ClaudeInvoicingSettings({ data, model }: ClaudeInvoicingSettingsProps) {
+  const verdict = getSriReadinessVerdict(data);
+  const readiness = data?.electronicSandboxReadiness;
+  const missingItems = [
+    ...(readiness?.blockers ?? []),
+    ...(readiness?.warnings ?? []),
+  ];
+
   return (
-    <div className={styles.invoicingDomainWorkGrid}>
+    <div className={styles.stack}>
       <Card>
-        <span className={styles.label}>Preparacion fiscal</span>
-        <h3>Cuatro pilares antes de enviar al SRI</h3>
-        <p>
-          Esta vista resume emisor, firma, gateway y numeracion como controles
-          operativos. Los detalles tecnicos quedan subordinados para no
-          convertir la configuracion en una pared de formularios.
-        </p>
-        <div className={styles.invoicingQueueList}>
-          {model.readiness.pillars.map((pillar) => (
-            <div className={styles.invoiceItemCard} key={pillar.key}>
-              <div className={styles.invoiceCardHeader}>
-                <strong>{pillar.label}</strong>
-                <StatusPill tone={statusTone(pillar.tone)}>
-                  {pillar.value}
-                </StatusPill>
-              </div>
-              <small>{pillar.sub}</small>
-            </div>
-          ))}
+        <div className={styles.commandCenterHeader}>
+          <div>
+            <span className={styles.label}>Preparacion SRI · Ecuador</span>
+            <h3>{verdict.label}</h3>
+            <p>{verdict.description}</p>
+          </div>
+          <StatusPill tone={statusTone(verdict.tone)}>
+            {getSriSandboxTier(data)}
+          </StatusPill>
         </div>
       </Card>
 
       <Card>
-        <span className={styles.label}>Evidencia tecnica</span>
-        <h3>Readiness SRI</h3>
-        <div className={styles.compactList}>
-          <p>
-            Emisor:{' '}
-            <strong>{data?.issuerProfile?.legalName ?? 'Pendiente'}</strong>
-          </p>
-          <p>
-            Firma:{' '}
-            <strong>
-              {data?.electronicSignatureSettings?.certificateLabel ??
-                data?.electronicSignatureMaterialInspection?.certificateLabel ??
-                'Pendiente'}
-            </strong>
-          </p>
-          <p>
-            Gateway:{' '}
-            <strong>
-              {data?.electronicSubmissionSettings?.provider ?? 'Pendiente'}
-            </strong>
-          </p>
-          <p>
-            Numeracion:{' '}
-            <strong>
-              {data?.invoiceNumberingSettings?.previewNumber ?? 'Pendiente'}
-            </strong>
-          </p>
+        <div className={styles.productWorkspaceContext}>
+          <div>
+            <span className={styles.label}>Siguiente paso recomendado</span>
+            <p>
+              {readiness?.recommendedNextStep ??
+                'Carga el readiness SRI para conocer el siguiente paso seguro.'}
+            </p>
+          </div>
+          <a className={styles.primaryButton} href="#invoicing-documents">
+            Ir a facturas
+          </a>
         </div>
       </Card>
+
+      <div className={styles.invoicingDomainMetricGrid}>
+        {model.readiness.pillars.map((pillar) => (
+          <Card className={styles.invoicingDomainMetricCard} key={pillar.key}>
+            <span className={styles.label}>{pillar.label}</span>
+            <h3>{pillar.value}</h3>
+            <p>{pillar.sub}</p>
+          </Card>
+        ))}
+      </div>
+
+      <div className={styles.invoicingDomainWorkGrid}>
+        <Card>
+          <span className={styles.label}>Areas de configuracion</span>
+          <h3>Cuatro controles antes de operar</h3>
+          <div className={styles.invoicingQueueList}>
+            <div className={styles.invoiceItemCard}>
+              <div className={styles.invoiceCardHeader}>
+                <strong>Emisor fiscal</strong>
+                <StatusPill tone={data?.issuerProfile ? 'success' : 'warning'}>
+                  {data?.issuerProfile ? 'Configurado' : 'Pendiente'}
+                </StatusPill>
+              </div>
+              <small>
+                {data?.issuerProfile?.legalName ?? 'Completa razon social, RUC y direcciones.'}
+              </small>
+            </div>
+
+            <div className={styles.invoiceItemCard}>
+              <div className={styles.invoiceCardHeader}>
+                <strong>Numeracion</strong>
+                <StatusPill
+                  tone={data?.invoiceNumberingSettings ? 'success' : 'warning'}
+                >
+                  {data?.invoiceNumberingSettings?.previewNumber ?? 'Pendiente'}
+                </StatusPill>
+              </div>
+              <small>
+                Serie y secuencial sugeridos para el siguiente documento.
+              </small>
+            </div>
+
+            <div className={styles.invoiceItemCard}>
+              <div className={styles.invoiceCardHeader}>
+                <strong>Firma electronica</strong>
+                <StatusPill
+                  tone={
+                    data?.electronicSignatureSettings?.isActive
+                      ? 'success'
+                      : 'warning'
+                  }
+                >
+                  {data?.electronicSignatureSettings?.isActive
+                    ? 'Activa'
+                    : 'Pendiente'}
+                </StatusPill>
+              </div>
+              <small>
+                {data?.electronicSignatureSettings?.certificateLabel ??
+                  data?.electronicSignatureMaterialInspection?.certificateLabel ??
+                  'Configura certificado y material de firma.'}
+              </small>
+            </div>
+
+            <div className={styles.invoiceItemCard}>
+              <div className={styles.invoiceCardHeader}>
+                <strong>Gateway SRI</strong>
+                <StatusPill
+                  tone={
+                    data?.electronicSubmissionSettings?.isActive
+                      ? 'success'
+                      : 'warning'
+                  }
+                >
+                  {data?.electronicSubmissionSettings?.provider ?? 'Pendiente'}
+                </StatusPill>
+              </div>
+              <small>
+                {data?.electronicSubmissionSettings?.transmissionMode ??
+                  'Define provider, modo de transmision y credenciales.'}
+              </small>
+            </div>
+          </div>
+        </Card>
+
+        <Card>
+          <span className={styles.label}>Readiness SRI</span>
+          <h3>Escalera sandbox</h3>
+          <div className={styles.invoicingQueueList}>
+            <ContextSignal
+              detail="Permite previews y validacion local sin prometer envio remoto."
+              label="Tier 1"
+              tone={
+                readiness?.isReadyForLocalStubSubmission ? 'success' : 'warning'
+              }
+              value="Stub local"
+            />
+            <ContextSignal
+              detail="Prepara artefactos firmados sin ejecutar el carril remoto final."
+              label="Tier 2"
+              tone={
+                readiness?.isReadyForPresignedRemoteSandboxSubmission
+                  ? 'success'
+                  : 'warning'
+              }
+              value="Presigned remoto"
+            />
+            <ContextSignal
+              detail="Carril remoto sandbox con respuesta SRI y trazabilidad."
+              label="Tier 3"
+              tone={
+                readiness?.isReadyForRemoteSandboxSubmission
+                  ? 'success'
+                  : 'warning'
+              }
+              value="Sandbox remoto"
+            />
+          </div>
+        </Card>
+      </div>
+
+      <div className={styles.invoicingDomainWorkGrid}>
+        <Card>
+          <span className={styles.label}>Que falta</span>
+          <h3>Bloqueos y advertencias</h3>
+          {missingItems.length ? (
+            <ul className={styles.compactList}>
+              {missingItems.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          ) : (
+            <p>No hay bloqueos ni advertencias reportadas por readiness.</p>
+          )}
+        </Card>
+
+        <Card>
+          <span className={styles.label}>Matriz de documentos</span>
+          <h3>Soporte electronico</h3>
+          <div className={styles.invoicingQueueList}>
+            {(readiness?.documentSupport ?? []).map((document) => (
+              <div className={styles.invoiceItemCard} key={document.documentCode}>
+                <div className={styles.invoiceCardHeader}>
+                  <strong>{document.label}</strong>
+                  <StatusPill tone={document.submitSupported ? 'success' : 'warning'}>
+                    {document.submitSupported ? 'Enviable' : 'Parcial'}
+                  </StatusPill>
+                </div>
+                <small>
+                  Num {document.numberingConfigured ? 'ok' : 'pendiente'} · XML{' '}
+                  {document.schemaValidationAvailable ? 'ok' : 'pendiente'} ·
+                  RIDE {document.rideAvailable ? 'ok' : 'pendiente'}
+                </small>
+              </div>
+            ))}
+            {readiness?.documentSupport.length ? null : (
+              <p>La matriz aparecera cuando el readiness entregue soporte.</p>
+            )}
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }

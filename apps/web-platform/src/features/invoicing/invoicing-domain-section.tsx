@@ -20,7 +20,8 @@ export type InvoicingWorkspaceSubview =
   | 'draft'
   | 'items'
   | 'sri-lifecycle'
-  | 'documents';
+  | 'documents'
+  | 'closeout';
 
 const INVOICING_WORKSPACE_TABS: Array<{
   href: string;
@@ -33,6 +34,7 @@ const INVOICING_WORKSPACE_TABS: Array<{
   { href: '#invoicing-items', key: 'items', label: 'Items' },
   { href: '#invoicing-sri-lifecycle', key: 'sri-lifecycle', label: 'Ciclo SRI' },
   { href: '#invoicing-documents', key: 'documents', label: 'Documentos' },
+  { href: '#invoicing-closeout', key: 'closeout', label: 'Cierre' },
 ];
 
 const INVOICING_SUBVIEW_CONTEXT: Record<
@@ -86,12 +88,20 @@ const INVOICING_SUBVIEW_CONTEXT: Record<
     title: 'Estado SRI y autorización',
   },
   documents: {
-    actionHref: '#invoicing-settings-sri',
-    actionLabel: 'Ajustar SRI',
+    actionHref: '#invoicing-closeout',
+    actionLabel: 'Cerrar entrega/pago',
     description:
       'Revisa la cola, el comprobante seleccionado, estado electrónico, evidencia y acciones.',
     eyebrow: 'Operación documental',
     title: 'Documentos y envío',
+  },
+  closeout: {
+    actionHref: '#invoicing-sri-lifecycle',
+    actionLabel: 'Ver ciclo SRI',
+    description:
+      'Cierra entrega y pago sin mezclar esas verdades con autorización SRI, impuestos o contabilidad.',
+    eyebrow: 'Cierre operativo',
+    title: 'Entrega, pago y evidencia',
   },
 };
 

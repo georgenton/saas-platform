@@ -458,7 +458,7 @@
   gap: 14px;
   grid-template-columns: minmax(0, 1fr) auto;
   margin-bottom: 12px;
-  padding: 14px 16px;
+  padding: 12px 14px;
 }
 
 .productWorkspaceTitleRow {
@@ -475,7 +475,7 @@
 
 .productWorkspaceHero h2 {
   color: var(--text-strong);
-  font-size: 1.12rem;
+  font-size: 1.02rem;
   letter-spacing: 0;
   line-height: 1.2;
   margin: 0;
@@ -537,11 +537,12 @@
   background: var(--surface-sunken);
   border: 1px solid var(--border);
   border-radius: 8px;
-  display: grid;
+  display: flex;
   gap: 4px;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
   margin-bottom: 18px;
+  overflow-x: auto;
   padding: 6px;
+  scrollbar-width: thin;
 }
 
 .productWorkspaceTabs a {
@@ -549,10 +550,11 @@
   border-radius: 8px;
   color: var(--text-muted);
   display: inline-flex;
+  flex: 1 0 max-content;
   font-size: 0.84rem;
   font-weight: 800;
   min-height: 38px;
-  min-width: 0;
+  min-width: max-content;
   padding: 9px 12px 9px 15px;
   position: relative;
   text-decoration: none;
@@ -1396,6 +1398,9 @@
 .invoicingDomainConsole {
   display: grid;
   gap: 16px;
+  margin: 0 auto;
+  max-width: 1040px;
+  width: min(100%, 1040px);
 }
 
 .invoicingDomainHero {
@@ -5227,6 +5232,15 @@
     overflow-wrap: anywhere;
     text-align: center;
     white-space: normal;
+  }
+
+  .invoiceQueueRow {
+    align-items: start;
+    grid-template-columns: 1fr;
+  }
+
+  .invoiceQueueTotal {
+    justify-self: start;
   }
 }
 

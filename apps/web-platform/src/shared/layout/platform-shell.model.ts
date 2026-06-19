@@ -29,10 +29,14 @@ export const PLATFORM_MOODS = [
 export type PlatformMoodKey = (typeof PLATFORM_MOODS)[number]['key'];
 
 export type PlatformShellNavItem = {
+  badge?: string | number;
+  group: 'core' | 'finance' | 'commerce' | 'clinics' | 'platform';
   href: string;
+  iconLabel: string;
   label: string;
   meta: string;
   state: string;
+  status?: 'active' | 'available' | 'disabled' | 'limited' | 'locked';
 };
 
 export type PlatformShellMetric = {

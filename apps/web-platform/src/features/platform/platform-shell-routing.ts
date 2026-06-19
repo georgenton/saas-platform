@@ -47,6 +47,14 @@ export function resolveActiveInvoicingSubview(
   }
 
   if (
+    activeHash === '#invoicing-sri-lifecycle' ||
+    activeHash === '#invoicing-electronic-lifecycle' ||
+    activeHash === '#invoicing-electronic-status'
+  ) {
+    return 'sri-lifecycle';
+  }
+
+  if (
     activeHash === '#invoicing-documents' ||
     activeHash === '#invoicing-invoice-detail'
   ) {

@@ -49,6 +49,7 @@ const INVOICING_WORKSPACE_TABS: Array<{
   { href: '#invoicing-settings-sri', key: 'settings', label: 'Configuracion SRI' },
   { href: '#invoicing-customer-draft', key: 'draft', label: 'Clientes y borrador' },
   { href: '#invoicing-items', key: 'items', label: 'Items' },
+  { href: '#invoicing-sri-lifecycle', key: 'sri-lifecycle', label: 'Ciclo SRI' },
   { href: '#invoicing-documents', key: 'documents', label: 'Documentos' },
 ];
 
@@ -768,6 +769,12 @@ function ClaudeInvoicingWorkspace({
         <ClaudeInvoicingItems
           data={data}
           invoices={invoices}
+          selectedInvoice={selectedInvoice}
+        />
+      ) : activeSubview === 'sri-lifecycle' ? (
+        <ClaudeInvoicingSriLifecycle
+          data={data}
+          onRefresh={onRefresh}
           selectedInvoice={selectedInvoice}
         />
       ) : (
@@ -1588,6 +1595,332 @@ function ClaudeInvoicingItems({
           </div>
         </Card>
       </div>
+    </div>
+  );
+}
+
+type ClaudeInvoicingSriLifecycleProps = {
+  data: InvoicingWorkspaceQueryData | undefined;
+  onRefresh: () => void;
+  selectedInvoice: InvoiceSummaryResponse | null;
+};
+
+function getSriLifecycleVerdict(invoice: InvoiceSummaryResponse | null): {
+  legalLine: string;
+  primaryAction: string;
+  secondaryAction: string;
+  title: string;
+  tone: 'success' | 'warning' | 'danger' | 'neutral';
+} {
+  if (!invoice) {
+    return {
+      legalLine: 'Selecciona una factura para leer su estado electronico.',
+      primaryAction: 'Seleccionar documento',
+      secondaryAction: 'Revisar documentos',
+      title: 'Sin documento activo',
+      tone: 'neutral',
+    };
+  }
+
+  if (invoice.electronicStatus === 'authorized') {
+    return {
+      legalLine: 'El comprobante es legalmente valido solo porque el backend confirma autorizacion.',
+      primaryAction: 'Ver evidencia',
+      secondaryAction: 'Revisar documento',
+      title: 'Autorizado por el SRI',
+      tone: 'success',
+    };
+  }
+
+  if (
+    invoice.electronicStatus === 'rejected' ||
+    invoice.electronicStatus === 'failed'
+  ) {
+    return {
+      legalLine: invoice.electronicStatusMessage ?? 'El SRI devolvio una observacion que conviene corregir.',
+      primaryAction: 'Corregir observacion',
+      secondaryAction: 'Revisar readiness',
+      title: 'Devuelto por el SRI',
+      tone: 'danger',
+    };
+  }
+
+  if (invoice.submittedAt || invoice.electronicStatus === 'submitted') {
+    return {
+      legalLine: 'Enviado NO significa autorizado. La validez legal llega solo con autorizacion confirmada.',
+      primaryAction: 'Consultar autorizacion',
+      secondaryAction: 'Ver XML preliminar',
+      title: 'Enviado al SRI',
+      tone: 'warning',
+    };
+  }
+
+  if (
+    invoice.electronicStatus === 'pending_submission' ||
+    invoice.signedAt ||
+    invoice.status.toLowerCase() === 'issued'
+  ) {
+    return {
+      legalLine: 'El documento puede prepararse para envio, pero aun no tiene autorizacion SRI.',
+      primaryAction: 'Revisar antes de enviar',
+      secondaryAction: 'Ver XML preliminar',
+      title: 'Listo para envio',
+      tone: 'warning',
+    };
+  }
+
+  return {
+    legalLine: 'Borrador comercial: todavia no esta firmado, enviado ni autorizado.',
+    primaryAction: 'Completar documento',
+    secondaryAction: 'Revisar items',
+    title: 'Preparacion pendiente',
+    tone: 'neutral',
+  };
+}
+
+function getSriLifecycleStepState(
+  invoice: InvoiceSummaryResponse | null,
+  step: 'prepared' | 'submitted' | 'authorized',
+): 'complete' | 'current' | 'pending' | 'danger' {
+  if (!invoice) {
+    return step === 'prepared' ? 'current' : 'pending';
+  }
+
+  const status = invoice.electronicStatus;
+
+  if (step === 'prepared') {
+    return 'complete';
+  }
+
+  if (step === 'submitted') {
+    if (status === 'rejected' || status === 'failed') {
+      return 'danger';
+    }
+
+    if (status === 'authorized') {
+      return 'complete';
+    }
+
+    if (invoice.submittedAt || status === 'submitted') {
+      return 'current';
+    }
+
+    return 'pending';
+  }
+
+  if (status === 'authorized') {
+    return 'complete';
+  }
+
+  return 'pending';
+}
+
+function sriLifecycleTone(
+  state: 'complete' | 'current' | 'pending' | 'danger',
+): 'success' | 'warning' | 'danger' | 'neutral' {
+  if (state === 'complete') {
+    return 'success';
+  }
+
+  if (state === 'danger') {
+    return 'danger';
+  }
+
+  return state === 'current' ? 'warning' : 'neutral';
+}
+
+function ClaudeInvoicingSriLifecycle({
+  data,
+  onRefresh,
+  selectedInvoice,
+}: ClaudeInvoicingSriLifecycleProps) {
+  const verdict = getSriLifecycleVerdict(selectedInvoice);
+  const accessKey = selectedInvoice?.accessKey ?? null;
+  const accessKeyChunks = accessKey?.match(/.{1,7}/g) ?? [];
+  const isAuthorized = selectedInvoice?.electronicStatus === 'authorized';
+  const readiness = data?.electronicSandboxReadiness;
+  const canSubmit =
+    Boolean(selectedInvoice) &&
+    selectedInvoice?.status.toLowerCase() !== 'draft' &&
+    Boolean(readiness?.isReadyForLocalStubSubmission);
+  const steps: Array<{
+    detail: string;
+    key: 'prepared' | 'submitted' | 'authorized';
+    label: string;
+  }> = [
+    {
+      detail: selectedInvoice?.signedAt
+        ? `Firmado ${formatDate(selectedInvoice.signedAt)}`
+        : 'Documento comercial preparado',
+      key: 'prepared',
+      label: 'Preparado',
+    },
+    {
+      detail: selectedInvoice?.submittedAt
+        ? `Enviado ${formatDate(selectedInvoice.submittedAt)}`
+        : 'Aun no enviado al SRI',
+      key: 'submitted',
+      label: 'Enviado al SRI',
+    },
+    {
+      detail: selectedInvoice?.authorizedAt
+        ? `Autorizado ${formatDate(selectedInvoice.authorizedAt)}`
+        : 'Disponible al autorizar',
+      key: 'authorized',
+      label: 'Autorizado',
+    },
+  ];
+
+  return (
+    <div className={styles.stack}>
+      <Card>
+        <div className={styles.commandCenterHeader}>
+          <div>
+            <span className={styles.label}>Estado legal SRI</span>
+            <h3>{verdict.title}</h3>
+            <p>{verdict.legalLine}</p>
+          </div>
+          <StatusPill tone={statusTone(verdict.tone)}>
+            {selectedInvoice?.number ?? 'Sin factura'}
+          </StatusPill>
+        </div>
+        <div className={styles.buttonRow}>
+          <button className={styles.primaryButton} onClick={onRefresh} type="button">
+            {verdict.primaryAction === 'Consultar autorizacion'
+              ? 'Consultar estado'
+              : 'Refrescar estado'}
+          </button>
+          <a
+            className={styles.secondaryButton}
+            href={
+              verdict.secondaryAction === 'Revisar readiness'
+                ? '#invoicing-settings-sri'
+                : verdict.secondaryAction === 'Revisar items'
+                  ? '#invoicing-items'
+                  : '#invoicing-documents'
+            }
+          >
+            {verdict.secondaryAction}
+          </a>
+        </div>
+      </Card>
+
+      <Card>
+        <span className={styles.label}>Lifecycle</span>
+        <h3>Preparado → Enviado al SRI → Autorizado</h3>
+        <div className={styles.invoicingContextTriad}>
+          {steps.map((step) => {
+            const state = getSriLifecycleStepState(selectedInvoice, step.key);
+
+            return (
+              <ContextSignal
+                detail={step.detail}
+                key={step.key}
+                label={step.label}
+                tone={sriLifecycleTone(state)}
+                value={
+                  state === 'complete'
+                    ? 'Completo'
+                    : state === 'current'
+                      ? 'En curso'
+                      : state === 'danger'
+                        ? 'Devuelto'
+                        : 'Pendiente'
+                }
+              />
+            );
+          })}
+        </div>
+      </Card>
+
+      <div className={styles.invoicingDomainWorkGrid}>
+        <Card>
+          <span className={styles.label}>Evidencia electronica</span>
+          <div className={styles.invoicingQueueList}>
+            <div className={styles.invoiceItemCard}>
+              <div className={styles.invoiceCardHeader}>
+                <strong>Clave de acceso</strong>
+                <StatusPill tone={accessKey ? 'success' : 'warning'}>
+                  {accessKey ? 'Visible' : 'Pendiente'}
+                </StatusPill>
+              </div>
+              <small>
+                {accessKeyChunks.length
+                  ? accessKeyChunks.join(' · ')
+                  : 'Puede existir antes de la autorizacion, pero no prueba validez legal.'}
+              </small>
+            </div>
+
+            <div className={styles.invoiceItemCard}>
+              <div className={styles.invoiceCardHeader}>
+                <strong>No. autorizacion</strong>
+                <StatusPill tone={isAuthorized ? 'success' : 'warning'}>
+                  {isAuthorized ? 'Confirmado' : 'Disponible al autorizar'}
+                </StatusPill>
+              </div>
+              <small>
+                {isAuthorized
+                  ? selectedInvoice?.authorizationNumber ?? 'Autorizacion confirmada'
+                  : 'No se muestra como evidencia hasta que electronicStatus sea authorized.'}
+              </small>
+            </div>
+
+            <div className={styles.invoiceItemCard}>
+              <div className={styles.invoiceCardHeader}>
+                <strong>Referencia de envio</strong>
+                <StatusPill tone={selectedInvoice?.submissionReference ? 'success' : 'warning'}>
+                  {selectedInvoice?.submissionReference ? 'Registrada' : 'Sin envio'}
+                </StatusPill>
+              </div>
+              <small>
+                {selectedInvoice?.submissionReference ??
+                  'Aparecera cuando exista envio registrado por el backend.'}
+              </small>
+            </div>
+          </div>
+        </Card>
+
+        <Card>
+          <span className={styles.label}>Camino seguro</span>
+          <h3>{canSubmit ? 'Listo para operar con backend' : 'Aun con guardrails activos'}</h3>
+          <p>
+            La accion principal mantiene el recorrido seguro hasta que conectemos
+            los handlers de envio y consulta en esta superficie. Intervencion
+            manual, XML prefirmado y trazas tecnicas quedan como soporte avanzado,
+            no como operacion diaria.
+          </p>
+          <div className={styles.invoicingQueueList}>
+            {(readiness?.blockers ?? []).slice(0, 3).map((blocker) => (
+              <div className={styles.invoiceItemCard} key={blocker}>
+                <div className={styles.invoiceCardHeader}>
+                  <strong>{blocker}</strong>
+                  <StatusPill tone="warning">Bloqueo</StatusPill>
+                </div>
+              </div>
+            ))}
+            {readiness?.blockers.length ? null : (
+              <div className={styles.invoiceItemCard}>
+                <div className={styles.invoiceCardHeader}>
+                  <strong>Sin bloqueos críticos visibles</strong>
+                  <StatusPill tone="success">Ready</StatusPill>
+                </div>
+                <small>
+                  La autorizacion depende de la respuesta SRI confirmada, no de
+                  esta pantalla.
+                </small>
+              </div>
+            )}
+          </div>
+        </Card>
+      </div>
+
+      {selectedInvoice?.electronicStatusMessage ? (
+        <Card>
+          <span className={styles.label}>Mensaje SRI</span>
+          <h3>Observacion devuelta</h3>
+          <p>{selectedInvoice.electronicStatusMessage}</p>
+        </Card>
+      ) : null}
     </div>
   );
 }

@@ -18,13 +18,15 @@ import {
   type InvoicingWorkspaceQueryData,
 } from '../invoicing/queries';
 import { useInvoicingWorkspaceModel } from '../invoicing/use-invoicing-workspace-model';
-import type { InvoicingWorkspaceFoundationModel } from '../invoicing/model';
+import type {
+  InvoicingWorkspaceFoundationModel,
+  InvoicingWorkspaceSubview,
+} from '../invoicing/model';
 import {
   buildPlatformShellNavItems,
   resolveActiveInvoicingSubview,
   resolveActiveProductWorkspace,
 } from './platform-shell-routing';
-import type { InvoicingWorkspaceSubview } from '../invoicing/invoicing-workspace';
 import { PlatformShell } from '../../shared/layout/platform-shell';
 import {
   PLATFORM_MOODS,

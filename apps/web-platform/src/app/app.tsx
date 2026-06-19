@@ -41628,7 +41628,10 @@ export function App() {
                   ? 'product-disabled'
                   : 'ready'
           }
+          formatElectronicStatus={formatElectronicStatus}
+          formatMoney={formatMoney}
           invoiceDetailLoading={invoiceDetailLoading}
+          invoiceEmailRecipient={invoiceEmailRecipient}
           invoicingActionMessage={invoicingActionMessage}
           invoicingLoading={invoicingLoading}
           model={invoicingWorkspaceModel}
@@ -41636,6 +41639,7 @@ export function App() {
           onRefresh={() => {
             void refreshInvoicingWorkspace();
           }}
+          selectedInvoiceDetail={selectedInvoiceDetail}
         >
           {activeInvoicingSubview === 'overview' && invoicingReport ? (
             <InvoicingWorkspaceReports

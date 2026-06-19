@@ -171,7 +171,7 @@ function getInvoiceStage(invoice: InvoiceSummaryResponse | null): {
   }
 
   if (invoice.submittedAt || invoice.electronicStatus === 'submitted') {
-    return { label: 'En el SRI', tone: 'warning' };
+    return { label: 'Enviado al SRI', tone: 'warning' };
   }
 
   if (invoice.signedAt || invoice.status.toLowerCase() === 'issued') {

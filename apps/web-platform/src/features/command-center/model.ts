@@ -58,13 +58,13 @@ export const COMMAND_CENTER_DOMAINS: CommandCenterDomain[] = [
   },
   {
     key: 'ai',
-    name: 'IA y Automatizacion',
-    summary: 'Sugerencias, aprobaciones y ejecucion protegida.',
+    name: 'IA y Automatización',
+    summary: 'Sugerencias, aprobaciones y ejecución protegida.',
   },
   {
     key: 'clinics',
-    name: 'Clinicas',
-    summary: 'Operaciones clinicas separadas por dominio.',
+    name: 'Clínicas',
+    summary: 'Operaciones clínicas separadas por dominio.',
   },
 ];
 

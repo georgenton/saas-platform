@@ -478,13 +478,10 @@
 }
 
 .commandCenter {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  box-shadow: var(--shadow-sm);
   display: grid;
-  gap: 18px;
-  margin-bottom: 18px;
+  gap: 22px;
+  margin: 0 auto;
+  max-width: 1240px;
   padding: 24px;
   scroll-margin-top: 120px;
 }
@@ -493,7 +490,7 @@
 .commandDomainHeader,
 .productStatusHeader,
 .productActionRow {
-  align-items: start;
+  align-items: flex-start;
   display: flex;
   gap: 14px;
   justify-content: space-between;
@@ -508,6 +505,13 @@
   margin: 0;
 }
 
+.commandCenterHeader h2 {
+  font-size: clamp(2rem, 4vw, 2.75rem);
+  letter-spacing: 0;
+  line-height: 1.04;
+  margin-top: 4px;
+}
+
 .commandCenterHeader p,
 .commandDomainHeader p,
 .productStatusHeader p {
@@ -516,9 +520,39 @@
   margin: 6px 0 0;
 }
 
+.commandCenterHeader p {
+  font-size: 1rem;
+  max-width: 640px;
+}
+
+.commandUpdated {
+  align-items: center;
+  color: var(--text-subtle);
+  display: inline-flex;
+  gap: 7px;
+  font-size: 0.86rem;
+  margin-top: auto;
+  white-space: nowrap;
+}
+
+.commandUpdated svg,
+.commandIconTile svg,
+.commandDomainIcon svg,
+.productAccessPill svg,
+.evidenceStrip svg,
+.includesItem svg {
+  fill: none;
+  height: 17px;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+  width: 17px;
+}
+
 .commandSummaryRail {
   display: grid;
-  gap: 14px;
+  gap: 18px;
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
@@ -761,36 +795,91 @@
 }
 
 .commandSummaryCard {
-  background: var(--surface-raised);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
-  display: grid;
-  gap: 12px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
   min-width: 0;
-  padding: 18px;
+  min-height: 214px;
+  padding: 24px;
 }
 
-.commandSummaryCard dl {
+.commandSummaryCardHeader {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+}
+
+.commandSummaryRows {
   display: grid;
   gap: 10px;
-  margin: 0;
 }
 
-.commandSummaryCard dl div {
-  display: grid;
-  gap: 2px;
+.commandSummaryRow {
+  align-items: center;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
 }
 
-.commandSummaryCard dt {
+.commandSummaryRow span {
   color: var(--text-muted);
-  font-size: 0.78rem;
-  font-weight: 700;
+  font-size: 0.88rem;
 }
 
-.commandSummaryCard dd {
+.commandSummaryRow strong {
   color: var(--text-strong);
-  margin: 0;
-  overflow-wrap: anywhere;
+  font-size: 0.92rem;
+  font-weight: 700;
+  text-align: right;
+}
+
+.commandPlanTitle {
+  align-items: baseline;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.commandPlanTitle > strong {
+  color: var(--text-muted);
+  font-size: 0.92rem;
+}
+
+.commandSeatProgress {
+  background: var(--surface-sunken);
+  border-radius: 999px;
+  display: block;
+  height: 6px;
+  overflow: hidden;
+}
+
+.commandSeatProgress i {
+  background: var(--primary);
+  border-radius: inherit;
+  display: block;
+  height: 100%;
+}
+
+.commandProductCount {
+  align-items: baseline;
+  display: flex;
+  gap: 8px;
+}
+
+.commandProductCount > strong {
+  color: var(--text-strong);
+  font-size: 2.35rem;
+  letter-spacing: 0;
+  line-height: 1;
+}
+
+.commandProductCount > span {
+  color: var(--text-muted);
+  font-size: 0.98rem;
 }
 
 .accessLegend {
@@ -848,23 +937,41 @@
 
 .commandDomains {
   display: grid;
-  gap: 22px;
+  gap: 26px;
 }
 
 .commandDomainSection {
   display: grid;
-  gap: 12px;
+  gap: 14px;
 }
 
 .commandDomainHeader {
-  border-bottom: 1px solid var(--divider);
-  padding-bottom: 12px;
+  align-items: center;
+  padding-bottom: 0;
+}
+
+.commandDomainHeader > div {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+}
+
+.commandDomainHeader > i {
+  background: var(--divider);
+  flex: 1 1 auto;
+  height: 1px;
+  margin-left: 4px;
+}
+
+.commandDomainIcon {
+  color: var(--text-muted);
+  display: inline-flex;
 }
 
 .productStatusGrid {
   display: grid;
-  gap: 14px;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 18px;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
 }
 
 .productStatusCard {
@@ -874,11 +981,11 @@
   flex-direction: column;
   gap: 14px;
   min-height: 320px;
-  padding: 18px;
+  padding: 24px;
 }
 
 .productStatusCardActive {
-  background: var(--surface-raised);
+  background: var(--surface);
   box-shadow: var(--shadow-sm);
 }
 
@@ -887,19 +994,25 @@
   box-shadow: none;
 }
 
-.productIconTile {
+.commandIconTile {
   align-items: center;
-  background: var(--primary-soft);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
-  color: var(--on-primary-soft);
+  color: var(--text-muted);
   display: inline-flex;
   flex: 0 0 auto;
   font-size: 0.78rem;
   font-weight: 800;
-  height: 38px;
+  height: 40px;
   justify-content: center;
-  width: 38px;
+  width: 40px;
+}
+
+.commandIconTileActive {
+  background: var(--primary-soft);
+  border-color: transparent;
+  color: var(--primary);
 }
 
 .productStatusHeader > div {
@@ -908,8 +1021,11 @@
 }
 
 .productAccessPill {
+  align-items: center;
   border-radius: 999px;
+  display: inline-flex;
   flex: 0 0 auto;
+  gap: 6px;
   font-size: 0.74rem;
   font-weight: 800;
   padding: 7px 10px;
@@ -940,18 +1056,17 @@
 .readinessList,
 .includesList {
   display: grid;
-  gap: 10px;
+  gap: 9px;
   margin: 0;
 }
 
 .readinessRow {
   align-items: center;
-  border-bottom: 1px solid var(--divider);
   color: var(--text-muted);
   display: grid;
   gap: 12px;
   grid-template-columns: minmax(0, 1fr) auto;
-  padding-bottom: 10px;
+  min-height: 22px;
 }
 
 .readinessRow strong {
@@ -965,29 +1080,55 @@
 .includesList {
   color: var(--text);
   line-height: 1.5;
-  padding-left: 20px;
+  padding-left: 0;
+}
+
+.includesItem {
+  align-items: flex-start;
+  color: var(--text);
+  display: flex;
+  font-size: 0.88rem;
+  gap: 8px;
+  line-height: 1.45;
+}
+
+.includesItem svg {
+  color: var(--text-subtle);
+  flex: 0 0 auto;
+  height: 14px;
+  margin-top: 2px;
+  width: 14px;
 }
 
 .evidenceStrip,
 .blockerRow {
   border-radius: 8px;
-  display: grid;
-  gap: 4px;
+  display: flex;
+  gap: 9px;
   padding: 12px;
 }
 
 .evidenceStrip {
   background: var(--surface-sunken);
   border: 1px solid var(--border);
+  color: var(--text-subtle);
+}
+
+.evidenceStrip > span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
 }
 
 .evidenceStrip strong {
   color: var(--text-strong);
+  font-size: 0.88rem;
+  line-height: 1.35;
 }
 
-.evidenceStrip span {
+.evidenceStrip small {
   color: var(--text-muted);
-  font-size: 0.84rem;
+  font-size: 0.78rem;
 }
 
 .blockerRow {
@@ -995,6 +1136,11 @@
   border: 1px solid var(--border);
   color: var(--warning);
   font-weight: 700;
+}
+
+.commandCardDivider {
+  background: var(--divider);
+  height: 1px;
 }
 
 .productActionRow {

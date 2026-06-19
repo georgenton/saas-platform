@@ -251,6 +251,23 @@ function getSriSandboxTier(data: InvoicingWorkspaceQueryData | undefined): strin
   return 'Sin carril listo';
 }
 
+function formatBuyerIdentificationType(value: string | null | undefined): string {
+  switch (value) {
+    case '04':
+      return 'RUC';
+    case '05':
+      return 'Cedula';
+    case '06':
+      return 'Pasaporte';
+    case '07':
+      return 'Consumidor final';
+    case '08':
+      return 'Exterior';
+    default:
+      return 'Sin tipo';
+  }
+}
+
 export function ClaudePlatformApp() {
   const [activeHash, setActiveHash] = useState(readInitialHash);
   const [mood, setMood] = useState<PlatformMoodKey>(readStoredPlatformMood);
@@ -1161,57 +1178,189 @@ type ClaudeInvoicingDraftProps = {
 };
 
 function ClaudeInvoicingDraft({ data, invoices }: ClaudeInvoicingDraftProps) {
+  const customers = data?.customers ?? [];
+  const selectedCustomer = customers[0] ?? null;
+  const draftInvoices = invoices.filter(
+    (invoice) => invoice.status.toLowerCase() === 'draft',
+  );
+  const latestDraft = draftInvoices[0] ?? null;
+  const nextInvoiceNumber =
+    data?.invoiceNumberingSettings?.previewNumber ?? 'Autogenerado';
+
   return (
-    <div className={styles.invoicingDomainWorkGrid}>
+    <div className={styles.stack}>
       <Card>
-        <span className={styles.label}>Emision guiada</span>
-        <h3>Comprador → identidad fiscal → borrador</h3>
-        <p>
-          El flujo se mantiene como lane guiada: primero se confirma el
-          comprador, luego su identidad tributaria, y finalmente se arma el
-          borrador sin insinuar envio al SRI.
-        </p>
-        <div className={styles.invoicingDomainMetricGrid}>
-          <MetricCard
-            label="Compradores"
-            sublabel="directorio actual"
-            value={data?.customers.length ?? 0}
-          />
-          <MetricCard
-            label="Impuestos"
-            sublabel="tarifas disponibles"
-            value={data?.taxRates.length ?? 0}
-          />
-          <MetricCard
-            label="Borradores"
-            sublabel="en la cola"
-            value={
-              invoices.filter(
-                (invoice) => invoice.status.toLowerCase() === 'draft',
-              ).length
-            }
-          />
-          <MetricCard
-            label="Siguiente numero"
-            sublabel="sugerido"
-            value={data?.invoiceNumberingSettings?.previewNumber ?? 'Pendiente'}
-          />
+        <div className={styles.commandCenterHeader}>
+          <div>
+            <span className={styles.label}>Emision guiada</span>
+            <h3>Comprador → identidad fiscal → borrador</h3>
+            <p>
+              Una lane simple para crear la base comercial de la factura sin
+              insinuar firma, envio ni autorizacion del SRI.
+            </p>
+          </div>
+          <StatusPill tone={latestDraft ? 'success' : 'warning'}>
+            {latestDraft ? 'Borrador disponible' : 'Preparar borrador'}
+          </StatusPill>
         </div>
       </Card>
 
-      <Card>
-        <span className={styles.label}>Guardrail</span>
-        <h3>Crear borrador no es emitir</h3>
-        <p>
-          La pantalla debe repetir esta frontera de forma tranquila: el borrador
-          todavia no esta firmado, enviado ni autorizado.
-        </p>
-        <div className={styles.buttonRow}>
-          <a className={styles.primaryButton} href="#invoicing-documents">
-            Revisar documentos
-          </a>
-        </div>
-      </Card>
+      <div className={styles.invoicingDomainMetricGrid}>
+        <MetricCard
+          label="Compradores"
+          sublabel="directorio actual"
+          value={customers.length}
+        />
+        <MetricCard
+          label="Identidad fiscal"
+          sublabel={
+            selectedCustomer
+              ? formatBuyerIdentificationType(selectedCustomer.identificationType)
+              : 'pendiente'
+          }
+          value={selectedCustomer?.taxId ?? selectedCustomer?.identification ?? 'Sin comprador'}
+        />
+        <MetricCard
+          label="Borradores"
+          sublabel="en la cola"
+          value={draftInvoices.length}
+        />
+        <MetricCard
+          label="Siguiente numero"
+          sublabel="sugerido"
+          value={nextInvoiceNumber}
+        />
+      </div>
+
+      <div className={styles.invoicingDomainWorkGrid}>
+        <Card>
+          <span className={styles.label}>Lane de creacion</span>
+          <div className={styles.invoicingQueueList}>
+            <div className={styles.invoiceItemCard}>
+              <div className={styles.invoiceCardHeader}>
+                <strong>1 · Comprador</strong>
+                <StatusPill tone={selectedCustomer ? 'success' : 'warning'}>
+                  {selectedCustomer ? 'Seleccionado' : 'Pendiente'}
+                </StatusPill>
+              </div>
+              <small>
+                {selectedCustomer
+                  ? `${selectedCustomer.name} · ${
+                      selectedCustomer.email ?? 'sin email'
+                    }`
+                  : 'Selecciona o crea un comprador antes de avanzar.'}
+              </small>
+            </div>
+
+            <div className={styles.invoiceItemCard}>
+              <div className={styles.invoiceCardHeader}>
+                <strong>2 · Identidad fiscal</strong>
+                <StatusPill tone={selectedCustomer ? 'success' : 'warning'}>
+                  {selectedCustomer
+                    ? formatBuyerIdentificationType(
+                        selectedCustomer.identificationType,
+                      )
+                    : 'Pendiente'}
+                </StatusPill>
+              </div>
+              <small>
+                {selectedCustomer
+                  ? selectedCustomer.taxId ??
+                    selectedCustomer.identification ??
+                    'Identificacion pendiente'
+                  : 'Confirma RUC, cedula, pasaporte, consumidor final o exterior.'}
+              </small>
+            </div>
+
+            <div className={styles.invoiceItemCard}>
+              <div className={styles.invoiceCardHeader}>
+                <strong>3 · Borrador</strong>
+                <StatusPill tone={latestDraft ? 'success' : 'warning'}>
+                  {latestDraft ? latestDraft.number : 'Por crear'}
+                </StatusPill>
+              </div>
+              <small>
+                {latestDraft
+                  ? `${latestDraft.buyerName ?? latestDraft.customerId} · ${formatMoney(
+                      latestDraft.totals.totalInCents,
+                      latestDraft.currency,
+                    )}`
+                  : `Numero sugerido ${nextInvoiceNumber}; vacio = autogenera backend.`}
+              </small>
+            </div>
+          </div>
+        </Card>
+
+        <Card>
+          <span className={styles.label}>Directorio de compradores</span>
+          <h3>{customers.length ? 'Compradores disponibles' : 'Aun no hay compradores'}</h3>
+          <div className={styles.invoicingQueueList}>
+            {customers.length ? (
+              customers.slice(0, 4).map((customer) => (
+                <div className={styles.invoiceItemCard} key={customer.id}>
+                  <div className={styles.invoiceCardHeader}>
+                    <strong>{customer.name}</strong>
+                    <StatusPill>
+                      {formatBuyerIdentificationType(customer.identificationType)}
+                    </StatusPill>
+                  </div>
+                  <small>
+                    {customer.taxId ?? customer.identification ?? 'Sin identificacion'} ·{' '}
+                    {customer.billingAddress ?? 'Sin direccion'}
+                  </small>
+                </div>
+              ))
+            ) : (
+              <div className={styles.emptyState}>
+                Crea un comprador para habilitar la creacion de borradores.
+              </div>
+            )}
+          </div>
+        </Card>
+      </div>
+
+      <div className={styles.invoicingDomainWorkGrid}>
+        <Card>
+          <span className={styles.label}>Confirmacion fiscal</span>
+          <h3>{selectedCustomer?.name ?? 'Selecciona un comprador'}</h3>
+          <p>
+            {selectedCustomer
+              ? `${formatBuyerIdentificationType(
+                  selectedCustomer.identificationType,
+                )}: ${
+                  selectedCustomer.taxId ??
+                  selectedCustomer.identification ??
+                  'pendiente'
+                }`
+              : 'Esta pausa reduce errores antes de crear el borrador fiscal.'}
+          </p>
+          <div className={styles.buttonRow}>
+            <button className={styles.secondaryButton} disabled type="button">
+              Guardar comprador
+            </button>
+            <button className={styles.primaryButton} disabled={!selectedCustomer} type="button">
+              Confirmar identidad
+            </button>
+          </div>
+        </Card>
+
+        <Card>
+          <span className={styles.label}>Guardrail</span>
+          <h3>Crear borrador no es emitir</h3>
+          <p>
+            El borrador todavia no esta firmado, enviado ni autorizado. La
+            emision electronica vive en documentos y ciclo SRI.
+          </p>
+          <div className={styles.buttonRow}>
+            <button className={styles.primaryButton} disabled={!selectedCustomer} type="button">
+              Crear borrador
+            </button>
+            <a className={styles.secondaryButton} href="#invoicing-documents">
+              Revisar documentos
+            </a>
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }

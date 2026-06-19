@@ -4789,29 +4789,6 @@ export function App() {
       ),
     [enabledProductKeys, productCatalog],
   );
-  const platformShellNavItems = useMemo(
-    () =>
-      buildPlatformShellNavItems({
-        canAccessTransversalAiConsole,
-        canManageInvitations,
-        canReadGrowthConversations,
-        currentTenantSlug: currentTenancy?.tenant.slug ?? null,
-        enabledProductKeys,
-        invoices,
-        sessionFlowLabel: session
-          ? flowLabel(session.sessionState.recommendedFlow)
-          : 'Operando',
-      }),
-    [
-      currentTenancy,
-      canAccessTransversalAiConsole,
-      canManageInvitations,
-      canReadGrowthConversations,
-      enabledProductKeys,
-      invoices,
-      session,
-    ],
-  );
   const invoicingEnabled = enabledProductKeys.has('invoicing');
   const accountingEnabled = enabledProductKeys.has('accounting');
   const growthProductEnabled = enabledProductKeys.has('growth');
@@ -4825,6 +4802,29 @@ export function App() {
   const customers = invoicingWorkspaceQuery.data?.customers ?? [];
   const taxRates = invoicingWorkspaceQuery.data?.taxRates ?? [];
   const invoices = invoicingWorkspaceQuery.data?.invoices ?? [];
+  const platformShellNavItems = useMemo(
+    () =>
+      buildPlatformShellNavItems({
+        canAccessTransversalAiConsole,
+        canManageInvitations,
+        canReadGrowthConversations,
+        currentTenantSlug,
+        enabledProductKeys,
+        invoices,
+        sessionFlowLabel: session
+          ? flowLabel(session.sessionState.recommendedFlow)
+          : 'Operando',
+      }),
+    [
+      canAccessTransversalAiConsole,
+      canManageInvitations,
+      canReadGrowthConversations,
+      currentTenantSlug,
+      enabledProductKeys,
+      invoices,
+      session,
+    ],
+  );
   const invoicingReport = invoicingWorkspaceQuery.data?.invoicingReport ?? null;
   const invoiceDocumentDraftingAssist =
     invoicingWorkspaceQuery.data?.invoiceDocumentDraftingAssist ?? null;

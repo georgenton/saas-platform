@@ -52,7 +52,7 @@ export function deriveSriCloseoutStatus(
         ? `Referencia ${invoice.submissionReference}`
         : 'Enviado; aun no implica autorizacion.',
       label: 'Enviado al SRI',
-      tone: 'info',
+      tone: 'warning',
     };
   }
 

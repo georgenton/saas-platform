@@ -41628,18 +41628,27 @@ export function App() {
                   ? 'product-disabled'
                   : 'ready'
           }
+          formatDate={formatDate}
           formatElectronicStatus={formatElectronicStatus}
+          formatInvoiceStatus={formatInvoiceStatus}
           formatMoney={formatMoney}
           invoiceDetailLoading={invoiceDetailLoading}
           invoiceEmailRecipient={invoiceEmailRecipient}
+          invoices={invoices}
           invoicingActionMessage={invoicingActionMessage}
           invoicingLoading={invoicingLoading}
           model={invoicingWorkspaceModel}
+          onSelectInvoice={setSelectedInvoiceId}
           onPrimaryAction={handleInvoicingWorkspacePrimaryAction}
           onRefresh={() => {
             void refreshInvoicingWorkspace();
           }}
+          resolveCustomerName={(customerId, buyerName) =>
+            buyerName ?? customerNameById.get(customerId) ?? customerId
+          }
           selectedInvoiceDetail={selectedInvoiceDetail}
+          selectedInvoiceId={selectedInvoiceId}
+          selectedInvoiceSummary={selectedInvoiceSummary}
         >
           {activeInvoicingSubview === 'overview' && invoicingReport ? (
             <InvoicingWorkspaceReports

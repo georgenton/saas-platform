@@ -1,6 +1,6 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import styles from '../../app/app.module.css';
-import type { InvoiceDetailResponse } from '../../app/types';
+import type { InvoiceDetailResponse, InvoiceSummaryResponse } from '../../app/types';
 import {
   deriveDeliveryCloseoutMeta,
   deriveDeliveryCloseoutStatus,
@@ -88,12 +88,19 @@ type InvoicingDomainSectionProps = {
   invoiceDetailLoading: boolean;
   invoicingActionMessage: string | null;
   invoicingLoading: boolean;
+  invoices: InvoiceSummaryResponse[];
   invoiceEmailRecipient: string;
   model: InvoicingWorkspaceFoundationModel;
   onPrimaryAction: (actionKey: InvoicingWorkspaceHeroActionKey) => void;
   onRefresh: () => void;
+  onSelectInvoice: (invoiceId: string) => void;
+  resolveCustomerName: (customerId: string, buyerName?: string | null) => string;
   selectedInvoiceDetail: InvoiceDetailResponse | null;
+  selectedInvoiceId: string | null;
+  selectedInvoiceSummary: InvoiceSummaryResponse | null;
+  formatDate: (value: string | null | undefined) => string;
   formatElectronicStatus: (value: string | null) => string;
+  formatInvoiceStatus: (value: string) => string;
   formatMoney: (valueInCents: number, currency: string) => string;
 };
 
@@ -106,12 +113,19 @@ export function InvoicingDomainSection({
   invoiceDetailLoading,
   invoicingActionMessage,
   invoicingLoading,
+  invoices,
   invoiceEmailRecipient,
   model,
   onPrimaryAction,
   onRefresh,
+  onSelectInvoice,
+  resolveCustomerName,
   selectedInvoiceDetail,
+  selectedInvoiceId,
+  selectedInvoiceSummary,
+  formatDate,
   formatElectronicStatus,
+  formatInvoiceStatus,
   formatMoney,
 }: InvoicingDomainSectionProps) {
   const subviewContext = INVOICING_SUBVIEW_CONTEXT[activeSubview];
@@ -137,44 +151,50 @@ export function InvoicingDomainSection({
       data-product-workspace-subview={activeSubview}
       id="invoicing-domain"
     >
-      <div className={styles.productWorkspaceHero}>
-        <div className={styles.productWorkspaceTitleRow}>
-          <span className={styles.label}>Producto activo · Ecuador</span>
-          <h2>Facturacion electronica SRI</h2>
+      {activeSubview === 'overview' ? null : (
+        <div className={styles.productWorkspaceHero}>
+          <div className={styles.productWorkspaceTitleRow}>
+            <span className={styles.label}>Producto activo · Ecuador</span>
+            <h2>Facturacion electronica SRI</h2>
+          </div>
+          <div className={styles.productWorkspaceActions}>
+            <a className={styles.secondaryButton} href="#platform-home">
+              Volver al Command Center
+            </a>
+            <a className={styles.primaryButton} href="#invoicing-settings-sri">
+              Configurar SRI
+            </a>
+          </div>
         </div>
-        <div className={styles.productWorkspaceActions}>
-          <a className={styles.secondaryButton} href="#platform-home">
-            Volver al Command Center
-          </a>
-          <a className={styles.primaryButton} href="#invoicing-settings-sri">
-            Configurar SRI
-          </a>
-        </div>
-      </div>
+      )}
 
       <InvoicingSubviewNav activeSubview={activeSubview} />
 
-      <div
-        aria-labelledby={subviewHeadingId}
-        className={`${styles.sectionHeading} ${styles.productWorkspaceSubviewHeading}`}
-        ref={subviewHeadingRef}
-        tabIndex={-1}
-      >
-        <div>
-          <span className={styles.label}>{subviewContext.eyebrow}</span>
-          <h2 id={subviewHeadingId}>{subviewContext.title}</h2>
+      {activeSubview === 'overview' ? (
+        <div ref={subviewHeadingRef} tabIndex={-1} />
+      ) : (
+        <div
+          aria-labelledby={subviewHeadingId}
+          className={`${styles.sectionHeading} ${styles.productWorkspaceSubviewHeading}`}
+          ref={subviewHeadingRef}
+          tabIndex={-1}
+        >
+          <div>
+            <span className={styles.label}>{subviewContext.eyebrow}</span>
+            <h2 id={subviewHeadingId}>{subviewContext.title}</h2>
+          </div>
+          {emptyState === 'ready' ? (
+            <button
+              className={styles.ghostButton}
+              disabled={invoicingLoading || invoiceDetailLoading}
+              onClick={onRefresh}
+              type="button"
+            >
+              {invoicingLoading ? 'Refrescando...' : 'Refrescar invoicing'}
+            </button>
+          ) : null}
         </div>
-        {emptyState === 'ready' ? (
-          <button
-            className={styles.ghostButton}
-            disabled={invoicingLoading || invoiceDetailLoading}
-            onClick={onRefresh}
-            type="button"
-          >
-            {invoicingLoading ? 'Refrescando...' : 'Refrescar invoicing'}
-          </button>
-        ) : null}
-      </div>
+      )}
 
       {emptyState === 'no-session' ? (
         <div className={styles.emptyState}>
@@ -212,31 +232,46 @@ export function InvoicingDomainSection({
             </p>
           ) : null}
 
-          <div className={styles.productWorkspaceContext}>
-            <p>{subviewContext.description}</p>
-            <a
-              className={styles.secondaryButton}
-              href={subviewContext.actionHref}
-            >
-              {subviewContext.actionLabel}
-            </a>
-          </div>
+          {activeSubview === 'overview' ? null : (
+            <>
+              <div className={styles.productWorkspaceContext}>
+                <p>{subviewContext.description}</p>
+                <a
+                  className={styles.secondaryButton}
+                  href={subviewContext.actionHref}
+                >
+                  {subviewContext.actionLabel}
+                </a>
+              </div>
 
-          <InvoicingContextStrip
-            formatElectronicStatus={formatElectronicStatus}
-            formatMoney={formatMoney}
-            invoiceEmailRecipient={invoiceEmailRecipient}
-            selectedInvoiceDetail={selectedInvoiceDetail}
-          />
+              <InvoicingContextStrip
+                formatElectronicStatus={formatElectronicStatus}
+                formatMoney={formatMoney}
+                invoiceEmailRecipient={invoiceEmailRecipient}
+                selectedInvoiceDetail={selectedInvoiceDetail}
+              />
+            </>
+          )}
 
           {activeSubview === 'overview' ? (
             <InvoicingWorkspaceSummary
+              formatDate={formatDate}
+              formatElectronicStatus={formatElectronicStatus}
+              formatInvoiceStatus={formatInvoiceStatus}
+              formatMoney={formatMoney}
+              invoiceDetailLoading={invoiceDetailLoading}
+              invoices={invoices}
               model={model}
+              onSelectInvoice={onSelectInvoice}
               onPrimaryAction={onPrimaryAction}
+              resolveCustomerName={resolveCustomerName}
+              selectedInvoiceDetail={selectedInvoiceDetail}
+              selectedInvoiceId={selectedInvoiceId}
+              selectedInvoiceSummary={selectedInvoiceSummary}
             />
           ) : null}
 
-          {children}
+          {activeSubview === 'overview' ? null : children}
         </div>
       )}
     </section>

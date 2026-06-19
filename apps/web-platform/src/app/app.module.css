@@ -1211,6 +1211,268 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.invoicingDomainConsole {
+  display: grid;
+  gap: 16px;
+}
+
+.invoicingDomainHero {
+  overflow: hidden;
+  padding: 0;
+}
+
+.invoicingDomainHeroMain {
+  align-items: flex-start;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  padding: 22px 24px;
+}
+
+.invoicingDomainHeroMain h2 {
+  color: var(--text-strong);
+  font-size: 1.55rem;
+  letter-spacing: 0;
+  line-height: 1.2;
+  margin: 2px 0 0;
+}
+
+.invoicingDomainHeroMain p {
+  color: var(--text-muted);
+  font-size: 1rem;
+  line-height: 1.55;
+  margin: 8px 0 0;
+  max-width: 68ch;
+}
+
+.invoicingDomainHeroIcon {
+  align-items: center;
+  border-radius: 8px;
+  display: inline-flex;
+  font-size: 1.35rem;
+  font-weight: 900;
+  height: 46px;
+  justify-content: center;
+  width: 46px;
+}
+
+.invoicingDomainHeroIconSuccess {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.invoicingDomainHeroIconWarning {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.invoicingDomainHeroIconDanger {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.invoicingDomainHeroIconDefault {
+  background: var(--info-soft);
+  color: var(--info);
+}
+
+.invoicingDomainMetricGrid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.invoicingDomainMetricCard {
+  min-height: 92px;
+}
+
+.invoicingDomainWorkGrid {
+  align-items: start;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1.45fr) minmax(340px, 0.85fr);
+}
+
+.invoicingDomainQueueCard,
+.invoicingDomainDetailCard {
+  padding: 0;
+}
+
+.invoicingDomainCardHeader {
+  align-items: center;
+  border-bottom: 1px solid var(--divider);
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  padding: 18px 20px;
+}
+
+.invoicingDomainCardHeader h3 {
+  color: var(--text-strong);
+  font-size: 1.25rem;
+  margin: 0;
+}
+
+.invoicingDomainCardHeader p {
+  color: var(--text-muted);
+  margin: 4px 0 0;
+}
+
+.invoicingDomainQueueFilters {
+  border-bottom: 1px solid var(--divider);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 12px 18px;
+}
+
+.invoicingDomainQueueFilters button {
+  align-items: center;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  font-weight: 750;
+  gap: 6px;
+  padding: 8px 12px;
+}
+
+.invoicingDomainQueueFilters button small {
+  color: inherit;
+  font-weight: 800;
+}
+
+.invoicingDomainQueueFilters .invoicingDomainQueueFilterActive {
+  background: var(--primary-soft);
+  border-color: transparent;
+  color: var(--on-primary-soft);
+}
+
+.invoicingDomainQueueList {
+  display: grid;
+}
+
+.invoicingDomainQueueHeader,
+.invoicingDomainQueueRow {
+  align-items: center;
+  column-gap: 12px;
+  display: grid;
+  grid-template-columns:
+    minmax(128px, 0.8fr) minmax(0, 1.4fr) minmax(110px, 0.7fr)
+    minmax(110px, auto);
+}
+
+.invoicingDomainQueueHeader {
+  border-bottom: 1px solid var(--divider);
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  padding: 10px 20px;
+  text-transform: uppercase;
+}
+
+.invoicingDomainQueueRow {
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--divider);
+  border-left: 3px solid transparent;
+  color: var(--text);
+  cursor: pointer;
+  padding: 16px 20px 16px 17px;
+  text-align: left;
+}
+
+.invoicingDomainQueueRow:hover,
+.invoicingDomainQueueRowActive {
+  background: var(--primary-soft);
+  border-left-color: var(--primary);
+}
+
+.invoicingDomainQueueRow strong {
+  color: var(--text-strong);
+  font-family: var(--font-mono);
+}
+
+.invoicingDomainQueueRow b {
+  color: var(--text-strong);
+  display: block;
+  font-weight: 760;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.invoicingDomainQueueRow small {
+  color: var(--text-muted);
+  display: block;
+  margin-top: 3px;
+}
+
+.invoicingDomainQueueRow em {
+  color: var(--text-strong);
+  font-style: normal;
+  font-weight: 800;
+  text-align: right;
+}
+
+.invoicingDomainDetailContent {
+  display: grid;
+  gap: 20px;
+  padding: 20px;
+}
+
+.invoicingDomainDetailTitle {
+  align-items: start;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.invoicingDomainDetailTitle span {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-weight: 800;
+}
+
+.invoicingDomainDetailTitle h3 {
+  color: var(--text-strong);
+  font-size: 1.3rem;
+  line-height: 1.25;
+  margin: 6px 0 0;
+}
+
+.invoicingDomainDetailTotal {
+  color: var(--text-strong);
+  font-size: 2rem;
+  letter-spacing: 0;
+  line-height: 1;
+}
+
+.invoicingDomainDetailFacts {
+  border-top: 1px solid var(--divider);
+  display: grid;
+  gap: 0;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.invoicingDomainDetailFacts span,
+.invoicingDomainDetailFacts strong {
+  border-bottom: 1px solid var(--divider);
+  padding: 12px 0;
+}
+
+.invoicingDomainDetailFacts span {
+  color: var(--text-muted);
+}
+
+.invoicingDomainDetailFacts strong {
+  color: var(--text-strong);
+  text-align: right;
+}
+
 .invoicingWorkspaceLayout {
   align-items: start;
   display: grid;
@@ -4254,6 +4516,10 @@
     grid-template-columns: 1fr;
   }
 
+  .invoicingDomainWorkGrid {
+    grid-template-columns: 1fr;
+  }
+
   .productWorkspaceHero {
     grid-template-columns: 1fr;
   }
@@ -4286,6 +4552,7 @@
   .commercialGrid,
   .featureGrid,
   .invoiceKpiGrid,
+  .invoicingDomainMetricGrid,
   .invoicingReadinessRibbon,
   .invoicingWorkspaceLayout,
   .invoicingSettingsWorkbench,
@@ -4362,6 +4629,40 @@
 
   .productWorkspaceTabs a {
     flex: 0 0 auto;
+  }
+
+  .invoicingDomainHeroMain {
+    grid-template-columns: 1fr;
+  }
+
+  .invoicingDomainHeroMain .primaryButton {
+    justify-self: stretch;
+  }
+
+  .invoicingDomainMetricGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .invoicingDomainQueueHeader {
+    display: none;
+  }
+
+  .invoicingDomainQueueRow {
+    grid-template-columns: 1fr;
+    row-gap: 8px;
+  }
+
+  .invoicingDomainQueueRow em {
+    text-align: left;
+  }
+
+  .invoicingDomainDetailFacts {
+    grid-template-columns: 1fr;
+  }
+
+  .invoicingDomainDetailFacts strong {
+    padding-top: 0;
+    text-align: left;
   }
 
   .invoicingContextTriad {
@@ -4659,6 +4960,8 @@
 
   .productWorkspaceHero,
   .productWorkspaceContext,
+  .invoicingDomainHeroMain,
+  .invoicingDomainDetailContent,
   .invoicingContextStrip,
   .invoicingCloseoutHero,
   .invoicingCloseoutCard,
@@ -4692,6 +4995,7 @@
   }
 
   .invoicingContextTriad,
+  .invoicingDomainMetricGrid,
   .invoicingCloseoutTriad,
   .invoicingCloseoutSettlementGrid,
   .invoicingReadinessRibbon,

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import styles from '../../app/app.module.css';
 import {
   PLATFORM_MOODS,
@@ -15,31 +16,54 @@ export function MoodSelector({
   onMoodChange,
   variant = 'full',
 }: MoodSelectorProps) {
+  const [isOpen, setIsOpen] = useState(false);
   const activeMood = PLATFORM_MOODS.find(
     (platformMood) => platformMood.key === mood,
   );
 
   if (variant === 'compact') {
     return (
-      <label className={styles.moodCompact}>
-        <span>Modo</span>
-        <select
-          aria-label="Elegir mood de interfaz"
-          onChange={(event) => onMoodChange(event.target.value as PlatformMoodKey)}
-          value={mood}
+      <div className={styles.moodCompact}>
+        <button
+          aria-expanded={isOpen}
+          aria-haspopup="menu"
+          aria-label={`Mood: ${activeMood?.label ?? mood}`}
+          className={styles.moodCompactButton}
+          onClick={() => setIsOpen((current) => !current)}
+          type="button"
         >
-          {PLATFORM_MOODS.map((platformMood) => (
-            <option key={platformMood.key} value={platformMood.key}>
-              {platformMood.label}
-            </option>
-          ))}
-        </select>
-        <i
-          aria-hidden="true"
-          className={styles.moodSwatch}
-          data-preview-mood={activeMood?.key ?? mood}
-        />
-      </label>
+          <span
+            aria-hidden="true"
+            className={styles.moodSwatch}
+            data-preview-mood={activeMood?.key ?? mood}
+          />
+          <span>{activeMood?.label ?? mood}</span>
+        </button>
+        {isOpen ? (
+          <div className={styles.moodCompactMenu} role="menu">
+            {PLATFORM_MOODS.map((platformMood) => (
+              <button
+                aria-checked={mood === platformMood.key}
+                className={styles.moodCompactOption}
+                key={platformMood.key}
+                onClick={() => {
+                  onMoodChange(platformMood.key);
+                  setIsOpen(false);
+                }}
+                role="menuitemradio"
+                type="button"
+              >
+                <span
+                  aria-hidden="true"
+                  className={styles.moodSwatch}
+                  data-preview-mood={platformMood.key}
+                />
+                <span>{platformMood.label}</span>
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </div>
     );
   }
 

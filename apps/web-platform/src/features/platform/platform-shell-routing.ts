@@ -85,7 +85,7 @@ export function buildPlatformShellNavItems({
       group: 'core',
       href: '#platform-home',
       iconLabel: 'D',
-      label: 'Inicio',
+      label: 'Dashboard',
       meta: sessionFlowLabel,
       state: currentTenantSlug ? 'Activo' : 'Listo',
       status: 'active',
@@ -102,8 +102,8 @@ export function buildPlatformShellNavItems({
     {
       group: 'finance',
       href: '#invoicing-domain',
-      iconLabel: 'F',
-      label: 'Facturacion',
+      iconLabel: 'I',
+      label: 'Invoicing',
       meta: enabledProductKeys.has('invoicing')
         ? 'Producto activo'
         : 'No habilitado',
@@ -115,7 +115,7 @@ export function buildPlatformShellNavItems({
       group: 'finance',
       href: '#tax-compliance-ec',
       iconLabel: 'T',
-      label: 'Impuestos EC',
+      label: 'Tax Compliance EC',
       meta: enabledProductKeys.has('tax-compliance-ec')
         ? 'Producto activo'
         : 'Depende de evidencia',

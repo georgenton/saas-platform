@@ -122,13 +122,9 @@ export function InvoicingDomainSection({
       id="invoicing-domain"
     >
       <div className={styles.productWorkspaceHero}>
-        <div>
+        <div className={styles.productWorkspaceTitleRow}>
           <span className={styles.label}>Producto activo · Ecuador</span>
           <h2>Facturacion electronica SRI</h2>
-          <p>
-            Emision, configuracion SRI y seguimiento documental en un workspace
-            enfocado.
-          </p>
         </div>
         <div className={styles.productWorkspaceActions}>
           <a className={styles.secondaryButton} href="#platform-home">

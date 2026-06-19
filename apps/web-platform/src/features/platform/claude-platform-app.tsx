@@ -31,7 +31,6 @@ import { PlatformShell } from '../../shared/layout/platform-shell';
 import {
   PLATFORM_MOODS,
   type PlatformMoodKey,
-  type PlatformShellMetric,
 } from '../../shared/layout/platform-shell.model';
 import { Button, Card, StatusPill } from '../../shared/design-system';
 
@@ -489,12 +488,14 @@ export function ClaudePlatformApp() {
     invoices,
     sessionFlowLabel,
   });
-  const shellMetrics: PlatformShellMetric[] = [
-    { label: 'Tenant', value: currentTenantSlug ?? 'Sin tenant' },
-    { label: 'Plan', value: currentPlan?.name ?? 'Piloto' },
-    { label: 'Productos activos', value: tenantEnabledProducts.length },
-    { label: 'Facturas', value: invoices.length },
-  ];
+  const userDisplayName =
+    session?.email?.split('@')[0]?.replace(/[._-]+/g, ' ') ??
+    currentTenancy?.tenant.name ??
+    'Jose';
+  const tenantRoleLabel =
+    currentTenancy?.roleKeys.includes('tenant_owner')
+      ? 'Owner'
+      : currentTenancy?.roleKeys[0] ?? 'Owner';
 
   if (!session || !currentTenancy) {
     return (
@@ -519,14 +520,15 @@ export function ClaudePlatformApp() {
     <PlatformShell
       activeHash={activeHash}
       activeProductWorkspace={activeProductWorkspace}
-      apiBaseUrl={API_BASE_URL}
       headline={sessionFlowLabel}
-      metrics={shellMetrics}
       mood={mood}
       navItems={navItems}
       onMoodChange={setMood}
+      tenantRoleLabel={tenantRoleLabel}
       tenantSlug={currentTenancy.tenant.slug}
+      tenantTaxId={invoicingData?.issuerProfile?.taxId ?? null}
       title={currentTenancy.tenant.name}
+      userDisplayName={userDisplayName}
     >
       {activeProductWorkspace === 'invoicing' ? (
         <ClaudeInvoicingWorkspace
@@ -563,8 +565,10 @@ export function ClaudePlatformApp() {
           }
           tenantMemberCount={session.tenancies.length}
           tenantName={currentTenancy.tenant.name}
-          tenantRoleLabel={currentTenancy.roleKeys.join(', ') || 'owner'}
+          tenantRoleLabel={tenantRoleLabel}
           tenantSlug={currentTenancy.tenant.slug}
+          tenantTaxId={invoicingData?.issuerProfile?.taxId ?? null}
+          userDisplayName={userDisplayName}
         />
       )}
     </PlatformShell>

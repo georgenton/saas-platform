@@ -21,8 +21,10 @@ import { useInvoicingWorkspaceModel } from '../invoicing/use-invoicing-workspace
 import type { InvoicingWorkspaceFoundationModel } from '../invoicing/model';
 import {
   buildPlatformShellNavItems,
+  resolveActiveInvoicingSubview,
   resolveActiveProductWorkspace,
 } from './platform-shell-routing';
+import type { InvoicingWorkspaceSubview } from '../invoicing/invoicing-workspace';
 import { PlatformShell } from '../../shared/layout/platform-shell';
 import {
   PLATFORM_MOODS,
@@ -37,6 +39,17 @@ const TOKEN_STORAGE_KEY = 'saas-platform.web.token';
 const PLATFORM_MOOD_STORAGE_KEY = 'saas-platform.web.platformMood';
 
 type AuthPhase = 'idle' | 'loading' | 'ready' | 'error';
+
+const INVOICING_WORKSPACE_TABS: Array<{
+  href: string;
+  key: InvoicingWorkspaceSubview;
+  label: string;
+}> = [
+  { href: '#invoicing-domain', key: 'overview', label: 'Resumen' },
+  { href: '#invoicing-settings-sri', key: 'settings', label: 'Configuracion SRI' },
+  { href: '#invoicing-customer-draft', key: 'draft', label: 'Clientes y borrador' },
+  { href: '#invoicing-documents', key: 'documents', label: 'Documentos' },
+];
 
 function isPlatformMoodKey(value: string): value is PlatformMoodKey {
   return PLATFORM_MOODS.some((mood) => mood.key === value);
@@ -137,6 +150,30 @@ function getInvoiceStage(invoice: InvoiceSummaryResponse | null): {
   }
 
   return { label: 'Borrador', tone: 'neutral' };
+}
+
+function statusTone(
+  tone: 'success' | 'warning' | 'danger' | 'neutral',
+): 'success' | 'warning' | 'danger' | 'default' {
+  return tone === 'neutral' ? 'default' : tone;
+}
+
+function getDeliveryLabel(invoice: InvoiceSummaryResponse | null): string {
+  if (!invoice) {
+    return 'Sin documento';
+  }
+
+  return invoice.buyerName || invoice.buyerIdentification
+    ? 'Listo para entrega'
+    : 'Falta comprador';
+}
+
+function getPaymentLabel(invoice: InvoiceSummaryResponse | null): string {
+  if (!invoice) {
+    return 'Sin pago';
+  }
+
+  return invoice.settlement.isFullyPaid ? 'Pagado' : 'Saldo abierto';
 }
 
 export function ClaudePlatformApp() {
@@ -380,6 +417,7 @@ export function ClaudePlatformApp() {
           model={invoicingModel}
           onRefresh={() => void invoicingQuery.refetch()}
           onSelectInvoice={setSelectedInvoiceId}
+          activeSubview={resolveActiveInvoicingSubview(activeHash)}
           selectedInvoice={selectedInvoice}
         />
       ) : (
@@ -446,7 +484,7 @@ function ClaudeAccessGateway({
                 la experiencia rediseñada con datos reales del backend.
               </p>
             </div>
-            <StatusPill tone={authPhase === 'error' ? 'error' : 'info'}>
+            <StatusPill tone={authPhase === 'error' ? 'danger' : 'default'}>
               {authPhase === 'loading' ? 'Validando' : 'Piloto local'}
             </StatusPill>
           </div>
@@ -528,6 +566,7 @@ function ClaudeAccessGateway({
 }
 
 type ClaudeInvoicingWorkspaceProps = {
+  activeSubview: InvoicingWorkspaceSubview;
   data: InvoicingWorkspaceQueryData | undefined;
   error: string | null;
   isLoading: boolean;
@@ -538,6 +577,7 @@ type ClaudeInvoicingWorkspaceProps = {
 };
 
 function ClaudeInvoicingWorkspace({
+  activeSubview,
   data,
   error,
   isLoading,
@@ -560,6 +600,33 @@ function ClaudeInvoicingWorkspace({
       data-product-workspace="invoicing"
       id="invoicing-domain"
     >
+      <div className={styles.productWorkspaceHero}>
+        <div className={styles.productWorkspaceTitleRow}>
+          <span className={styles.label}>Producto activo · Ecuador</span>
+          <h2>Facturacion electronica SRI</h2>
+        </div>
+        <div className={styles.productWorkspaceActions}>
+          <a className={styles.secondaryButton} href="#platform-home">
+            Volver al Command Center
+          </a>
+          <a className={styles.primaryButton} href="#invoicing-settings-sri">
+            Configurar SRI
+          </a>
+        </div>
+      </div>
+
+      <nav className={styles.productWorkspaceTabs} aria-label="Invoicing">
+        {INVOICING_WORKSPACE_TABS.map((tab) => (
+          <a
+            aria-current={activeSubview === tab.key ? 'page' : undefined}
+            href={tab.href}
+            key={tab.key}
+          >
+            {tab.label}
+          </a>
+        ))}
+      </nav>
+
       <Card className={styles.invoicingDomainHero}>
         <div className={styles.invoicingDomainHeroMain}>
           <span
@@ -581,99 +648,396 @@ function ClaudeInvoicingWorkspace({
             Revisar SRI
           </a>
         </div>
-        <div className={styles.invoicingContextStrip}>
-          <div className={styles.invoicingContextIdentity}>
-            <span className={styles.label}>Readiness</span>
-            <strong>
-              {data?.issuerProfile?.legalName ?? 'Emisor pendiente'}
-            </strong>
-            <small>
-              {data?.invoiceNumberingSettings?.previewNumber ??
-                'Numeracion pendiente'}{' '}
-              · {model.readiness.ready ? 'Listo para operar' : 'Con bloqueos'}
-            </small>
-          </div>
-          <div className={styles.invoicingContextTriad}>
-            {model.readiness.pillars.slice(0, 3).map((pillar) => (
-              <div className={styles.invoicingContextSignal} key={pillar.key}>
-                <i
-                  className={`${styles.invoicingContextSignalDot} ${
-                    pillar.tone === 'success'
-                      ? styles.invoicingContextSignalSuccess
-                      : pillar.tone === 'danger'
-                        ? styles.invoicingContextSignalDanger
-                        : pillar.tone === 'warning'
-                          ? styles.invoicingContextSignalWarning
-                          : styles.invoicingContextSignalInfo
-                  }`}
-                />
-                <span>{pillar.label}</span>
-                <strong>{pillar.value}</strong>
-                <small>{pillar.sub}</small>
-              </div>
-            ))}
-          </div>
-        </div>
       </Card>
+
+      <ClaudeInvoicingContextStrip
+        data={data}
+        model={model}
+        selectedInvoice={selectedInvoice}
+      />
 
       {error ? <Card>{error}</Card> : null}
       {isLoading ? <Card>Cargando facturacion...</Card> : null}
 
+      {activeSubview === 'overview' ? (
+        <ClaudeInvoicingOverview
+          currency={currency}
+          invoices={invoices}
+          onRefresh={onRefresh}
+          portfolioTotal={portfolioTotal}
+          selectedInvoice={selectedInvoice}
+        />
+      ) : activeSubview === 'settings' ? (
+        <ClaudeInvoicingSettings data={data} model={model} />
+      ) : activeSubview === 'draft' ? (
+        <ClaudeInvoicingDraft data={data} invoices={invoices} />
+      ) : (
+        <ClaudeInvoicingDocuments
+          invoices={invoices}
+          onRefresh={onRefresh}
+          onSelectInvoice={onSelectInvoice}
+          selectedInvoice={selectedInvoice}
+          stage={stage}
+        />
+      )}
+    </section>
+  );
+}
+
+type ClaudeInvoicingContextStripProps = {
+  data: InvoicingWorkspaceQueryData | undefined;
+  model: InvoicingWorkspaceFoundationModel;
+  selectedInvoice: InvoiceSummaryResponse | null;
+};
+
+function ClaudeInvoicingContextStrip({
+  data,
+  model,
+  selectedInvoice,
+}: ClaudeInvoicingContextStripProps) {
+  const stage = getInvoiceStage(selectedInvoice);
+
+  return (
+    <div className={styles.invoicingContextStrip}>
+      <div className={styles.invoicingContextIdentity}>
+        <span className={styles.label}>Contexto operativo</span>
+        <strong>{data?.issuerProfile?.legalName ?? 'Emisor pendiente'}</strong>
+        <small>
+          {data?.invoiceNumberingSettings?.previewNumber ??
+            'Numeracion pendiente'}{' '}
+          · {model.readiness.ready ? 'Listo para operar' : 'Con bloqueos'}
+        </small>
+      </div>
+      <div className={styles.invoicingContextTriad}>
+        <ContextSignal
+          detail="No implica autorizacion hasta confirmacion backend"
+          label="SRI"
+          tone={stage.tone}
+          value={stage.label}
+        />
+        <ContextSignal
+          detail={selectedInvoice?.buyerName ?? 'Comprador pendiente'}
+          label="Entrega"
+          tone={selectedInvoice ? 'success' : 'neutral'}
+          value={getDeliveryLabel(selectedInvoice)}
+        />
+        <ContextSignal
+          detail={
+            selectedInvoice
+              ? formatMoney(
+                  selectedInvoice.settlement.balanceDueInCents,
+                  selectedInvoice.currency,
+                )
+              : 'Sin saldo'
+          }
+          label="Pago"
+          tone={selectedInvoice?.settlement.isFullyPaid ? 'success' : 'warning'}
+          value={getPaymentLabel(selectedInvoice)}
+        />
+      </div>
+    </div>
+  );
+}
+
+type ContextSignalProps = {
+  detail: string;
+  label: string;
+  tone: 'success' | 'warning' | 'danger' | 'neutral';
+  value: string;
+};
+
+function ContextSignal({ detail, label, tone, value }: ContextSignalProps) {
+  return (
+    <div className={styles.invoicingContextSignal}>
+      <i
+        className={`${styles.invoicingContextSignalDot} ${
+          tone === 'success'
+            ? styles.invoicingContextSignalSuccess
+            : tone === 'danger'
+              ? styles.invoicingContextSignalDanger
+              : tone === 'warning'
+                ? styles.invoicingContextSignalWarning
+                : styles.invoicingContextSignalInfo
+        }`}
+      />
+      <span>{label}</span>
+      <strong>{value}</strong>
+      <small>{detail}</small>
+    </div>
+  );
+}
+
+type ClaudeInvoicingOverviewProps = {
+  currency: string;
+  invoices: InvoiceSummaryResponse[];
+  onRefresh: () => void;
+  portfolioTotal: number;
+  selectedInvoice: InvoiceSummaryResponse | null;
+};
+
+function ClaudeInvoicingOverview({
+  currency,
+  invoices,
+  onRefresh,
+  portfolioTotal,
+  selectedInvoice,
+}: ClaudeInvoicingOverviewProps) {
+  const pendingSriCount = invoices.filter((invoice) =>
+    ['submitted', 'sent'].includes(
+      invoice.electronicStatus?.toLowerCase() ?? '',
+    ),
+  ).length;
+  const outstandingTotal = invoices.reduce(
+    (sum, invoice) => sum + invoice.settlement.balanceDueInCents,
+    0,
+  );
+
+  return (
+    <>
       <div className={styles.invoicingDomainMetricGrid}>
-        <Card className={styles.invoicingDomainMetricCard}>
-          <span className={styles.label}>Por autorizar</span>
-          <h3>
-            {
-              invoices.filter((invoice) =>
-                ['submitted', 'sent'].includes(
-                  invoice.electronicStatus?.toLowerCase() ?? '',
-                ),
-              ).length
-            }
-          </h3>
-          <p>en el SRI</p>
-        </Card>
-        <Card className={styles.invoicingDomainMetricCard}>
-          <span className={styles.label}>Autorizadas</span>
-          <h3>{invoices.filter((invoice) => invoice.authorizedAt).length}</h3>
-          <p>confirmadas por backend</p>
-        </Card>
-        <Card className={styles.invoicingDomainMetricCard}>
-          <span className={styles.label}>Cartera del mes</span>
-          <h3>{formatMoney(portfolioTotal, currency)}</h3>
-          <p>facturado</p>
-        </Card>
-        <Card className={styles.invoicingDomainMetricCard}>
-          <span className={styles.label}>Por cobrar</span>
-          <h3>
-            {formatMoney(
-              invoices.reduce(
-                (sum, invoice) => sum + invoice.settlement.balanceDueInCents,
-                0,
-              ),
-              currency,
-            )}
-          </h3>
-          <p>pendiente de pago</p>
-        </Card>
+        <MetricCard label="Por autorizar" sublabel="en el SRI" value={pendingSriCount} />
+        <MetricCard
+          label="Autorizadas"
+          sublabel="confirmadas por backend"
+          value={invoices.filter((invoice) => invoice.authorizedAt).length}
+        />
+        <MetricCard
+          label="Cartera del mes"
+          sublabel="facturado"
+          value={formatMoney(portfolioTotal, currency)}
+        />
+        <MetricCard
+          label="Por cobrar"
+          sublabel="pendiente de pago"
+          value={formatMoney(outstandingTotal, currency)}
+        />
       </div>
 
       <div className={styles.invoicingDomainWorkGrid}>
-        <Card className={styles.invoicingDomainQueueCard}>
-          <div className={styles.invoicingDomainCardHeader}>
-            <div>
-              <h3>Facturas</h3>
-              <p>Selecciona una para revisar el estado a la derecha.</p>
-            </div>
-            <button className={styles.primaryButton} type="button">
-              + Nueva
+        <Card>
+          <span className={styles.label}>Siguiente foco operativo</span>
+          <h3>
+            {pendingSriCount > 0
+              ? 'Revisar documentos esperando autorizacion.'
+              : 'Mantener la configuracion SRI al dia.'}
+          </h3>
+          <p>
+            La consola mantiene separadas las verdades de documento, SRI,
+            entrega y pago para evitar falsas autorizaciones.
+          </p>
+          <div className={styles.buttonRow}>
+            <a className={styles.primaryButton} href="#invoicing-documents">
+              Revisar documentos
+            </a>
+            <button className={styles.secondaryButton} onClick={onRefresh} type="button">
+              Refrescar
             </button>
           </div>
-          <div className={styles.invoicingQueueList}>
-            {invoices.map((invoice) => (
+        </Card>
+
+        <Card>
+          <span className={styles.label}>Factura activa</span>
+          <h3>{selectedInvoice?.number ?? 'Sin factura seleccionada'}</h3>
+          <p>
+            {selectedInvoice
+              ? `${selectedInvoice.buyerName ?? selectedInvoice.customerId} · ${formatMoney(
+                  selectedInvoice.totals.totalInCents,
+                  selectedInvoice.currency,
+                )}`
+              : 'Selecciona un documento para abrir el detalle operacional.'}
+          </p>
+          <div className={styles.buttonRow}>
+            <a className={styles.secondaryButton} href="#invoicing-settings-sri">
+              Configuracion SRI
+            </a>
+          </div>
+        </Card>
+      </div>
+    </>
+  );
+}
+
+type MetricCardProps = {
+  label: string;
+  sublabel: string;
+  value: string | number;
+};
+
+function MetricCard({ label, sublabel, value }: MetricCardProps) {
+  return (
+    <Card className={styles.invoicingDomainMetricCard}>
+      <span className={styles.label}>{label}</span>
+      <h3>{value}</h3>
+      <p>{sublabel}</p>
+    </Card>
+  );
+}
+
+type ClaudeInvoicingSettingsProps = {
+  data: InvoicingWorkspaceQueryData | undefined;
+  model: InvoicingWorkspaceFoundationModel;
+};
+
+function ClaudeInvoicingSettings({ data, model }: ClaudeInvoicingSettingsProps) {
+  return (
+    <div className={styles.invoicingDomainWorkGrid}>
+      <Card>
+        <span className={styles.label}>Preparacion fiscal</span>
+        <h3>Cuatro pilares antes de enviar al SRI</h3>
+        <p>
+          Esta vista resume emisor, firma, gateway y numeracion como controles
+          operativos. Los detalles tecnicos quedan subordinados para no
+          convertir la configuracion en una pared de formularios.
+        </p>
+        <div className={styles.invoicingQueueList}>
+          {model.readiness.pillars.map((pillar) => (
+            <div className={styles.invoiceItemCard} key={pillar.key}>
+              <div className={styles.invoiceCardHeader}>
+                <strong>{pillar.label}</strong>
+                <StatusPill tone={statusTone(pillar.tone)}>
+                  {pillar.value}
+                </StatusPill>
+              </div>
+              <small>{pillar.sub}</small>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <Card>
+        <span className={styles.label}>Evidencia tecnica</span>
+        <h3>Readiness SRI</h3>
+        <div className={styles.compactList}>
+          <p>
+            Emisor:{' '}
+            <strong>{data?.issuerProfile?.legalName ?? 'Pendiente'}</strong>
+          </p>
+          <p>
+            Firma:{' '}
+            <strong>
+              {data?.electronicSignatureSettings?.certificateLabel ??
+                data?.electronicSignatureMaterialInspection?.certificateLabel ??
+                'Pendiente'}
+            </strong>
+          </p>
+          <p>
+            Gateway:{' '}
+            <strong>
+              {data?.electronicSubmissionSettings?.provider ?? 'Pendiente'}
+            </strong>
+          </p>
+          <p>
+            Numeracion:{' '}
+            <strong>
+              {data?.invoiceNumberingSettings?.previewNumber ?? 'Pendiente'}
+            </strong>
+          </p>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+type ClaudeInvoicingDraftProps = {
+  data: InvoicingWorkspaceQueryData | undefined;
+  invoices: InvoiceSummaryResponse[];
+};
+
+function ClaudeInvoicingDraft({ data, invoices }: ClaudeInvoicingDraftProps) {
+  return (
+    <div className={styles.invoicingDomainWorkGrid}>
+      <Card>
+        <span className={styles.label}>Emision guiada</span>
+        <h3>Comprador → identidad fiscal → borrador</h3>
+        <p>
+          El flujo se mantiene como lane guiada: primero se confirma el
+          comprador, luego su identidad tributaria, y finalmente se arma el
+          borrador sin insinuar envio al SRI.
+        </p>
+        <div className={styles.invoicingDomainMetricGrid}>
+          <MetricCard
+            label="Compradores"
+            sublabel="directorio actual"
+            value={data?.customers.length ?? 0}
+          />
+          <MetricCard
+            label="Impuestos"
+            sublabel="tarifas disponibles"
+            value={data?.taxRates.length ?? 0}
+          />
+          <MetricCard
+            label="Borradores"
+            sublabel="en la cola"
+            value={
+              invoices.filter(
+                (invoice) => invoice.status.toLowerCase() === 'draft',
+              ).length
+            }
+          />
+          <MetricCard
+            label="Siguiente numero"
+            sublabel="sugerido"
+            value={data?.invoiceNumberingSettings?.previewNumber ?? 'Pendiente'}
+          />
+        </div>
+      </Card>
+
+      <Card>
+        <span className={styles.label}>Guardrail</span>
+        <h3>Crear borrador no es emitir</h3>
+        <p>
+          La pantalla debe repetir esta frontera de forma tranquila: el borrador
+          todavia no esta firmado, enviado ni autorizado.
+        </p>
+        <div className={styles.buttonRow}>
+          <a className={styles.primaryButton} href="#invoicing-documents">
+            Revisar documentos
+          </a>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+type ClaudeInvoicingDocumentsProps = {
+  invoices: InvoiceSummaryResponse[];
+  onRefresh: () => void;
+  onSelectInvoice: (invoiceId: string) => void;
+  selectedInvoice: InvoiceSummaryResponse | null;
+  stage: ReturnType<typeof getInvoiceStage>;
+};
+
+function ClaudeInvoicingDocuments({
+  invoices,
+  onRefresh,
+  onSelectInvoice,
+  selectedInvoice,
+  stage,
+}: ClaudeInvoicingDocumentsProps) {
+  return (
+    <div className={styles.invoicingDomainWorkGrid}>
+      <Card className={styles.invoicingDomainQueueCard}>
+        <div className={styles.invoicingDomainCardHeader}>
+          <div>
+            <h3>Facturas</h3>
+            <p>Selecciona una para revisar el estado a la derecha.</p>
+          </div>
+          <button className={styles.primaryButton} type="button">
+            + Nueva
+          </button>
+        </div>
+        <div className={styles.invoicingQueueList}>
+          {invoices.length === 0 ? (
+            <div className={styles.emptyState}>
+              No hay documentos visibles para este tenant.
+            </div>
+          ) : (
+            invoices.map((invoice) => (
               <button
                 className={`${styles.invoiceQueueRow} ${
-                  selectedInvoice?.id === invoice.id ? styles.drilldownCardActive : ''
+                  selectedInvoice?.id === invoice.id
+                    ? styles.drilldownCardActive
+                    : ''
                 }`}
                 key={invoice.id}
                 onClick={() => onSelectInvoice(invoice.id)}
@@ -689,78 +1053,71 @@ function ClaudeInvoicingWorkspace({
                 </span>
                 <StatusPill>{humanizeKey(invoice.status)}</StatusPill>
               </button>
-            ))}
-          </div>
-        </Card>
+            ))
+          )}
+        </div>
+      </Card>
 
-        <Card className={styles.invoicingDomainDetailCard}>
-          <div className={styles.invoicingDomainCardHeader}>
-            <div>
-              <h3>{selectedInvoice?.buyerName ?? 'Sin factura seleccionada'}</h3>
-              <p>{selectedInvoice?.number ?? 'La cola esta vacia'}</p>
-            </div>
-            <StatusPill
-              tone={
-                stage.tone === 'danger'
-                  ? 'error'
-                  : stage.tone === 'warning'
-                    ? 'warning'
-                    : 'info'
+      <Card className={styles.invoicingDomainDetailCard}>
+        <div className={styles.invoicingDomainCardHeader}>
+          <div>
+            <h3>{selectedInvoice?.buyerName ?? 'Sin factura seleccionada'}</h3>
+            <p>{selectedInvoice?.number ?? 'La cola esta vacia'}</p>
+          </div>
+          <StatusPill tone={statusTone(stage.tone)}>{stage.label}</StatusPill>
+        </div>
+        <div className={styles.documentPreview}>
+          <h3>
+            {selectedInvoice
+              ? formatMoney(
+                  selectedInvoice.totals.totalInCents,
+                  selectedInvoice.currency,
+                )
+              : '$0,00'}
+          </h3>
+          <div className={styles.invoicingContextTriad}>
+            <ContextSignal
+              detail="Condicion del sistema"
+              label="Documento"
+              tone="neutral"
+              value={
+                selectedInvoice ? humanizeKey(selectedInvoice.status) : 'Sin dato'
               }
-            >
-              {stage.label}
-            </StatusPill>
+            />
+            <ContextSignal
+              detail="No implica autorizacion hasta confirmacion backend"
+              label="SRI"
+              tone={stage.tone}
+              value={
+                selectedInvoice
+                  ? humanizeKey(selectedInvoice.electronicStatus)
+                  : 'Sin dato'
+              }
+            />
+            <ContextSignal
+              detail={
+                selectedInvoice
+                  ? formatMoney(
+                      selectedInvoice.settlement.balanceDueInCents,
+                      selectedInvoice.currency,
+                    )
+                  : 'Sin saldo'
+              }
+              label="Pago"
+              tone={selectedInvoice?.settlement.isFullyPaid ? 'success' : 'warning'}
+              value={getPaymentLabel(selectedInvoice)}
+            />
           </div>
-          <div className={styles.documentPreview}>
-            <h3>
-              {selectedInvoice
-                ? formatMoney(selectedInvoice.totals.totalInCents, selectedInvoice.currency)
-                : '$0,00'}
-            </h3>
-            <div className={styles.invoicingContextTriad}>
-              <div className={styles.invoicingContextSignal}>
-                <i className={styles.invoicingContextSignalDot} />
-                <span>Documento</span>
-                <strong>{selectedInvoice ? humanizeKey(selectedInvoice.status) : 'Sin dato'}</strong>
-                <small>Condicion del sistema</small>
-              </div>
-              <div className={styles.invoicingContextSignal}>
-                <i className={styles.invoicingContextSignalDot} />
-                <span>SRI</span>
-                <strong>
-                  {selectedInvoice
-                    ? humanizeKey(selectedInvoice.electronicStatus)
-                    : 'Sin dato'}
-                </strong>
-                <small>No implica autorizacion hasta confirmacion backend</small>
-              </div>
-              <div className={styles.invoicingContextSignal}>
-                <i className={styles.invoicingContextSignalDot} />
-                <span>Pago</span>
-                <strong>
-                  {selectedInvoice?.settlement.isFullyPaid ? 'Pagado' : 'Sin pago'}
-                </strong>
-                <small>
-                  {selectedInvoice
-                    ? formatMoney(
-                        selectedInvoice.settlement.balanceDueInCents,
-                        selectedInvoice.currency,
-                      )
-                    : 'Sin saldo'}
-                </small>
-              </div>
-            </div>
-            <div className={styles.buttonRow}>
-              <button className={styles.primaryButton} onClick={onRefresh} type="button">
-                Refrescar
-              </button>
-              <a className={styles.secondaryButton} href="#invoicing-documents">
-                Ver documentos
-              </a>
-            </div>
+          <div className={styles.buttonRow}>
+            <button className={styles.primaryButton} onClick={onRefresh} type="button">
+              Refrescar
+            </button>
+            <a className={styles.secondaryButton} href="#invoicing-settings-sri">
+              Ajustar SRI
+            </a>
           </div>
-        </Card>
-      </div>
-    </section>
+        </div>
+      </Card>
+    </div>
   );
 }

@@ -1,5 +1,4 @@
-export { InvoicingDomainSection } from './invoicing-domain-section';
-export type { InvoicingWorkspaceSubview } from './invoicing-domain-section';
+export type { InvoicingWorkspaceSubview } from './model';
 export { InvoicingWorkspaceAssist } from './workspace-assist';
 export { InvoicingWorkspaceAiAssistantPanel } from './workspace-ai-assistant';
 export { InvoicingWorkspaceSummary } from './workspace-summary';

@@ -1,5 +1,5 @@
 import type { InvoiceSummaryResponse } from '../../app/types';
-import type { InvoicingWorkspaceSubview } from '../invoicing/invoicing-workspace';
+import type { InvoicingWorkspaceSubview } from '../invoicing/model';
 import type { PlatformShellNavItem } from '../../shared/layout/platform-shell.model';
 
 export type ActiveProductWorkspace = 'invoicing' | null;

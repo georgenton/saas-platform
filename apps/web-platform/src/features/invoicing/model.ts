@@ -10,6 +10,15 @@ export type InvoicingWorkspaceHeroActionKey =
   | 'review-pending'
   | 'create-invoice';
 
+export type InvoicingWorkspaceSubview =
+  | 'overview'
+  | 'settings'
+  | 'draft'
+  | 'items'
+  | 'sri-lifecycle'
+  | 'documents'
+  | 'closeout';
+
 export type InvoicingWorkspaceHeroState =
   | 'operating'
   | 'no-issuer'

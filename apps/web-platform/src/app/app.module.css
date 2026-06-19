@@ -542,7 +542,9 @@
   margin-bottom: 18px;
   overflow-x: auto;
   padding: 6px;
+  scroll-padding-inline: 6px;
   scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
 }
 
 .productWorkspaceTabs a {
@@ -3375,14 +3377,20 @@
   text-align: left;
 }
 
+.invoiceQueueRow > * {
+  min-width: 0;
+}
+
 .invoiceQueueNumber {
   color: var(--text-strong);
   font-family: var(--font-mono);
   font-size: 0.9rem;
+  overflow-wrap: anywhere;
 }
 
 .invoiceQueueCustomer {
   font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
 .invoiceQueueTotal {
@@ -5208,11 +5216,15 @@
   }
 
   .invoicingCloseoutQuickActions,
+  .buttonRow,
   .productWorkspaceActions {
     align-items: stretch;
     flex-direction: column;
   }
 
+  .buttonRow > *,
+  .buttonRow button,
+  .buttonRow a,
   .invoicingCloseoutQuickActions button,
   .productWorkspaceActions a,
   .invoicingDocumentActionGroup button,

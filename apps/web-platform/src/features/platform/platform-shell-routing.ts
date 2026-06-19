@@ -61,6 +61,13 @@ export function resolveActiveInvoicingSubview(
     return 'documents';
   }
 
+  if (
+    activeHash === '#invoicing-closeout' ||
+    activeHash === '#invoicing-payment-email-closeout'
+  ) {
+    return 'closeout';
+  }
+
   return 'overview';
 }
 

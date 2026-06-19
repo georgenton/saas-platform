@@ -51,6 +51,7 @@ const INVOICING_WORKSPACE_TABS: Array<{
   { href: '#invoicing-items', key: 'items', label: 'Items' },
   { href: '#invoicing-sri-lifecycle', key: 'sri-lifecycle', label: 'Ciclo SRI' },
   { href: '#invoicing-documents', key: 'documents', label: 'Documentos' },
+  { href: '#invoicing-closeout', key: 'closeout', label: 'Cierre' },
 ];
 
 function isPlatformMoodKey(value: string): value is PlatformMoodKey {
@@ -773,6 +774,12 @@ function ClaudeInvoicingWorkspace({
         />
       ) : activeSubview === 'sri-lifecycle' ? (
         <ClaudeInvoicingSriLifecycle
+          data={data}
+          onRefresh={onRefresh}
+          selectedInvoice={selectedInvoice}
+        />
+      ) : activeSubview === 'closeout' ? (
+        <ClaudeInvoicingCloseout
           data={data}
           onRefresh={onRefresh}
           selectedInvoice={selectedInvoice}
@@ -1921,6 +1928,311 @@ function ClaudeInvoicingSriLifecycle({
           <p>{selectedInvoice.electronicStatusMessage}</p>
         </Card>
       ) : null}
+    </div>
+  );
+}
+
+type ClaudeInvoicingCloseoutProps = {
+  data: InvoicingWorkspaceQueryData | undefined;
+  onRefresh: () => void;
+  selectedInvoice: InvoiceSummaryResponse | null;
+};
+
+function getCloseoutPaymentStatus(invoice: InvoiceSummaryResponse | null): {
+  detail: string;
+  label: string;
+  tone: 'success' | 'warning' | 'danger' | 'neutral';
+} {
+  if (!invoice) {
+    return {
+      detail: 'Selecciona una factura para revisar saldo.',
+      label: 'Sin factura',
+      tone: 'neutral',
+    };
+  }
+
+  if (invoice.settlement.isFullyPaid) {
+    return {
+      detail: 'Saldo cubierto segun settlement del backend.',
+      label: 'Pagado',
+      tone: 'success',
+    };
+  }
+
+  if (invoice.settlement.paidInCents > 0) {
+    return {
+      detail: 'Hay pagos registrados, pero queda saldo pendiente.',
+      label: 'Pago parcial',
+      tone: 'warning',
+    };
+  }
+
+  return {
+    detail: 'Aun no hay pagos registrados para esta factura.',
+    label: 'Sin pago',
+    tone: 'neutral',
+  };
+}
+
+function getCloseoutVerdict({
+  customerEmail,
+  invoice,
+}: {
+  customerEmail: string | null;
+  invoice: InvoiceSummaryResponse | null;
+}): {
+  detail: string;
+  label: string;
+  nextStep: string;
+  tone: 'success' | 'warning' | 'danger' | 'neutral';
+} {
+  if (!invoice) {
+    return {
+      detail: 'Selecciona una factura para cerrar entrega y pago.',
+      label: 'Sin factura activa',
+      nextStep: 'Revisar documentos',
+      tone: 'neutral',
+    };
+  }
+
+  if (invoice.status.toLowerCase() === 'draft') {
+    return {
+      detail: 'Primero completa el documento. Entrega y pago no convierten un borrador en comprobante legal.',
+      label: 'Aun es borrador',
+      nextStep: 'Revisar documento',
+      tone: 'warning',
+    };
+  }
+
+  if (
+    invoice.electronicStatus === 'rejected' ||
+    invoice.electronicStatus === 'failed'
+  ) {
+    return {
+      detail: invoice.electronicStatusMessage ?? 'Corrige la observacion SRI antes de tratar el documento como cerrado.',
+      label: 'Atencion SRI',
+      nextStep: 'Ver ciclo SRI',
+      tone: 'danger',
+    };
+  }
+
+  if (!customerEmail) {
+    return {
+      detail: 'Falta correo para entregar el comprobante, pero el saldo puede seguir visible.',
+      label: 'Completar entrega',
+      nextStep: 'Agregar correo del cliente',
+      tone: 'warning',
+    };
+  }
+
+  if (!invoice.settlement.isFullyPaid) {
+    return {
+      detail: 'La autorizacion o entrega no significan que el dinero este pagado.',
+      label: 'Cerrar saldo',
+      nextStep: 'Registrar pago recibido',
+      tone: 'warning',
+    };
+  }
+
+  return {
+    detail: 'Saldo cubierto. Conserva evidencia para los futuros handoffs de impuestos y contabilidad.',
+    label: 'Cierre operativo',
+    nextStep: 'Revisar evidencia',
+    tone: 'success',
+  };
+}
+
+function ClaudeInvoicingCloseout({
+  data,
+  onRefresh,
+  selectedInvoice,
+}: ClaudeInvoicingCloseoutProps) {
+  const customer = data?.customers.find(
+    (candidate) => candidate.id === selectedInvoice?.customerId,
+  );
+  const customerEmail = customer?.email ?? null;
+  const sri = getElectronicReviewCopy(selectedInvoice);
+  const payment = getCloseoutPaymentStatus(selectedInvoice);
+  const verdict = getCloseoutVerdict({
+    customerEmail,
+    invoice: selectedInvoice,
+  });
+  const currency = selectedInvoice?.currency ?? 'USD';
+  const settlement = selectedInvoice?.settlement;
+  const balanceDueInCents = settlement?.balanceDueInCents ?? 0;
+  const totalInCents = selectedInvoice?.totals.totalInCents ?? 0;
+  const paidRatio =
+    totalInCents > 0
+      ? Math.min(100, Math.round(((settlement?.paidInCents ?? 0) / totalInCents) * 100))
+      : 0;
+
+  return (
+    <div className={styles.stack}>
+      <Card>
+        <div className={styles.commandCenterHeader}>
+          <div>
+            <span className={styles.label}>Cierre operativo</span>
+            <h3>{verdict.label}</h3>
+            <p>{verdict.detail}</p>
+          </div>
+          <StatusPill tone={statusTone(verdict.tone)}>
+            {selectedInvoice?.number ?? 'Sin factura'}
+          </StatusPill>
+        </div>
+        <div className={styles.invoicingContextTriad}>
+          <ContextSignal
+            detail={sri.description}
+            label="SRI"
+            tone={sri.tone}
+            value={sri.label}
+          />
+          <ContextSignal
+            detail={
+              customerEmail
+                ? customerEmail
+                : 'Agrega un correo antes de enviar el comprobante.'
+            }
+            label="Entrega"
+            tone={customerEmail ? 'success' : 'warning'}
+            value={customerEmail ? 'Lista' : 'Sin email'}
+          />
+          <ContextSignal
+            detail={payment.detail}
+            label="Pago"
+            tone={payment.tone}
+            value={payment.label}
+          />
+        </div>
+        <p>
+          Tres verdades independientes: el SRI autoriza, tu entregas, el cliente
+          paga. Ninguna de estas acciones implica automaticamente a las otras.
+        </p>
+      </Card>
+
+      <div className={styles.invoicingDomainWorkGrid}>
+        <Card>
+          <span className={styles.label}>Siguiente paso recomendado</span>
+          <h3>{verdict.nextStep}</h3>
+          <p>
+            Esta pantalla prepara el cierre sin agregar gateway de pago,
+            conciliacion bancaria, WhatsApp, recibos PDF, impuestos ni asientos
+            contables.
+          </p>
+          <div className={styles.buttonRow}>
+            <button className={styles.primaryButton} onClick={onRefresh} type="button">
+              Refrescar cierre
+            </button>
+            <a className={styles.secondaryButton} href="#invoicing-documents">
+              Revisar documento
+            </a>
+          </div>
+        </Card>
+
+        <Card>
+          <span className={styles.label}>Saldo pendiente</span>
+          <h3>{formatMoney(balanceDueInCents, currency)}</h3>
+          <div className={styles.invoicingQueueList}>
+            <div className={styles.invoiceItemCard}>
+              <div className={styles.invoiceCardHeader}>
+                <strong>Total</strong>
+                <span>{formatMoney(totalInCents, currency)}</span>
+              </div>
+            </div>
+            <div className={styles.invoiceItemCard}>
+              <div className={styles.invoiceCardHeader}>
+                <strong>Pagado</strong>
+                <span>{formatMoney(settlement?.paidInCents ?? 0, currency)}</span>
+              </div>
+              <small>{paidRatio}% cubierto segun settlement del backend.</small>
+            </div>
+            <div className={styles.invoiceItemCard}>
+              <div className={styles.invoiceCardHeader}>
+                <strong>Saldo</strong>
+                <StatusPill tone={balanceDueInCents === 0 ? 'success' : 'warning'}>
+                  {formatMoney(balanceDueInCents, currency)}
+                </StatusPill>
+              </div>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      <div className={styles.invoicingDomainWorkGrid}>
+        <Card>
+          <span className={styles.label}>Entrega del comprobante</span>
+          <h3>{customerEmail ? 'Listo para enviar al cliente' : 'Falta email del cliente'}</h3>
+          <p>
+            Enviar el comprobante por email no cambia el estado SRI ni registra
+            pagos. La entrega es solo una verdad operativa separada.
+          </p>
+          <div className={styles.invoiceInlineGrid}>
+            <label className={styles.field}>
+              Destinatario
+              <input
+                disabled
+                readOnly
+                value={customerEmail ?? 'Sin correo en el directorio'}
+              />
+            </label>
+            <label className={styles.field}>
+              Mensaje
+              <input disabled readOnly value="Adjuntamos su comprobante." />
+            </label>
+          </div>
+          <button className={styles.primaryButton} disabled type="button">
+            Enviar al cliente
+          </button>
+        </Card>
+
+        <Card>
+          <span className={styles.label}>Registro de pago</span>
+          <h3>{balanceDueInCents > 0 ? 'Registrar pago recibido' : 'Factura sin saldo'}</h3>
+          <p>
+            Registrar pago no concilia banco, no genera asiento contable y no
+            presenta impuestos. Es evidencia operativa para cerrar cartera.
+          </p>
+          <div className={styles.invoiceInlineGrid}>
+            <label className={styles.field}>
+              Monto
+              <input
+                disabled
+                readOnly
+                value={formatMoney(balanceDueInCents, currency)}
+              />
+            </label>
+            <label className={styles.field}>
+              Moneda
+              <input disabled readOnly value={currency} />
+            </label>
+            <label className={styles.field}>
+              Metodo
+              <input disabled readOnly value="transferencia" />
+            </label>
+            <label className={styles.field}>
+              Referencia
+              <input disabled readOnly value="Pendiente de registrar" />
+            </label>
+          </div>
+          <button
+            className={styles.primaryButton}
+            disabled
+            type="button"
+          >
+            Registrar pago
+          </button>
+        </Card>
+      </div>
+
+      <Card>
+        <span className={styles.label}>Evidencia y handoff futuro</span>
+        <h3>Tax Compliance y Accounting vienen despues</h3>
+        <p>
+          Este cierre conserva las piezas que luego necesitaran impuestos y
+          contabilidad: autorizacion SRI, entrega, saldo y pagos registrados. No
+          declara IVA, no registra diario contable y no reemplaza revision
+          profesional.
+        </p>
+      </Card>
     </div>
   );
 }

@@ -28,6 +28,8 @@ Referencias:
 - `docs/frontend-handoff/07-invoicing-items-flow.md`
 - `docs/frontend-handoff/08-invoicing-document-review.md`
 - `docs/frontend-handoff/09-invoicing-sri-submission-lifecycle.md`
+- `docs/frontend-handoff/11-invoicing-payment-email-delivery-closeout.md`
+- `docs/frontend-handoff/12-invoicing-operational-polish-qa.md`
 
 ## Prerrequisitos
 
@@ -85,6 +87,18 @@ solo, solo permite entrar si el usuario del token ya pertenece al tenant.
 - El Command Center puede seguir montado en DOM, pero debe estar oculto.
 - No debe quedar una pagina larga mezclando productos sin jerarquia.
 - La consola del navegador no debe mostrar errores `Uncaught`.
+
+### QA visual post polish
+
+Despues de los PRs de polish operativo, la entrada a Invoicing debe leerse como
+un workspace dedicado, no como una seccion mas del dashboard:
+
+- un solo encabezado de producto;
+- navegacion de subvistas con estado activo;
+- tira de contexto visible cuando hay factura seleccionada;
+- una accion primaria recomendada por estado;
+- el selector de mood disponible desde el shell;
+- Command Center oculto cuando el hash activo pertenece a Invoicing.
 
 ## Paso 3. Crear o seleccionar un borrador
 
@@ -171,6 +185,60 @@ que:
 - la UI no marca `Autorizado` antes de confirmacion real;
 - el usuario ve un mensaje legible, no un payload JSON crudo.
 
+## Paso 8. Validar jerarquia SRI, entrega y pago
+
+1. Con la factura seleccionada, revisar las subvistas de `Documentos`, `SRI` y
+   cierre/entrega.
+2. Confirmar que la triada `SRI · Entrega · Pago` se mantenga como tres
+   verdades independientes.
+3. Si el estado electronico es `submitted`, verificar que se lea como
+   `Enviado al SRI` o seguimiento, nunca como autorizado.
+4. Si existe pago registrado, revisar que `Revertir pago` aparezca como accion
+   secundaria/ghost, no como accion principal.
+5. Abrir el historial tecnico SRI solo desde su disclosure secundario.
+
+### Resultado esperado
+
+- Verde/success queda reservado para `authorized` confirmado por backend.
+- `submitted` usa tono de atencion/seguimiento.
+- Entregar por email no cambia SRI ni pago.
+- Registrar pago no implica conciliacion bancaria ni asiento contable.
+- El trace tecnico no domina la pantalla operativa.
+
+## Paso 9. QA de moods y responsive
+
+Probar al menos estas rutas en desktop y mobile:
+
+- `#invoicing-domain`
+- `#invoicing-settings-sri`
+- `#invoicing-customer-draft`
+- `#invoicing-documents`
+
+En cada ruta, alternar los cinco moods:
+
+- `comfort`
+- `focus`
+- `calm`
+- `high-contrast`
+- `night`
+
+### Checklist desktop
+
+- Las tarjetas usan superficies, bordes y sombras acordes al mood.
+- High contrast no depende de sombras para jerarquia.
+- La navegacion de subvistas conserva foco/estado activo.
+- Los status pills mantienen radio, padding y peso visual consistente.
+- La accion primaria no compite con acciones secundarias o destructivas.
+
+### Checklist mobile
+
+- No hay overflow horizontal.
+- La navegacion de producto no se corta.
+- Las triadas y grids se apilan a una columna.
+- Los textos largos de siguiente paso envuelven sin sacar botones de pantalla.
+- Los status pills no aplastan contenido.
+- La accion principal queda alcanzable y clara.
+
 ## Criterios de pase
 
 La prueba pasa si:
@@ -184,6 +252,9 @@ La prueba pasa si:
 - el intento SRI muestra error legible;
 - no hay errores `Uncaught` en consola;
 - ninguna pantalla afirma autorizacion SRI sin backend confirmando `authorized`.
+- desktop y mobile no presentan overflow horizontal;
+- los cinco moods afectan shell, cards, controles y feedback;
+- los traces tecnicos permanecen secundarios.
 
 ## Criterios de falla
 
@@ -197,6 +268,9 @@ La prueba falla si:
 - se pierden lineas/totales tras recargar;
 - la UI marca `Autorizado` solo por haber enviado o intentado enviar;
 - el shell mezcla Command Center e Invoicing como contenido visible principal.
+- `submitted` aparece en verde o como completado legal;
+- una accion destructiva o excepcional compite como accion primaria;
+- mobile requiere scroll horizontal para entender la triada o los tabs.
 
 ## Hallazgos del piloto 2026-06-18
 
@@ -210,6 +284,11 @@ La prueba falla si:
   `SignatureValue` aparece antes de `SignedInfo`.
 - La correccion `fix(frontend): normalize api error messages` evita mostrar
   errores JSON crudos al usuario.
+- El polish operativo de slice 11 quedo integrado hasta:
+  - shell/workspace layout;
+  - navegacion de subvistas y tira de contexto;
+  - hardening mobile;
+  - jerarquia de estados y acciones.
 
 ## Backlog derivado
 
@@ -218,5 +297,7 @@ La prueba falla si:
    la UX mental coincidan mejor.
 3. Frontend: automatizar este recorrido con un smoke remoto cuando exista un
    token/tenant de piloto generable sin pasos manuales.
-4. Claude Design: continuar con los siguientes slices solo despues de preservar
+4. Frontend: considerar rutas dedicadas reales cuando se deje atras la
+   navegacion por hash.
+5. Claude Design: continuar con los siguientes slices solo despues de preservar
    este flujo como referencia minima de no regresion.

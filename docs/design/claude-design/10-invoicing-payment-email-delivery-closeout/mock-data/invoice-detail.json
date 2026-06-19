@@ -1,0 +1,82 @@
+{
+  "_note": "Shape mirrors InvoiceDetailResponse (apps/web-platform/src/app/types.ts) — the closeout-relevant subset. Returned by GET /api/invoicing/tenants/{slug}/invoices/{invoiceId}. This is the 'multiple payments' scenario (one transfer + one cash, balance open).",
+  "id": "inv_5a1c",
+  "tenantId": "ten_acme",
+  "customerId": "cus_01",
+  "number": "001-001-000000148",
+  "documentCode": "01",
+  "establishmentCode": "001",
+  "emissionPointCode": "001",
+  "sequenceNumber": 148,
+  "buyerIdentificationType": "04",
+  "buyerIdentification": "1791234567001",
+  "buyerName": "Comercial Andina S.A.",
+  "buyerEmail": "cobranzas@comercialandina.ec",
+  "buyerAddress": "Av. República del Salvador N35-04, Quito",
+  "status": "issued",
+  "currency": "USD",
+  "electronicStatus": "authorized",
+  "accessKey": "1706202601179001234500110010010001480123456789",
+  "authorizationNumber": "1706202601179001234500110010010001480123456789",
+  "authorizedAt": "2026-06-17T12:05:00-05:00",
+  "issuedAt": "2026-06-17T11:20:00-05:00",
+  "dueAt": "2026-07-15",
+  "notes": "Servicios de logística junio 2026.",
+  "createdAt": "2026-06-17T11:20:00-05:00",
+  "updatedAt": "2026-06-18T09:05:00-05:00",
+  "items": [
+    {
+      "id": "it_01",
+      "position": 1,
+      "description": "Servicio de logística — ruta Quito/Guayaquil",
+      "quantity": 1,
+      "unitPriceInCents": 200000,
+      "lineTotalInCents": 200000,
+      "taxRateName": "IVA",
+      "taxRatePercentage": 15,
+      "lineTaxInCents": 30000
+    }
+  ],
+  "totals": {
+    "subtotalInCents": 200000,
+    "taxInCents": 30100,
+    "totalInCents": 230100
+  },
+  "settlement": {
+    "paidInCents": 195050,
+    "balanceDueInCents": 35050,
+    "isFullyPaid": false
+  },
+  "payments": [
+    {
+      "id": "pay_0001",
+      "tenantId": "ten_acme",
+      "invoiceId": "inv_5a1c",
+      "amountInCents": 115050,
+      "currency": "USD",
+      "status": "posted",
+      "method": "transfer",
+      "reference": "TRF-0098341",
+      "paidAt": "2026-06-17T15:20:00-05:00",
+      "notes": "",
+      "reversedAt": null,
+      "reversalReason": null,
+      "createdAt": "2026-06-17T15:20:30-05:00"
+    },
+    {
+      "id": "pay_0002",
+      "tenantId": "ten_acme",
+      "invoiceId": "inv_5a1c",
+      "amountInCents": 80000,
+      "currency": "USD",
+      "status": "posted",
+      "method": "cash",
+      "reference": "REC-0042",
+      "paidAt": "2026-06-18T09:05:00-05:00",
+      "notes": "Abono en oficina.",
+      "reversedAt": null,
+      "reversalReason": null,
+      "createdAt": "2026-06-18T09:05:20-05:00"
+    }
+  ]
+}

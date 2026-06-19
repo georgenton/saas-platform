@@ -1,0 +1,32 @@
+{
+  "_endpoint": "GET /api/invoicing/tenants/{slug}/electronic-signature/inspection",
+  "_type": "ElectronicSignatureMaterialInspectionResponse",
+  "_note": "Read-only PKCS#12 inspection. Drives the 'Inspección del certificado' progressive-disclosure group and the issuer RUC alignment (inspection.extractedTaxId). certificateValidityStatus drives the firma status pill (valid → Vigente, expiring_soon → Por vencer, expired → Caducada).",
+  "tenantSlug": "acme-logistica",
+  "signatureProvider": "xades_pkcs12",
+  "certificateLabel": "Firma Legal · Security Data 2024",
+  "storageMode": "secret_ref",
+  "isActive": true,
+  "materialConfigured": true,
+  "inspection": {
+    "status": "likely_usable",
+    "detail": "El keystore PKCS#12 se abrió y el certificado es legible.",
+    "encoding": "base64_der",
+    "probeMethod": "openssl_pkcs12",
+    "certificateValidityStatus": "valid",
+    "cryptographicProofStatus": "verified",
+    "cryptographicProofDetail": "Se firmó y verificó un reto interno con la clave privada.",
+    "passwordPresent": true,
+    "hasAdvisoryWarning": false,
+    "fingerprintPresent": true,
+    "subjectNamePresent": true,
+    "extractedFingerprint": "A1:0F:88:4C:7E:22:9B:D3:61:04:FE:5A:88:C9:33:71:6E:0B:2D:4A",
+    "extractedTaxId": "1790012345001",
+    "extractedSubjectName": "CN=ACME LOGISTICA S.A., O=ACME LOGISTICA S.A., C=EC",
+    "extractedIssuerName": "CN=AC SECURITY DATA S.A. 2, O=SECURITY DATA, C=EC",
+    "validFrom": "2024-11-08",
+    "validUntil": "2026-11-08",
+    "daysUntilExpiry": 510,
+    "byteLength": 4096
+  }
+}

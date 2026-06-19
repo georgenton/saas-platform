@@ -1,0 +1,21 @@
+{
+  "_endpoint": "GET /api/invoicing/tenants/{slug}/invoices/{invoiceId}",
+  "_note": "Submitted invoice — the SRI panel stops the stepper at 'Enviado'. `authorizationNumber`/`authorizedAt` stay null until check-authorization returns AUTORIZADO.",
+  "id": "inv_0145",
+  "number": "001-001-000145",
+  "customer": "Importadora Costa Verde",
+  "customerRuc": "0990012345001",
+  "issuedAt": "2026-06-16",
+  "items": 6,
+  "currency": "USD",
+  "subtotalInCents": 450000,
+  "ivaInCents": 54000,
+  "totalInCents": 504000,
+  "status": "issued",
+  "electronicStatus": "submitted",
+  "accessKey": "1606202601179001234500120010010000001452938475610",
+  "authorizationNumber": null,
+  "authorizedAt": null,
+  "rejection": null,
+  "documentType": "01"
+}

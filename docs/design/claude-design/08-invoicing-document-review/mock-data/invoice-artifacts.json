@@ -1,0 +1,14 @@
+{
+  "_endpoint": "GET /api/invoicing/tenants/{slug}/invoices/{invoiceId}/electronic-document/artifacts",
+  "_xmlPreview": "GET .../electronic-document/xml  (fetchInvoiceElectronicXmlPreview)",
+  "_xmlDownload": "GET .../electronic-document/xml/download  (onDownloadElectronicXml)",
+  "_type": "InvoiceElectronicArtifactsResponse",
+  "_note": "Artifact availability. canDownloadRide / canDownloadXml gate the download actions (a disabled button when false). fileBaseName drives the RIDE/XML file names. In this slice RIDE and XML are preview/download artifacts only — never generate/sign/submit. When artifacts are not generated yet, the endpoint returns null and the review desk shows 'Aún no generado'.",
+  "fileBaseName": "factura-001-001-000000148",
+  "rideHtmlFileName": "factura-001-001-000000148-ride.html",
+  "xmlFileName": "factura-001-001-000000148.xml",
+  "accessKey": "1706202601179001234500110010010001480123456789",
+  "electronicStatus": "authorized",
+  "canDownloadRide": true,
+  "canDownloadXml": true
+}

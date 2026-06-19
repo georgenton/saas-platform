@@ -1,0 +1,7 @@
+{
+  "_endpoint": "GET /api/invoicing/tenants/{slug}/numbering/invoice",
+  "establishment": "001",
+  "emissionPoint": "001",
+  "nextNumber": "001-001-000148",
+  "sequentialRemaining": 99852
+}

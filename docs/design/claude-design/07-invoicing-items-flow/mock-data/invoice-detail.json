@@ -1,0 +1,59 @@
+{
+  "_endpoint": "GET /api/invoicing/tenants/{slug}/invoices/{invoiceId}",
+  "_type": "InvoiceDetailResponse",
+  "_note": "The selected invoice the panel composes. items[] are InvoiceItemResponse; totals + settlement are backend-owned (cents). electronicStatus is shown only as quiet context here — never an action in this slice.",
+  "id": "inv_5a1c",
+  "tenantId": "ten_acme",
+  "customerId": "cus_01",
+  "number": "001-001-000000148",
+  "documentCode": "01",
+  "establishmentCode": "001",
+  "emissionPointCode": "001",
+  "sequenceNumber": 148,
+  "buyerIdentificationType": "04",
+  "buyerIdentification": "1791234567001",
+  "buyerName": "Comercial Andina S.A.",
+  "buyerAddress": "Av. República del Salvador N35-04, Quito",
+  "electronicStatus": null,
+  "accessKey": null,
+  "authorizationNumber": null,
+  "authorizedAt": null,
+  "electronicStatusMessage": null,
+  "signedAt": null,
+  "submittedAt": null,
+  "submissionReference": null,
+  "status": "draft",
+  "currency": "USD",
+  "issuedAt": "2026-06-17T11:20:00-05:00",
+  "dueAt": "2026-07-15",
+  "notes": "Servicios de logística junio 2026.",
+  "createdAt": "2026-06-17T11:20:00-05:00",
+  "updatedAt": "2026-06-17T11:40:00-05:00",
+  "items": [
+    {
+      "id": "it_01", "tenantId": "ten_acme", "invoiceId": "inv_5a1c", "position": 1,
+      "description": "Servicio de logística — ruta Quito/Guayaquil",
+      "quantity": 1, "unitPriceInCents": 120000, "lineTotalInCents": 138000,
+      "taxRateId": "tax_iva15", "taxRateName": "IVA", "taxRatePercentage": 15, "lineTaxInCents": 18000,
+      "createdAt": "2026-06-17T11:40:00-05:00", "updatedAt": "2026-06-17T11:40:00-05:00"
+    },
+    {
+      "id": "it_02", "tenantId": "ten_acme", "invoiceId": "inv_5a1c", "position": 2,
+      "description": "Almacenaje (m³ · mes)",
+      "quantity": 12, "unitPriceInCents": 4500, "lineTotalInCents": 62100,
+      "taxRateId": "tax_iva15", "taxRateName": "IVA", "taxRatePercentage": 15, "lineTaxInCents": 8100,
+      "createdAt": "2026-06-17T11:40:00-05:00", "updatedAt": "2026-06-17T11:40:00-05:00"
+    },
+    {
+      "id": "it_03", "tenantId": "ten_acme", "invoiceId": "inv_5a1c", "position": 3,
+      "description": "Seguro de mercadería",
+      "quantity": 1, "unitPriceInCents": 30000, "lineTotalInCents": 30000,
+      "taxRateId": "tax_iva0", "taxRateName": "Exento", "taxRatePercentage": 0, "lineTaxInCents": 0,
+      "createdAt": "2026-06-17T11:40:00-05:00", "updatedAt": "2026-06-17T11:40:00-05:00"
+    }
+  ],
+  "payments": [],
+  "electronicEvents": [],
+  "totals": { "subtotalInCents": 212000, "taxInCents": 26100, "totalInCents": 238100 },
+  "settlement": { "paidInCents": 0, "balanceDueInCents": 238100, "isFullyPaid": false }
+}

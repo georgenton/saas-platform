@@ -1,0 +1,12 @@
+{
+  "_endpoint": "PUT /api/auth/me/current-tenancy",
+  "_note": "Workspace selection. Request body: { slug }. Response is the updated session (same shape as GET /api/auth/me) now carrying the chosen currentTenancy → gateway transitions to 'ready'.",
+  "request": { "slug": "acme-logistica" },
+  "response": {
+    "user": { "name": "José Quizá Manchuro", "email": "jose@acme-logistica.ec" },
+    "currentTenancy": {
+      "slug": "acme-logistica", "name": "Acme Logística S.A.", "ruc": "1790012345001",
+      "role": "Owner", "environment": "production", "members": 6
+    }
+  }
+}

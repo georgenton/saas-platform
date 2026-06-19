@@ -1,0 +1,36 @@
+{
+  "_note": "Request bodies the three closeout mutations accept. These mirror api.ts (sendInvoiceEmail / createInvoicePayment / reverseInvoicePayment). No fields beyond what the frozen backend already exposes are invented.",
+
+  "send_email": {
+    "_endpoint": "POST /api/invoicing/tenants/{slug}/invoices/{invoiceId}/send-email",
+    "_fn": "sendInvoiceEmail(slug, invoiceId, body)",
+    "request": {
+      "recipientEmail": "cobranzas@comercialandina.ec",
+      "message": "Estimados, adjuntamos su factura electrónica autorizada. Quedamos atentos."
+    },
+    "_note_response": "On success the parent refreshes via GET invoice detail; the UI shows a sent timestamp from the action result / refreshed record. Delivery tracking, resend history and WhatsApp are explicitly out of scope."
+  },
+
+  "create_payment": {
+    "_endpoint": "POST /api/invoicing/tenants/{slug}/invoices/{invoiceId}/payments",
+    "_fn": "createInvoicePayment(slug, invoiceId, body)",
+    "request": {
+      "amountInCents": 115050,
+      "currency": "USD",
+      "method": "transfer",
+      "reference": "TRF-0098341",
+      "paidAt": "2026-06-17T15:20:00-05:00",
+      "notes": ""
+    },
+    "_note": "The UI collects a decimal amount ('1150.50') and converts to integer cents before sending. Quick-fill chips ('saldo total', '50%') compute from settlement.balanceDueInCents. Response is the created PaymentResponse; the parent refreshes the invoice so settlement updates."
+  },
+
+  "reverse_payment": {
+    "_endpoint": "POST /api/invoicing/tenants/{slug}/invoices/{invoiceId}/payments/{paymentId}/reverse",
+    "_fn": "reverseInvoicePayment(slug, invoiceId, paymentId, body)",
+    "request": {
+      "reason": "Cheque sin fondos — el abono no se concretó."
+    },
+    "_note": "Reversal is a secondary, clearly exceptional path. Response is the updated PaymentResponse (status 'reversed' + reversedAt + reversalReason); the parent refreshes so settlement recomputes balance."
+  }
+}

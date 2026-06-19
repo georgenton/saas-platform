@@ -1,0 +1,37 @@
+{
+  "_endpoint": "GET /api/invoicing/tenants/{slug}/invoices/{invoiceId}/document",
+  "_html": "GET /api/invoicing/tenants/{slug}/invoices/{invoiceId}/document/html",
+  "_type": "InvoiceDocumentResponse",
+  "_note": "The printable document model the review desk reads. issuer/customer/invoice/lines/totals. The /html endpoint backs 'Abrir versión imprimible' (onOpenPrintableInvoice). electronicStatus is quiet context here — reviewing is not submitting.",
+  "issuer": {
+    "tenantId": "ten_acme", "tenantName": "Acme Logística", "tenantSlug": "acme-logistica",
+    "legalName": "Acme Logística S.A.", "commercialName": "Acme Logística",
+    "taxId": "1790012345001", "environment": "production", "emissionType": "normal",
+    "accountingObligated": true, "specialTaxpayerCode": "5368", "rimpeTaxpayerType": null,
+    "matrixAddress": "Av. Amazonas N34-120 y Av. Atahualpa, Quito",
+    "establishmentAddress": "Av. Amazonas N34-120, local 3, Quito"
+  },
+  "customer": {
+    "name": "Comercial Andina S.A.", "email": "pagos@andina.ec", "taxId": "1791234567001",
+    "identificationType": "04", "identification": "1791234567001",
+    "billingAddress": "Av. República del Salvador N35-04, Quito"
+  },
+  "invoice": {
+    "id": "inv_5a1c", "tenantId": "ten_acme", "customerId": "cus_01",
+    "number": "001-001-000000148",
+    "documentCode": "01", "establishmentCode": "001", "emissionPointCode": "001", "sequenceNumber": 148,
+    "buyerIdentificationType": "04", "buyerIdentification": "1791234567001",
+    "buyerName": "Comercial Andina S.A.", "buyerAddress": "Av. República del Salvador N35-04, Quito",
+    "electronicStatus": null, "accessKey": null, "authorizationNumber": null, "authorizedAt": null,
+    "electronicStatusMessage": null, "signedAt": null, "submittedAt": null, "submissionReference": null,
+    "status": "draft", "currency": "USD",
+    "issuedAt": "2026-06-17T11:20:00-05:00", "dueAt": "2026-07-15", "notes": "Servicios de logística junio 2026.",
+    "createdAt": "2026-06-17T11:20:00-05:00", "updatedAt": "2026-06-17T11:40:00-05:00"
+  },
+  "lines": [
+    { "id": "it_01", "position": 1, "description": "Servicio de logística — ruta Quito/Guayaquil", "quantity": 1, "unitPriceInCents": 120000, "lineSubtotalInCents": 120000, "taxRateId": "tax_iva15", "taxRateName": "IVA", "taxRatePercentage": 15, "lineTaxInCents": 18000, "lineTotalInCents": 138000 },
+    { "id": "it_02", "position": 2, "description": "Almacenaje (m³ · mes)", "quantity": 12, "unitPriceInCents": 4500, "lineSubtotalInCents": 54000, "taxRateId": "tax_iva15", "taxRateName": "IVA", "taxRatePercentage": 15, "lineTaxInCents": 8100, "lineTotalInCents": 62100 },
+    { "id": "it_03", "position": 3, "description": "Seguro de mercadería", "quantity": 1, "unitPriceInCents": 30000, "lineSubtotalInCents": 30000, "taxRateId": "tax_iva0", "taxRateName": "Exento", "taxRatePercentage": 0, "lineTaxInCents": 0, "lineTotalInCents": 30000 }
+  ],
+  "totals": { "subtotalInCents": 204000, "taxInCents": 26100, "totalInCents": 230100 }
+}

@@ -1,0 +1,20 @@
+{
+  "_endpoint": "GET /api/invoicing/tenants/{slug}/invoices/{invoiceId}",
+  "_type": "InvoiceDetailResponse",
+  "_note": "Slice 11 reads only the closeout-relevant subset to drive the context summary strip (number, buyer, totals, electronicStatus, settlement). No new fields are invented; shape matches slices 08–10.",
+  "id": "inv_5a1c",
+  "tenantId": "ten_acme",
+  "number": "001-001-000000148",
+  "documentStatus": "issued",
+  "electronicStatus": "authorized",
+  "buyerName": "Comercial Andina S.A.",
+  "buyerIdentification": "1791234567001",
+  "buyerEmail": "cobranzas@comercialandina.ec",
+  "currency": "USD",
+  "accessKey": "1706202601179001234500110010010001480123456789",
+  "authorizationNumber": "1706202601179001234500110010010001480123456789",
+  "authorizedAt": "2026-06-17T12:05:00-05:00",
+  "totals": { "subtotalInCents": 200000, "taxInCents": 30100, "totalInCents": 230100 },
+  "settlement": { "paidInCents": 80000, "balanceDueInCents": 150100, "isFullyPaid": false },
+  "delivery": { "lastSentAt": "2026-06-17T14:02:00-05:00" }
+}

@@ -1,0 +1,8 @@
+{
+  "_endpoint": "GET /api/auth/me",
+  "_note": "Variant: session resolved but NO currentTenancy and NO tenancies → no-tenant state. The UI explains what's missing instead of dumping the shell. A variant with tenancies[] but currentTenancy:null drives workspace-select; a variant with pendingInvitations[] drives invitation review.",
+  "user": { "name": "José Quizá Manchuro", "email": "jose@acme-logistica.ec" },
+  "currentTenancy": null,
+  "tenancies": [],
+  "pendingInvitations": []
+}

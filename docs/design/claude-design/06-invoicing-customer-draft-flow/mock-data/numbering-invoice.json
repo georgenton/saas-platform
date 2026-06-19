@@ -1,0 +1,14 @@
+{
+  "_endpoint": "GET /api/invoicing/tenants/{slug}/numbering/invoice",
+  "_type": "InvoiceNumberingSettingsResponse",
+  "_note": "Drives the suggested invoice number (previewNumber). The draft form's Número field uses this as its placeholder; leaving it empty lets the backend autogenerate the next sequence from these settings.",
+  "id": "num_01HZX3",
+  "tenantId": "ten_acme",
+  "documentCode": "01",
+  "establishmentCode": "001",
+  "emissionPointCode": "001",
+  "nextSequenceNumber": 148,
+  "previewNumber": "001-001-000000148",
+  "createdAt": "2024-11-08T10:00:00-05:00",
+  "updatedAt": "2026-06-15T18:20:00-05:00"
+}

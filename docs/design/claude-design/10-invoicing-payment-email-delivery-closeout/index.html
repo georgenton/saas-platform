@@ -1,16 +1,17 @@
-<!-- @dsCard group="Platform" viewport="1440x900" name="Product Command Center" subtitle="Slice 01 — post-login workspace home: tenant + plan + product status, all access states, desktop & mobile, 5 moods" -->
-<!-- @startingPoint section="Platform" subtitle="Operational workspace home — product status cards, access model, states, mobile launcher, 5 moods" viewport="1440x900" -->
+<!-- @dsCard group="Platform" viewport="1440x900" name="Invoicing Payment + Email Delivery Closeout" subtitle="Slice 10 — verdict · status triad · one next step · delivery · settlement · payment · history · evidence · 20 states · mood" -->
+<!-- @startingPoint section="Platform" subtitle="Post-issue closeout — deliver, settle, record payment, web + mobile, 20 states, 5 moods" viewport="1440x900" -->
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Product Command Center — SaaS Platform Design Kit</title>
+<title>Invoicing Payment + Email Delivery Closeout · SaaS Platform Design Kit</title>
 <link rel="stylesheet" href="../00-platform-shell/design-system/styles.css">
 <style>
-  html, body { height: 100%; margin: 0; }
+  html, body { height: 100%; margin: 0; background: #0f1115; }
   #root { height: 100%; }
-  select:focus-visible { outline: none; box-shadow: var(--focus-ring-shadow); }
+  select:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible { outline: none; box-shadow: var(--focus-ring-shadow); }
+  input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 </style>
 </head>
 <body>
@@ -27,8 +28,8 @@
 <script type="text/babel" data-presets="" data-plugins="transform-react-jsx" src="src/icons.jsx"></script>
 <script type="text/babel" data-presets="" data-plugins="transform-react-jsx" src="src/components.jsx"></script>
 <script type="text/babel" data-presets="" data-plugins="transform-react-jsx" src="src/chrome.jsx"></script>
-<script type="text/babel" data-presets="" data-plugins="transform-react-jsx" src="src/command-center.jsx"></script>
-<script type="text/babel" data-presets="" data-plugins="transform-react-jsx" src="src/mobile.jsx"></script>
+<script type="text/babel" data-presets="" data-plugins="transform-react-jsx" src="src/closeout-panel.jsx"></script>
+<script type="text/babel" data-presets="" data-plugins="transform-react-jsx" src="src/closeout-mobile.jsx"></script>
 <script type="text/babel" data-presets="" data-plugins="transform-react-jsx" src="src/app.jsx"></script>
 </body>
 </html>

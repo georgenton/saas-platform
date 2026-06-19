@@ -1,0 +1,29 @@
+{
+  "_endpoint": "GET /api/invoicing/tenants/{slug}/invoices/{invoiceId}/electronic-document/ride",
+  "_html": "GET .../electronic-document/ride/html  (onOpenElectronicRide)",
+  "_download": "GET .../electronic-document/ride/download  (onDownloadElectronicRide)",
+  "_type": "InvoiceRideResponse",
+  "_note": "RIDE model. ride.canBePrintedAsAuthorized is the ONLY signal that the RIDE may be presented as an authorized voucher — paired with invoice.electronicStatus 'authorized'. When false, the RIDE is referencial / pendiente. accessKeyChunks is the access key split for legible, copy-friendly display. This example is the AUTHORIZED case; for referential, set canBePrintedAsAuthorized:false, authorizationNumber/authorizedAt:null, electronicStatusLabel:'Firmado · referencial'.",
+  "issuer": { "_sameAs": "InvoiceDocumentResponse.issuer" },
+  "customer": { "_sameAs": "InvoiceDocumentResponse.customer" },
+  "invoice": { "_sameAs": "InvoiceDocumentResponse.invoice", "electronicStatus": "authorized", "accessKey": "1706202601179001234500110010010001480123456789", "authorizationNumber": "1706202601179001234500110010010001480123456789", "authorizedAt": "2026-06-17T12:05:00-05:00", "status": "issued" },
+  "lines": [ { "_sameAs": "InvoiceDocumentResponse.lines" } ],
+  "totals": { "subtotalInCents": 204000, "taxInCents": 26100, "totalInCents": 230100 },
+  "ride": {
+    "documentLabel": "Factura",
+    "environmentLabel": "Producción",
+    "emissionTypeLabel": "Normal",
+    "sequenceDisplay": "001-001-000000148",
+    "electronicStatusLabel": "Autorizado",
+    "canBePrintedAsAuthorized": true,
+    "accessKey": "1706202601179001234500110010010001480123456789",
+    "accessKeyChunks": ["1706202", "6011790", "0123450", "0110010", "0100014", "8012345", "6789"],
+    "authorizationNumber": "1706202601179001234500110010010001480123456789",
+    "authorizedAt": "2026-06-17T12:05:00-05:00",
+    "authorizationMessage": "Autorizado por el SRI el 17 jun 2026 12:05.",
+    "additionalInfoFields": [
+      { "label": "Forma de pago", "value": "Transferencia (20 días)" },
+      { "label": "Guía de remisión", "value": "No aplica" }
+    ]
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "_endpoint": "GET /api/invoicing/tenants/{slug}/electronic-signature/inspection",
+  "_note": "Signature inspection results are shown BEFORE submit; submit is disabled while status is not valid.",
+  "status": "valid",
+  "subject": "ACME LOGISTICA S.A.",
+  "issuer": "Security Data C.A.",
+  "validUntil": "2026-11-08",
+  "daysToExpiry": 145,
+  "inspected": true,
+  "expiredExample": {
+    "status": "expired",
+    "validUntil": "2026-05-30",
+    "daysToExpiry": -17
+  }
+}

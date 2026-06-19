@@ -1,0 +1,49 @@
+{
+  "_note": "PaymentResponse shapes (apps/web-platform/src/app/types.ts). amountInCents is integer cents; the UI formats to currency — the operator never types raw cents. status ∈ 'posted' | 'reversed'. A reversed payment keeps its original fields and adds reversedAt + reversalReason; reversed payments are excluded from settlement.paidInCents.",
+  "posted_transfer": {
+    "id": "pay_0001",
+    "tenantId": "ten_acme",
+    "invoiceId": "inv_5a1c",
+    "amountInCents": 115050,
+    "currency": "USD",
+    "status": "posted",
+    "method": "transfer",
+    "reference": "TRF-0098341",
+    "paidAt": "2026-06-17T15:20:00-05:00",
+    "notes": "",
+    "reversedAt": null,
+    "reversalReason": null,
+    "createdAt": "2026-06-17T15:20:30-05:00"
+  },
+  "posted_cash_partial": {
+    "id": "pay_0003",
+    "tenantId": "ten_acme",
+    "invoiceId": "inv_5a1c",
+    "amountInCents": 80000,
+    "currency": "USD",
+    "status": "posted",
+    "method": "cash",
+    "reference": "REC-0042",
+    "paidAt": "2026-06-17T15:10:00-05:00",
+    "notes": "Abono inicial en oficina.",
+    "reversedAt": null,
+    "reversalReason": null,
+    "createdAt": "2026-06-17T15:10:30-05:00"
+  },
+  "reversed_check": {
+    "id": "pay_0002",
+    "tenantId": "ten_acme",
+    "invoiceId": "inv_5a1c",
+    "amountInCents": 80000,
+    "currency": "USD",
+    "status": "reversed",
+    "method": "check",
+    "reference": "CHQ-1180",
+    "paidAt": "2026-06-17T16:00:00-05:00",
+    "notes": "Cheque recibido en recepción.",
+    "reversedAt": "2026-06-17T17:30:00-05:00",
+    "reversalReason": "Cheque sin fondos — el abono no se concretó.",
+    "createdAt": "2026-06-17T16:00:20-05:00"
+  },
+  "methods": ["transfer", "cash", "card", "check", "other"]
+}

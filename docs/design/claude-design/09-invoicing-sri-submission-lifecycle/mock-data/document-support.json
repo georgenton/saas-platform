@@ -1,0 +1,22 @@
+{
+  "_endpoint": "GET /api/invoicing/tenants/{slug}/invoices/{invoiceId}/electronic-document (readiness context)",
+  "_type": "ElectronicSandboxReadinessResponse.documentSupport[number]",
+  "_note": "The per-document-type support row the panel receives as selectedInvoiceDocumentSupport. submitSupported === false drives the 'unsupported document type' state (the automatic SRI lane pauses, fallback becomes the recommended path). canSubmitElectronicDocument (a separate local derived boolean) drives 'readiness blocked'.",
+  "supported_factura": {
+    "documentCode": "01", "label": "Factura",
+    "numberingConfigured": true, "previewAvailable": true, "rideAvailable": true,
+    "schemaValidationAvailable": true, "submitSupported": true,
+    "detail": "Factura lista para emisión electrónica."
+  },
+  "unsupported_remission_guide": {
+    "documentCode": "06", "label": "Guía de remisión",
+    "numberingConfigured": true, "previewAvailable": true, "rideAvailable": true,
+    "schemaValidationAvailable": true, "submitSupported": false,
+    "detail": "La guía de remisión aún no sigue la ruta automática del SRI en esta versión."
+  },
+  "_derivedInputs": {
+    "canSubmitElectronicDocument": "boolean — false => readiness blocked (firma/gateway pendientes)",
+    "documentSupportDetail": "string | null — blocker/explanation copy shown under the next-step / compatibility area",
+    "actionLoading": "'submit-invoice-electronic-document' | 'check-invoice-electronic-authorization' | 'invoice-electronic-status' | 'submit-presigned-invoice-electronic-document' | 'load-invoice-xml-preview' | null"
+  }
+}

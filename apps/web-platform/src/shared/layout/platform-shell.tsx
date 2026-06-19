@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import styles from '../../app/app.module.css';
-import { Metric, MoodSelector } from '../design-system';
+import { MoodSelector } from '../design-system';
 import type {
   PlatformMoodKey,
   PlatformShellMetric,
@@ -125,7 +125,6 @@ export function PlatformShell({
   apiBaseUrl,
   children,
   headline,
-  metrics,
   mood,
   navItems,
   onMoodChange,
@@ -292,12 +291,6 @@ export function PlatformShell({
             </span>
           </div>
         </header>
-
-        <section className={styles.shellOverview} aria-label="Estado del shell">
-          {metrics.map((metric) => (
-            <Metric key={metric.label} label={metric.label} value={metric.value} />
-          ))}
-        </section>
 
         {children}
       </main>

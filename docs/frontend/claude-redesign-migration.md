@@ -37,3 +37,20 @@ Each frontend slice should:
    `shared/`.
 5. Avoid reintroducing long document-like pages where multiple product
    workspaces render at once.
+
+## Invoicing boundary
+
+The active Invoicing presentation is composed in
+`apps/web-platform/src/features/platform/claude-platform-app.tsx` from the
+Claude Design slices. The legacy Invoicing domain shell was removed in
+`refactor(frontend): retire legacy invoicing shell`.
+
+`apps/web-platform/src/features/invoicing/invoicing-workspace.tsx` is no longer
+a product UI entrypoint. Keep it as a narrow contract/helper boundary only
+(`InvoicingWorkspaceSubview`, `Stepper`, `deriveStageFromInvoiceDetail`) so new
+work does not accidentally mount older panels as the product workspace.
+
+Older `workspace-*` files may still be consulted for behavior, field naming,
+and small reusable helpers while the redesign is completed. If one is needed in
+production again, rebuild the surface against the approved Claude Design slice
+instead of exporting the legacy component wholesale.

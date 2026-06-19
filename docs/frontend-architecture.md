@@ -148,9 +148,12 @@ Current split:
 - `features/invoicing/adapters.ts`: converts current `app.tsx` source data into
   the presentational Invoicing foundation model, including derived readiness
   and electronic stage mapping.
-- `features/invoicing/invoicing-workspace.tsx`: extracted workspace structure
-  for the top of the existing Invoicing domain screen. It now acts as a barrel
-  over smaller internal modules:
+- `features/invoicing/invoicing-workspace.tsx`: narrow Invoicing
+  contract/helper boundary. It intentionally does not export older product UI
+  panels now that the Claude Design workspace is the active presentation.
+- Older `features/invoicing/workspace-*` files remain as implementation
+  references while the redesign is completed. Reuse their contracts/helpers
+  selectively, but do not remount them as the product workspace:
   - `workspace-summary.tsx`
   - `workspace-shared.tsx`
   - `workspace-operations.tsx`

@@ -54,6 +54,32 @@ const INVOICING_WORKSPACE_TABS: Array<{
   { href: '#invoicing-closeout', key: 'closeout', label: 'Cierre' },
 ];
 
+function getInvoicingSubviewAction(
+  activeSubview: InvoicingWorkspaceSubview,
+): {
+  href: string;
+  label: string;
+} {
+  switch (activeSubview) {
+    case 'overview':
+      return { href: '#invoicing-settings-sri', label: 'Revisar SRI' };
+    case 'settings':
+      return { href: '#invoicing-customer-draft', label: 'Crear borrador' };
+    case 'draft':
+      return { href: '#invoicing-items', label: 'Agregar items' };
+    case 'items':
+      return { href: '#invoicing-documents', label: 'Revisar documento' };
+    case 'documents':
+      return { href: '#invoicing-sri-lifecycle', label: 'Ver ciclo SRI' };
+    case 'sri-lifecycle':
+      return { href: '#invoicing-closeout', label: 'Cerrar entrega/pago' };
+    case 'closeout':
+      return { href: '#invoicing-sri-lifecycle', label: 'Ver ciclo SRI' };
+    default:
+      return { href: '#invoicing-domain', label: 'Volver a resumen' };
+  }
+}
+
 function isPlatformMoodKey(value: string): value is PlatformMoodKey {
   return PLATFORM_MOODS.some((mood) => mood.key === value);
 }
@@ -688,6 +714,7 @@ function ClaudeInvoicingWorkspace({
     0,
   );
   const currency = selectedInvoice?.currency ?? invoices[0]?.currency ?? 'USD';
+  const subviewAction = getInvoicingSubviewAction(activeSubview);
 
   return (
     <section
@@ -704,8 +731,8 @@ function ClaudeInvoicingWorkspace({
           <a className={styles.secondaryButton} href="#platform-home">
             Volver al Command Center
           </a>
-          <a className={styles.primaryButton} href="#invoicing-settings-sri">
-            Configurar SRI
+          <a className={styles.primaryButton} href={subviewAction.href}>
+            {subviewAction.label}
           </a>
         </div>
       </div>
@@ -748,6 +775,7 @@ function ClaudeInvoicingWorkspace({
       ) : null}
 
       <ClaudeInvoicingContextStrip
+        activeSubview={activeSubview}
         data={data}
         model={model}
         selectedInvoice={selectedInvoice}
@@ -800,28 +828,40 @@ function ClaudeInvoicingWorkspace({
 }
 
 type ClaudeInvoicingContextStripProps = {
+  activeSubview: InvoicingWorkspaceSubview;
   data: InvoicingWorkspaceQueryData | undefined;
   model: InvoicingWorkspaceFoundationModel;
   selectedInvoice: InvoiceSummaryResponse | null;
 };
 
 function ClaudeInvoicingContextStrip({
+  activeSubview,
   data,
   model,
   selectedInvoice,
 }: ClaudeInvoicingContextStripProps) {
   const stage = getInvoiceStage(selectedInvoice);
+  const activeTab =
+    INVOICING_WORKSPACE_TABS.find((tab) => tab.key === activeSubview)?.label ??
+    'Invoicing';
+  const identityTitle = selectedInvoice
+    ? `${selectedInvoice.number} · ${selectedInvoice.buyerName ?? selectedInvoice.customerId}`
+    : data?.issuerProfile?.legalName ?? 'Emisor pendiente';
+  const identityDetail = selectedInvoice
+    ? `${formatMoney(
+        selectedInvoice.totals.totalInCents,
+        selectedInvoice.currency,
+      )} · ${activeTab}`
+    : `${
+        data?.invoiceNumberingSettings?.previewNumber ?? 'Numeracion pendiente'
+      } · ${model.readiness.ready ? 'Listo para operar' : 'Con bloqueos'}`;
 
   return (
     <div className={styles.invoicingContextStrip}>
       <div className={styles.invoicingContextIdentity}>
-        <span className={styles.label}>Contexto operativo</span>
-        <strong>{data?.issuerProfile?.legalName ?? 'Emisor pendiente'}</strong>
-        <small>
-          {data?.invoiceNumberingSettings?.previewNumber ??
-            'Numeracion pendiente'}{' '}
-          · {model.readiness.ready ? 'Listo para operar' : 'Con bloqueos'}
-        </small>
+        <span className={styles.label}>Contexto operativo · {activeTab}</span>
+        <strong>{identityTitle}</strong>
+        <small>{identityDetail}</small>
       </div>
       <div className={styles.invoicingContextTriad}>
         <ContextSignal

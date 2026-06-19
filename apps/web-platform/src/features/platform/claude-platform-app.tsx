@@ -772,11 +772,11 @@ function ClaudeInvoicingWorkspace({
         />
       ) : (
         <ClaudeInvoicingDocuments
+          data={data}
           invoices={invoices}
           onRefresh={onRefresh}
           onSelectInvoice={onSelectInvoice}
           selectedInvoice={selectedInvoice}
-          stage={stage}
         />
       )}
     </section>
@@ -1593,20 +1593,129 @@ function ClaudeInvoicingItems({
 }
 
 type ClaudeInvoicingDocumentsProps = {
+  data: InvoicingWorkspaceQueryData | undefined;
   invoices: InvoiceSummaryResponse[];
   onRefresh: () => void;
   onSelectInvoice: (invoiceId: string) => void;
   selectedInvoice: InvoiceSummaryResponse | null;
-  stage: ReturnType<typeof getInvoiceStage>;
 };
 
+type DocumentReviewCheck = {
+  detail: string;
+  key: string;
+  label: string;
+  ok: boolean;
+};
+
+function getDocumentReviewChecks(
+  data: InvoicingWorkspaceQueryData | undefined,
+  invoice: InvoiceSummaryResponse | null,
+): DocumentReviewCheck[] {
+  const issuer = data?.issuerProfile;
+
+  return [
+    {
+      detail: issuer?.legalName ?? 'Emisor pendiente',
+      key: 'issuer',
+      label: 'Emisor',
+      ok: Boolean(issuer?.legalName && issuer.taxId && issuer.environment),
+    },
+    {
+      detail:
+        invoice?.buyerName ??
+        invoice?.buyerIdentification ??
+        'Comprador pendiente',
+      key: 'buyer',
+      label: 'Comprador',
+      ok: Boolean(
+        invoice?.buyerName &&
+          (invoice.buyerIdentification || invoice.buyerIdentificationType),
+      ),
+    },
+    {
+      detail: invoice?.number ?? 'Numeracion pendiente',
+      key: 'numbering',
+      label: 'Numeracion',
+      ok: Boolean(
+        invoice?.documentCode &&
+          invoice.establishmentCode &&
+          invoice.emissionPointCode &&
+          invoice.sequenceNumber != null,
+      ),
+    },
+    {
+      detail: invoice ? `${invoice.itemCount} lineas` : 'Sin documento',
+      key: 'items',
+      label: 'Items y totales',
+      ok: Boolean(invoice && invoice.itemCount > 0),
+    },
+  ];
+}
+
+function getElectronicReviewCopy(invoice: InvoiceSummaryResponse | null): {
+  description: string;
+  label: string;
+  tone: 'success' | 'warning' | 'danger' | 'neutral';
+} {
+  if (!invoice) {
+    return {
+      description: 'Selecciona una factura para revisar su condicion electronica.',
+      label: 'Sin documento',
+      tone: 'neutral',
+    };
+  }
+
+  if (invoice.electronicStatus === 'authorized') {
+    return {
+      description:
+        'Autorizado solo porque el backend confirma estado electronico autorizado.',
+      label: 'Autorizado',
+      tone: 'success',
+    };
+  }
+
+  if (
+    invoice.electronicStatus === 'rejected' ||
+    invoice.electronicStatus === 'failed'
+  ) {
+    return {
+      description: invoice.electronicStatusMessage ?? 'El SRI devolvio una observacion.',
+      label: 'Requiere correccion',
+      tone: 'danger',
+    };
+  }
+
+  if (invoice.submittedAt || invoice.electronicStatus === 'submitted') {
+    return {
+      description:
+        'Enviado no significa autorizado; falta confirmacion final del backend.',
+      label: 'Enviado al SRI',
+      tone: 'warning',
+    };
+  }
+
+  return {
+    description:
+      'Revision documental disponible; todavia no hay autorizacion electronica.',
+    label: 'Referencial',
+    tone: 'neutral',
+  };
+}
+
 function ClaudeInvoicingDocuments({
+  data,
   invoices,
   onRefresh,
   onSelectInvoice,
   selectedInvoice,
-  stage,
 }: ClaudeInvoicingDocumentsProps) {
+  const reviewChecks = getDocumentReviewChecks(data, selectedInvoice);
+  const completedChecks = reviewChecks.filter((check) => check.ok).length;
+  const reviewIsComplete = completedChecks === reviewChecks.length;
+  const electronicReview = getElectronicReviewCopy(selectedInvoice);
+  const accessKey = selectedInvoice?.accessKey ?? null;
+  const accessKeyChunks = accessKey?.match(/.{1,7}/g) ?? [];
+
   return (
     <div className={styles.invoicingDomainWorkGrid}>
       <Card className={styles.invoicingDomainQueueCard}>
@@ -1654,11 +1763,55 @@ function ClaudeInvoicingDocuments({
       <Card className={styles.invoicingDomainDetailCard}>
         <div className={styles.invoicingDomainCardHeader}>
           <div>
-            <h3>{selectedInvoice?.buyerName ?? 'Sin factura seleccionada'}</h3>
-            <p>{selectedInvoice?.number ?? 'La cola esta vacia'}</p>
+            <span className={styles.label}>Mesa de revision</span>
+            <h3>{selectedInvoice?.number ?? 'Selecciona una factura'}</h3>
+            <p>
+              Revisar el documento no es firmar, enviar ni autorizar ante el
+              SRI.
+            </p>
           </div>
-          <StatusPill tone={statusTone(stage.tone)}>{stage.label}</StatusPill>
+          <StatusPill tone={reviewIsComplete ? 'success' : 'warning'}>
+            {reviewIsComplete
+              ? 'Revision completa'
+              : `${completedChecks}/${reviewChecks.length} checks`}
+          </StatusPill>
         </div>
+
+        <div className={styles.invoicingQueueList}>
+          {reviewChecks.map((check) => (
+            <div className={styles.invoiceItemCard} key={check.key}>
+              <div className={styles.invoiceCardHeader}>
+                <strong>{check.label}</strong>
+                <StatusPill tone={check.ok ? 'success' : 'warning'}>
+                  {check.ok ? 'Listo' : 'Revisar'}
+                </StatusPill>
+              </div>
+              <small>{check.detail}</small>
+            </div>
+          ))}
+        </div>
+
+        <div className={styles.invoiceInlineGrid}>
+          <div className={styles.invoiceItemCard}>
+            <span className={styles.label}>Emisor</span>
+            <strong>{data?.issuerProfile?.legalName ?? 'Emisor pendiente'}</strong>
+            <small>
+              {data?.issuerProfile?.taxId ?? 'RUC pendiente'} ·{' '}
+              {data?.issuerProfile?.environment ?? 'ambiente pendiente'}
+            </small>
+          </div>
+          <div className={styles.invoiceItemCard}>
+            <span className={styles.label}>Comprador</span>
+            <strong>{selectedInvoice?.buyerName ?? 'Comprador pendiente'}</strong>
+            <small>
+              {formatBuyerIdentificationType(
+                selectedInvoice?.buyerIdentificationType,
+              )}{' '}
+              · {selectedInvoice?.buyerIdentification ?? 'identificacion pendiente'}
+            </small>
+          </div>
+        </div>
+
         <div className={styles.documentPreview}>
           <h3>
             {selectedInvoice
@@ -1670,7 +1823,7 @@ function ClaudeInvoicingDocuments({
           </h3>
           <div className={styles.invoicingContextTriad}>
             <ContextSignal
-              detail="Condicion del sistema"
+              detail="Condicion comercial del documento"
               label="Documento"
               tone="neutral"
               value={
@@ -1678,14 +1831,10 @@ function ClaudeInvoicingDocuments({
               }
             />
             <ContextSignal
-              detail="No implica autorizacion hasta confirmacion backend"
+              detail={electronicReview.description}
               label="SRI"
-              tone={stage.tone}
-              value={
-                selectedInvoice
-                  ? humanizeKey(selectedInvoice.electronicStatus)
-                  : 'Sin dato'
-              }
+              tone={electronicReview.tone}
+              value={electronicReview.label}
             />
             <ContextSignal
               detail={
@@ -1701,12 +1850,54 @@ function ClaudeInvoicingDocuments({
               value={getPaymentLabel(selectedInvoice)}
             />
           </div>
+          <div className={styles.invoicingQueueList}>
+            <div className={styles.invoiceItemCard}>
+              <div className={styles.invoiceCardHeader}>
+                <strong>Documento imprimible</strong>
+                <StatusPill tone={selectedInvoice ? 'success' : 'warning'}>
+                  {selectedInvoice ? 'Disponible' : 'Pendiente'}
+                </StatusPill>
+              </div>
+              <small>
+                Preview de factura para revision interna. No equivale a envio ni
+                autorizacion SRI.
+              </small>
+            </div>
+            <div className={styles.invoiceItemCard}>
+              <div className={styles.invoiceCardHeader}>
+                <strong>RIDE</strong>
+                <StatusPill tone={statusTone(electronicReview.tone)}>
+                  {electronicReview.label}
+                </StatusPill>
+              </div>
+              <small>
+                El RIDE solo puede leerse como autorizado cuando el backend
+                confirma estado electronico autorizado.
+              </small>
+            </div>
+            <div className={styles.invoiceItemCard}>
+              <div className={styles.invoiceCardHeader}>
+                <strong>XML / clave de acceso</strong>
+                <StatusPill tone={accessKey ? 'success' : 'warning'}>
+                  {accessKey ? 'Evidencia visible' : 'No generado'}
+                </StatusPill>
+              </div>
+              <small>
+                {accessKeyChunks.length
+                  ? accessKeyChunks.join(' · ')
+                  : 'La clave de acceso aparecera cuando exista artefacto electronico.'}
+              </small>
+            </div>
+          </div>
           <div className={styles.buttonRow}>
             <button className={styles.primaryButton} onClick={onRefresh} type="button">
               Refrescar
             </button>
+            <a className={styles.secondaryButton} href="#invoicing-items">
+              Revisar items
+            </a>
             <a className={styles.secondaryButton} href="#invoicing-settings-sri">
-              Ajustar SRI
+              Readiness SRI
             </a>
           </div>
         </div>

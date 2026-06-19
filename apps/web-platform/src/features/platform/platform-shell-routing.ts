@@ -40,6 +40,13 @@ export function resolveActiveInvoicingSubview(
   }
 
   if (
+    activeHash === '#invoicing-items' ||
+    activeHash === '#invoicing-invoice-items'
+  ) {
+    return 'items';
+  }
+
+  if (
     activeHash === '#invoicing-documents' ||
     activeHash === '#invoicing-invoice-detail'
   ) {

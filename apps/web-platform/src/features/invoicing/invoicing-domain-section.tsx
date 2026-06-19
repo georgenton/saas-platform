@@ -19,6 +19,7 @@ export type InvoicingWorkspaceSubview =
   | 'settings'
   | 'draft'
   | 'items'
+  | 'sri-lifecycle'
   | 'documents';
 
 const INVOICING_WORKSPACE_TABS: Array<{
@@ -30,6 +31,7 @@ const INVOICING_WORKSPACE_TABS: Array<{
   { href: '#invoicing-settings-sri', key: 'settings', label: 'Configuracion SRI' },
   { href: '#invoicing-customer-draft', key: 'draft', label: 'Clientes y borrador' },
   { href: '#invoicing-items', key: 'items', label: 'Items' },
+  { href: '#invoicing-sri-lifecycle', key: 'sri-lifecycle', label: 'Ciclo SRI' },
   { href: '#invoicing-documents', key: 'documents', label: 'Documentos' },
 ];
 
@@ -74,6 +76,14 @@ const INVOICING_SUBVIEW_CONTEXT: Record<
       'Compone las líneas, revisa totales y conserva claro que el backend calcula la factura final.',
     eyebrow: 'Composición comercial',
     title: 'Items y totales',
+  },
+  'sri-lifecycle': {
+    actionHref: '#invoicing-documents',
+    actionLabel: 'Revisar documento',
+    description:
+      'Lee el estado legal exacto del comprobante y el siguiente paso seguro sin confundir enviado con autorizado.',
+    eyebrow: 'Ciclo electrónico',
+    title: 'Estado SRI y autorización',
   },
   documents: {
     actionHref: '#invoicing-settings-sri',

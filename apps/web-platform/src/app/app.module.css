@@ -352,23 +352,27 @@
 }
 
 .productWorkspaceTabs {
-  background: color-mix(in srgb, var(--surface-sunken) 78%, var(--surface));
+  background: var(--surface-sunken);
   border: 1px solid var(--border);
   border-radius: 8px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  display: grid;
+  gap: 4px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   margin-bottom: 18px;
   padding: 6px;
 }
 
 .productWorkspaceTabs a {
+  align-items: center;
   border-radius: 8px;
   color: var(--text-muted);
+  display: inline-flex;
   font-size: 0.84rem;
   font-weight: 800;
   min-height: 38px;
-  padding: 9px 12px;
+  min-width: 0;
+  padding: 9px 12px 9px 15px;
+  position: relative;
   text-decoration: none;
   transition:
     background var(--transition-base),
@@ -385,6 +389,116 @@
   background: var(--surface);
   box-shadow: inset 0 0 0 1px var(--border-strong);
   color: var(--text-strong);
+}
+
+.productWorkspaceTabs a[aria-current='page']::before {
+  background: var(--primary);
+  border-radius: 999px;
+  bottom: 9px;
+  content: '';
+  left: 7px;
+  position: absolute;
+  top: 9px;
+  width: 3px;
+}
+
+.invoicingContextStrip {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(220px, 0.72fr) minmax(0, 1fr);
+  padding: 14px;
+}
+
+.invoicingContextIdentity {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.invoicingContextIdentity .label {
+  margin-bottom: 2px;
+}
+
+.invoicingContextIdentity strong {
+  color: var(--text-strong);
+  overflow-wrap: anywhere;
+}
+
+.invoicingContextIdentity small {
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.invoicingContextTriad {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.invoicingContextSignal {
+  background: var(--surface-sunken);
+  border: 1px solid var(--divider);
+  border-radius: 8px;
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 10px 12px 10px 28px;
+  position: relative;
+}
+
+.invoicingContextSignal span {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.invoicingContextSignal strong {
+  color: var(--text-strong);
+  font-size: 0.9rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.invoicingContextSignal small {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.invoicingContextSignalDot {
+  background: var(--text-muted);
+  border-radius: 999px;
+  height: 8px;
+  left: 12px;
+  position: absolute;
+  top: 15px;
+  width: 8px;
+}
+
+.invoicingContextSignalSuccess {
+  background: var(--success);
+}
+
+.invoicingContextSignalWarning {
+  background: var(--warning);
+}
+
+.invoicingContextSignalDanger {
+  background: var(--danger);
+}
+
+.invoicingContextSignalInfo {
+  background: var(--info);
 }
 
 .commandSummaryCard {
@@ -4157,6 +4271,10 @@
     grid-template-columns: 1fr;
   }
 
+  .invoicingContextStrip {
+    grid-template-columns: 1fr;
+  }
+
   .commandCenterHeader,
   .commandDomainHeader,
   .productStatusHeader,
@@ -4237,12 +4355,17 @@
   }
 
   .productWorkspaceTabs {
+    display: flex;
     flex-wrap: nowrap;
     overflow-x: auto;
   }
 
   .productWorkspaceTabs a {
     flex: 0 0 auto;
+  }
+
+  .invoicingContextTriad {
+    grid-template-columns: 1fr;
   }
 
   .tokenForm,

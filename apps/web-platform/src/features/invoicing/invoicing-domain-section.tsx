@@ -1,5 +1,13 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import styles from '../../app/app.module.css';
+import type { InvoiceDetailResponse } from '../../app/types';
+import {
+  deriveDeliveryCloseoutMeta,
+  deriveDeliveryCloseoutStatus,
+  derivePaymentCloseoutMeta,
+  deriveSriCloseoutStatus,
+  type InvoicingCloseoutTone,
+} from './closeout';
 import type {
   InvoicingWorkspaceFoundationModel,
   InvoicingWorkspaceHeroActionKey,
@@ -80,9 +88,13 @@ type InvoicingDomainSectionProps = {
   invoiceDetailLoading: boolean;
   invoicingActionMessage: string | null;
   invoicingLoading: boolean;
+  invoiceEmailRecipient: string;
   model: InvoicingWorkspaceFoundationModel;
   onPrimaryAction: (actionKey: InvoicingWorkspaceHeroActionKey) => void;
   onRefresh: () => void;
+  selectedInvoiceDetail: InvoiceDetailResponse | null;
+  formatElectronicStatus: (value: string | null) => string;
+  formatMoney: (valueInCents: number, currency: string) => string;
 };
 
 export function InvoicingDomainSection({
@@ -94,9 +106,13 @@ export function InvoicingDomainSection({
   invoiceDetailLoading,
   invoicingActionMessage,
   invoicingLoading,
+  invoiceEmailRecipient,
   model,
   onPrimaryAction,
   onRefresh,
+  selectedInvoiceDetail,
+  formatElectronicStatus,
+  formatMoney,
 }: InvoicingDomainSectionProps) {
   const subviewContext = INVOICING_SUBVIEW_CONTEXT[activeSubview];
   const subviewHeadingRef = useRef<HTMLDivElement | null>(null);
@@ -136,20 +152,7 @@ export function InvoicingDomainSection({
         </div>
       </div>
 
-      <nav
-        aria-label="Navegacion interna de facturacion electronica"
-        className={styles.productWorkspaceTabs}
-      >
-        {INVOICING_WORKSPACE_TABS.map((tab) => (
-          <a
-            aria-current={activeSubview === tab.key ? 'page' : undefined}
-            href={tab.href}
-            key={tab.key}
-          >
-            {tab.label}
-          </a>
-        ))}
-      </nav>
+      <InvoicingSubviewNav activeSubview={activeSubview} />
 
       <div
         aria-labelledby={subviewHeadingId}
@@ -219,6 +222,13 @@ export function InvoicingDomainSection({
             </a>
           </div>
 
+          <InvoicingContextStrip
+            formatElectronicStatus={formatElectronicStatus}
+            formatMoney={formatMoney}
+            invoiceEmailRecipient={invoiceEmailRecipient}
+            selectedInvoiceDetail={selectedInvoiceDetail}
+          />
+
           {activeSubview === 'overview' ? (
             <InvoicingWorkspaceSummary
               model={model}
@@ -230,5 +240,144 @@ export function InvoicingDomainSection({
         </div>
       )}
     </section>
+  );
+}
+
+function InvoicingSubviewNav({
+  activeSubview,
+}: {
+  activeSubview: InvoicingWorkspaceSubview;
+}) {
+  return (
+    <nav
+      aria-label="Navegacion interna de facturacion electronica"
+      className={styles.productWorkspaceTabs}
+    >
+      {INVOICING_WORKSPACE_TABS.map((tab) => (
+        <a
+          aria-current={activeSubview === tab.key ? 'page' : undefined}
+          href={tab.href}
+          key={tab.key}
+        >
+          {tab.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function InvoicingContextStrip({
+  formatElectronicStatus,
+  formatMoney,
+  invoiceEmailRecipient,
+  selectedInvoiceDetail,
+}: {
+  formatElectronicStatus: (value: string | null) => string;
+  formatMoney: (valueInCents: number, currency: string) => string;
+  invoiceEmailRecipient: string;
+  selectedInvoiceDetail: InvoiceDetailResponse | null;
+}) {
+  if (!selectedInvoiceDetail) {
+    return (
+      <section
+        aria-label="Contexto de factura activa"
+        className={styles.invoicingContextStrip}
+      >
+        <div className={styles.invoicingContextIdentity}>
+          <span className={styles.label}>Factura activa</span>
+          <strong>Selecciona un documento</strong>
+          <small>
+            La tira de contexto mostrara numero, cliente, total y estado cuando
+            exista una factura activa.
+          </small>
+        </div>
+      </section>
+    );
+  }
+
+  const sriStatus = deriveSriCloseoutStatus(selectedInvoiceDetail);
+  const deliveryStatus = deriveDeliveryCloseoutMeta(
+    deriveDeliveryCloseoutStatus({
+      isSending: false,
+      recipientEmail: invoiceEmailRecipient,
+    }),
+  );
+  const paymentStatus = derivePaymentCloseoutMeta(selectedInvoiceDetail);
+
+  return (
+    <section
+      aria-label="Contexto de factura activa"
+      className={styles.invoicingContextStrip}
+    >
+      <div className={styles.invoicingContextIdentity}>
+        <span className={styles.label}>Factura activa</span>
+        <strong className={styles.monoValue}>{selectedInvoiceDetail.number}</strong>
+        <small>
+          {selectedInvoiceDetail.buyerName ?? 'Cliente sin nombre'} ·{' '}
+          {formatMoney(
+            selectedInvoiceDetail.totals.totalInCents,
+            selectedInvoiceDetail.currency,
+          )}
+        </small>
+      </div>
+
+      <div className={styles.invoicingContextTriad}>
+        <InvoicingContextSignal
+          detail={formatElectronicStatus(selectedInvoiceDetail.electronicStatus)}
+          label="SRI"
+          status={sriStatus.label}
+          tone={sriStatus.tone}
+        />
+        <InvoicingContextSignal
+          detail={invoiceEmailRecipient || 'Correo pendiente'}
+          label="Entrega"
+          status={deliveryStatus.label}
+          tone={deliveryStatus.tone}
+        />
+        <InvoicingContextSignal
+          detail={formatMoney(
+            selectedInvoiceDetail.settlement.balanceDueInCents,
+            selectedInvoiceDetail.currency,
+          )}
+          label="Pago"
+          status={paymentStatus.label}
+          tone={paymentStatus.tone}
+        />
+      </div>
+    </section>
+  );
+}
+
+function InvoicingContextSignal({
+  detail,
+  label,
+  status,
+  tone,
+}: {
+  detail: string;
+  label: string;
+  status: string;
+  tone: InvoicingCloseoutTone;
+}) {
+  return (
+    <div className={styles.invoicingContextSignal}>
+      <span>{label}</span>
+      <strong>{status}</strong>
+      <small>{detail}</small>
+      <i
+        aria-hidden="true"
+        className={`${styles.invoicingContextSignalDot} ${
+          tone === 'success'
+            ? styles.invoicingContextSignalSuccess
+            : tone === 'warning'
+              ? styles.invoicingContextSignalWarning
+              : tone === 'danger'
+                ? styles.invoicingContextSignalDanger
+                : tone === 'info'
+                  ? styles.invoicingContextSignalInfo
+                  : ''
+        }`}
+      />
+    </div>
   );
 }

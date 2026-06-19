@@ -4641,6 +4641,109 @@
   }
 }
 
+@media (max-width: 480px) {
+  .page {
+    padding: 12px 8px 56px;
+  }
+
+  .topbar,
+  .tokenCard,
+  .panel,
+  .adminPanel {
+    padding: 14px;
+  }
+
+  .pageProductWorkspaceActive [data-product-workspace='invoicing'] {
+    padding: 12px 8px;
+  }
+
+  .productWorkspaceHero,
+  .productWorkspaceContext,
+  .invoicingContextStrip,
+  .invoicingCloseoutHero,
+  .invoicingCloseoutCard,
+  .invoicingCloseoutEvidence {
+    padding: 12px;
+  }
+
+  .productWorkspaceTabs {
+    margin-left: -2px;
+    margin-right: -2px;
+    padding: 5px;
+    scroll-padding-inline: 6px;
+  }
+
+  .productWorkspaceTabs a {
+    max-width: 76vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .productWorkspaceContext p,
+  .invoicingCloseoutHeroMain p,
+  .invoicingCloseoutEvidence p,
+  .invoicingCloseoutNextStep strong,
+  .invoicingSRINextStepCard p,
+  .invoicingSRIInterventionAlert p,
+  .invoicingItemsQuietContext span {
+    overflow-wrap: anywhere;
+    text-wrap: pretty;
+  }
+
+  .invoicingContextTriad,
+  .invoicingCloseoutTriad,
+  .invoicingCloseoutSettlementGrid,
+  .invoicingReadinessRibbon,
+  .invoicingDocumentReadinessGrid,
+  .invoicingSRIStatusTriad,
+  .invoicingSRICopyGrid,
+  .invoicingSRIEvidenceGrid,
+  .invoicingSettingsPillarGrid,
+  .invoicingSettingsReadinessRail,
+  .invoiceTotalsGrid,
+  .invoiceDetailGrid,
+  .invoicingDetailSignalGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .invoicingContextSignal strong,
+  .invoicingContextSignal small,
+  .invoicingCloseoutTriadCard strong,
+  .invoicingCloseoutTriadCard small {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+  }
+
+  .invoicingCloseoutQuickActions,
+  .productWorkspaceActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .invoicingCloseoutQuickActions button,
+  .productWorkspaceActions a,
+  .invoicingDocumentActionGroup button,
+  .invoicingDocumentActionGroup a,
+  .invoicingSRICopyCard button {
+    width: 100%;
+  }
+
+  .invoicingCloseoutReverseAction {
+    grid-template-columns: 1fr;
+  }
+
+  .statusPill {
+    justify-content: center;
+    max-width: 100%;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    text-align: center;
+    white-space: normal;
+  }
+}
+
 .accessGateway {
   background:
     radial-gradient(

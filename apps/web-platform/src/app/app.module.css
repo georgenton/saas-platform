@@ -211,6 +211,11 @@
 
 .pageProductWorkspaceActive [data-product-workspace='invoicing'] {
   margin-top: 0;
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 1040px;
+  padding: var(--gutter, 22px);
+  width: 100%;
 }
 
 .pageProductWorkspaceActive .topbar {
@@ -263,32 +268,35 @@
 }
 
 .productWorkspaceHero {
-  align-items: start;
-  background:
-    linear-gradient(180deg, var(--surface-raised), var(--surface)),
-    var(--surface-raised);
+  align-items: center;
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
   display: grid;
-  gap: 18px;
+  gap: 14px;
   grid-template-columns: minmax(0, 1fr) auto;
   margin-bottom: 12px;
-  padding: 20px;
+  padding: 14px 16px;
+}
+
+.productWorkspaceTitleRow {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  min-width: 0;
+}
+
+.productWorkspaceTitleRow .label {
+  margin-bottom: 0;
 }
 
 .productWorkspaceHero h2 {
   color: var(--text-strong);
-  font-size: 1.42rem;
+  font-size: 1.12rem;
   letter-spacing: 0;
-  line-height: 1.15;
-  margin: 2px 0 7px;
-}
-
-.productWorkspaceHero p {
-  color: var(--text-muted);
-  line-height: 1.55;
+  line-height: 1.2;
   margin: 0;
-  max-width: 68ch;
 }
 
 .productWorkspaceContext {
@@ -375,9 +383,7 @@
 
 .productWorkspaceTabs a[aria-current='page'] {
   background: var(--surface);
-  box-shadow:
-    inset 0 0 0 1px var(--border-strong),
-    var(--shadow-sm);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
   color: var(--text-strong);
 }
 

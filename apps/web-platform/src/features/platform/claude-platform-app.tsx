@@ -48,6 +48,7 @@ const INVOICING_WORKSPACE_TABS: Array<{
   { href: '#invoicing-domain', key: 'overview', label: 'Resumen' },
   { href: '#invoicing-settings-sri', key: 'settings', label: 'Configuracion SRI' },
   { href: '#invoicing-customer-draft', key: 'draft', label: 'Clientes y borrador' },
+  { href: '#invoicing-items', key: 'items', label: 'Items' },
   { href: '#invoicing-documents', key: 'documents', label: 'Documentos' },
 ];
 
@@ -763,6 +764,12 @@ function ClaudeInvoicingWorkspace({
         <ClaudeInvoicingSettings data={data} model={model} />
       ) : activeSubview === 'draft' ? (
         <ClaudeInvoicingDraft data={data} invoices={invoices} />
+      ) : activeSubview === 'items' ? (
+        <ClaudeInvoicingItems
+          data={data}
+          invoices={invoices}
+          selectedInvoice={selectedInvoice}
+        />
       ) : (
         <ClaudeInvoicingDocuments
           invoices={invoices}
@@ -1357,6 +1364,226 @@ function ClaudeInvoicingDraft({ data, invoices }: ClaudeInvoicingDraftProps) {
             </button>
             <a className={styles.secondaryButton} href="#invoicing-documents">
               Revisar documentos
+            </a>
+          </div>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+type ClaudeInvoicingItemsProps = {
+  data: InvoicingWorkspaceQueryData | undefined;
+  invoices: InvoiceSummaryResponse[];
+  selectedInvoice: InvoiceSummaryResponse | null;
+};
+
+function ClaudeInvoicingItems({
+  data,
+  invoices,
+  selectedInvoice,
+}: ClaudeInvoicingItemsProps) {
+  const invoice =
+    selectedInvoice ??
+    invoices.find((candidate) => candidate.status.toLowerCase() === 'draft') ??
+    invoices[0] ??
+    null;
+  const activeTaxRates = (data?.taxRates ?? []).filter((rate) => rate.isActive);
+  const defaultTaxRate = activeTaxRates[0] ?? null;
+  const draftIsEditable = invoice?.status.toLowerCase() === 'draft';
+  const currency = invoice?.currency ?? 'USD';
+  const sampleSubtotalInCents = 2500;
+  const sampleTaxInCents = defaultTaxRate
+    ? Math.round((sampleSubtotalInCents * defaultTaxRate.percentage) / 100)
+    : 0;
+  const sampleTotalInCents = sampleSubtotalInCents + sampleTaxInCents;
+
+  return (
+    <div className={styles.stack}>
+      <Card>
+        <div className={styles.commandCenterHeader}>
+          <div>
+            <span className={styles.label}>Composicion comercial</span>
+            <h3>Items → impuestos → totales</h3>
+            <p>
+              La pantalla ordena las lineas del borrador sin mezclarlo con firma,
+              envio o autorizacion SRI. Los totales finales siguen siendo
+              calculados por el backend.
+            </p>
+          </div>
+          <StatusPill tone={draftIsEditable ? 'success' : 'warning'}>
+            {draftIsEditable ? 'Borrador editable' : 'Solo lectura'}
+          </StatusPill>
+        </div>
+      </Card>
+
+      <div className={styles.invoicingDomainMetricGrid}>
+        <MetricCard
+          label="Factura activa"
+          sublabel={invoice?.buyerName ?? 'sin comprador'}
+          value={invoice?.number ?? 'Sin borrador'}
+        />
+        <MetricCard
+          label="Lineas"
+          sublabel="registradas en backend"
+          value={invoice?.itemCount ?? 0}
+        />
+        <MetricCard
+          label="Base imponible"
+          sublabel="subtotal actual"
+          value={
+            invoice
+              ? formatMoney(invoice.totals.subtotalInCents, invoice.currency)
+              : formatMoney(0, currency)
+          }
+        />
+        <MetricCard
+          label="Total"
+          sublabel="documento actual"
+          value={
+            invoice
+              ? formatMoney(invoice.totals.totalInCents, invoice.currency)
+              : formatMoney(0, currency)
+          }
+        />
+      </div>
+
+      <div className={styles.invoicingDomainWorkGrid}>
+        <Card>
+          <span className={styles.label}>Lineas del documento</span>
+          <h3>{invoice ? invoice.number : 'Selecciona o crea un borrador'}</h3>
+          <div className={styles.invoicingQueueList}>
+            {invoice && invoice.itemCount > 0 ? (
+              <div className={styles.invoiceItemCard}>
+                <div className={styles.invoiceCardHeader}>
+                  <strong>{invoice.itemCount} lineas registradas</strong>
+                  <StatusPill tone="success">Backend</StatusPill>
+                </div>
+                <small>
+                  Esta lane ya respeta el contrato fiscal: el detalle completo
+                  vive en la factura del backend y se conectara aqui sin duplicar
+                  reglas de calculo en UI.
+                </small>
+              </div>
+            ) : (
+              <div className={styles.emptyState}>
+                Crea un borrador y agrega la primera linea comercial antes de
+                revisar el documento.
+              </div>
+            )}
+          </div>
+          <div className={styles.buttonRow}>
+            <a className={styles.secondaryButton} href="#invoicing-customer-draft">
+              Volver al borrador
+            </a>
+            <a className={styles.primaryButton} href="#invoicing-documents">
+              Revisar documento
+            </a>
+          </div>
+        </Card>
+
+        <Card>
+          <span className={styles.label}>Agregar item</span>
+          <h3>Entrada guiada, calculo del backend</h3>
+          <div className={styles.invoiceInlineGrid}>
+            <label className={styles.field}>
+              Descripcion
+              <input disabled value="Servicio profesional" readOnly />
+            </label>
+            <label className={styles.field}>
+              Cantidad
+              <input disabled value="1" readOnly />
+            </label>
+            <label className={styles.field}>
+              Precio unitario
+              <input
+                disabled
+                value={formatMoney(sampleSubtotalInCents, currency)}
+                readOnly
+              />
+            </label>
+            <label className={styles.field}>
+              IVA
+              <input
+                disabled
+                value={
+                  defaultTaxRate
+                    ? `${defaultTaxRate.name} · ${defaultTaxRate.percentage}%`
+                    : 'Pendiente'
+                }
+                readOnly
+              />
+            </label>
+          </div>
+          <p>
+            El formulario queda preparado para guardar la linea con el contrato
+            real; por ahora no simula guardados ni recalcula impuestos fuera del
+            backend.
+          </p>
+          <button className={styles.primaryButton} disabled type="button">
+            Agregar linea
+          </button>
+        </Card>
+      </div>
+
+      <div className={styles.invoicingDomainWorkGrid}>
+        <Card>
+          <span className={styles.label}>Totales del borrador</span>
+          <div className={styles.documentPreview}>
+            <h3>
+              {invoice
+                ? formatMoney(invoice.totals.totalInCents, invoice.currency)
+                : formatMoney(sampleTotalInCents, currency)}
+            </h3>
+            <div className={styles.invoicingContextTriad}>
+              <ContextSignal
+                detail="Base antes de impuestos"
+                label="Subtotal"
+                tone="neutral"
+                value={
+                  invoice
+                    ? formatMoney(invoice.totals.subtotalInCents, invoice.currency)
+                    : formatMoney(sampleSubtotalInCents, currency)
+                }
+              />
+              <ContextSignal
+                detail={defaultTaxRate?.name ?? 'Tarifa no seleccionada'}
+                label="IVA"
+                tone={defaultTaxRate ? 'success' : 'warning'}
+                value={
+                  invoice
+                    ? formatMoney(invoice.totals.taxInCents, invoice.currency)
+                    : formatMoney(sampleTaxInCents, currency)
+                }
+              />
+              <ContextSignal
+                detail="Listo para revision documental"
+                label="Total"
+                tone={invoice ? 'success' : 'warning'}
+                value={
+                  invoice
+                    ? formatMoney(invoice.totals.totalInCents, invoice.currency)
+                    : formatMoney(sampleTotalInCents, currency)
+                }
+              />
+            </div>
+          </div>
+        </Card>
+
+        <Card>
+          <span className={styles.label}>Guardrail Ecuador</span>
+          <h3>Items no autorizan SRI</h3>
+          <p>
+            Agregar lineas solo compone el documento comercial. La firma, el
+            envio y la autorizacion siguen bloqueados hasta que el ciclo SRI lo
+            confirme con evidencia del backend.
+          </p>
+          <div className={styles.buttonRow}>
+            <a className={styles.secondaryButton} href="#invoicing-settings-sri">
+              Revisar readiness
+            </a>
+            <a className={styles.primaryButton} href="#invoicing-documents">
+              Ir a documentos
             </a>
           </div>
         </Card>

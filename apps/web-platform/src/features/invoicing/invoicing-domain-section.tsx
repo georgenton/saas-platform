@@ -18,6 +18,7 @@ export type InvoicingWorkspaceSubview =
   | 'overview'
   | 'settings'
   | 'draft'
+  | 'items'
   | 'documents';
 
 const INVOICING_WORKSPACE_TABS: Array<{
@@ -28,6 +29,7 @@ const INVOICING_WORKSPACE_TABS: Array<{
   { href: '#invoicing-domain', key: 'overview', label: 'Resumen' },
   { href: '#invoicing-settings-sri', key: 'settings', label: 'Configuracion SRI' },
   { href: '#invoicing-customer-draft', key: 'draft', label: 'Clientes y borrador' },
+  { href: '#invoicing-items', key: 'items', label: 'Items' },
   { href: '#invoicing-documents', key: 'documents', label: 'Documentos' },
 ];
 
@@ -58,12 +60,20 @@ const INVOICING_SUBVIEW_CONTEXT: Record<
     title: 'Configuración SRI',
   },
   draft: {
-    actionHref: '#invoicing-documents',
-    actionLabel: 'Ver documentos',
+    actionHref: '#invoicing-items',
+    actionLabel: 'Agregar items',
     description:
       'Crea compradores y borradores con una guía clara antes de pasar a revisión o envío.',
     eyebrow: 'Emisión guiada',
     title: 'Clientes y borrador',
+  },
+  items: {
+    actionHref: '#invoicing-documents',
+    actionLabel: 'Revisar documento',
+    description:
+      'Compone las líneas, revisa totales y conserva claro que el backend calcula la factura final.',
+    eyebrow: 'Composición comercial',
+    title: 'Items y totales',
   },
   documents: {
     actionHref: '#invoicing-settings-sri',

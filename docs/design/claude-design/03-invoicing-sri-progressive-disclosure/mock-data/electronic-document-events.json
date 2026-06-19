@@ -1,0 +1,54 @@
+{
+  "_endpoint": "embedded in GET /api/invoicing/tenants/{slug}/invoices/{invoiceId} → electronicEvents[]",
+  "_note": "The technical-trace timeline. Quiet evidence for support/diagnostics — not the main workflow. Shape mirrors workspace-electronic.tsx InvoicingTechnicalTracePanel.",
+  "electronicEvents": [
+    {
+      "id": "evt_sub_01",
+      "eventType": "submission",
+      "provider": "SRI · Recepción",
+      "providerStatus": "RECIBIDA",
+      "occurredAt": "2026-06-15T14:28:51-05:00",
+      "message": "Comprobante recibido por el SRI. En proceso de validación.",
+      "soapAction": "validarComprobante",
+      "endpoint": "recepcion.sri.gob.ec/comprobantes-electronicos-ws/RecepcionComprobantesOffline?wsdl",
+      "submissionReference": "REC-2a18c0",
+      "authorizationNumber": null,
+      "sriDiagnostics": { "summary": "Recepción aceptada sin observaciones.", "messages": [] },
+      "requestPayload": "<soap:Envelope><soap:Body><ec:validarComprobante><xml>…(base64)…</xml></ec:validarComprobante></soap:Body></soap:Envelope>",
+      "responsePayload": "<RespuestaRecepcionComprobante><estado>RECIBIDA</estado></RespuestaRecepcionComprobante>"
+    },
+    {
+      "id": "evt_auth_ok",
+      "eventType": "authorization",
+      "provider": "SRI · Autorización",
+      "providerStatus": "AUTORIZADO",
+      "occurredAt": "2026-06-15T14:32:07-05:00",
+      "message": "Comprobante autorizado por el SRI.",
+      "soapAction": "autorizacionComprobante",
+      "endpoint": "autorizacion.sri.gob.ec/comprobantes-electronicos-ws/AutorizacionComprobantesOffline?wsdl",
+      "submissionReference": "REC-2a18c0",
+      "authorizationNumber": "1506202601179001234500120010010000001438472610934",
+      "sriDiagnostics": { "summary": "Autorizado en ambiente de producción.", "messages": [] },
+      "requestPayload": "<soap:Envelope><soap:Body><ec:autorizacionComprobante><claveAccesoComprobante>1506…0934</claveAccesoComprobante></ec:autorizacionComprobante></soap:Body></soap:Envelope>",
+      "responsePayload": "<RespuestaAutorizacionComprobante><autorizaciones><autorizacion><estado>AUTORIZADO</estado></autorizacion></autorizaciones></RespuestaAutorizacionComprobante>"
+    },
+    {
+      "id": "evt_rej_01",
+      "eventType": "authorization",
+      "provider": "SRI · Autorización",
+      "providerStatus": "NO AUTORIZADO",
+      "occurredAt": "2026-06-15T16:05:44-05:00",
+      "message": "Comprobante devuelto con observaciones.",
+      "soapAction": "autorizacionComprobante",
+      "endpoint": "autorizacion.sri.gob.ec/comprobantes-electronicos-ws/AutorizacionComprobantesOffline?wsdl",
+      "submissionReference": "REC-91b4de",
+      "authorizationNumber": null,
+      "sriDiagnostics": {
+        "summary": "Una observación bloqueante (cód. 43).",
+        "messages": [
+          { "identifier": "43", "message": "IDENTIFICACION DEL COMPRADOR", "additionalInfo": ["El RUC del comprador no es válido para el régimen seleccionado."] }
+        ]
+      }
+    }
+  ]
+}

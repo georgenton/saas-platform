@@ -1,0 +1,20 @@
+{
+  "_note": "Slice 11 composes the readiness ribbon CLIENT-SIDE from the four electronic-* / numbering endpoints (same as slice 02). `ready` is derived, never assumed. No endpoints invented.",
+  "_endpoints": [
+    "GET /api/invoicing/tenants/{slug}/electronic-profile",
+    "GET /api/invoicing/tenants/{slug}/electronic-signature/inspection",
+    "GET /api/invoicing/tenants/{slug}/electronic-submission",
+    "GET /api/invoicing/tenants/{slug}/numbering/invoice"
+  ],
+  "pillars": {
+    "emisor":     { "ready": true, "label": "Perfil del emisor", "note": "RUC 1790012345001 · producción" },
+    "firma":      { "ready": true, "label": "Firma electrónica", "note": "Vigente hasta 14 mar 2027" },
+    "gateway":    { "ready": true, "label": "Envío / Gateway",   "note": "Conectado al SRI" },
+    "numeracion": { "ready": true, "label": "Numeración",        "note": "001-001 · siguiente 000149" }
+  },
+  "missingSetupVariant": {
+    "emisor":  { "ready": false, "note": "Sin completar — falta RUC y dirección" },
+    "firma":   { "ready": false, "note": "Sin certificado cargado" },
+    "gateway": { "ready": false, "note": "Disponible al completar el perfil" }
+  }
+}

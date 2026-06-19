@@ -1,0 +1,30 @@
+{
+  "_endpoint": "POST /api/invoicing/tenants/{slug}/invoices/{invoiceId}/items",
+  "_function": "createInvoiceItem(token, tenantSlug, invoiceId, body)",
+  "_note": "Add-item request body shape exactly as the component's form. The design collects 'Precio unitario' in normal currency terms and maps it to unitPriceInCents (integer cents) before sending — see integration-plan.md. quantity is an integer; taxRateId is optional (null = Sin impuesto). The backend computes position, lineTotalInCents, lineTaxInCents and the refreshed invoice totals; nothing is committed until the item is created and the invoice re-fetched.",
+  "request": {
+    "description": "Transporte adicional fin de semana",
+    "quantity": 2,
+    "unitPriceInCents": 8500,
+    "taxRateId": "tax_iva15"
+  },
+  "response_201_InvoiceItemResponse": {
+    "id": "it_04",
+    "tenantId": "ten_acme",
+    "invoiceId": "inv_5a1c",
+    "position": 4,
+    "description": "Transporte adicional fin de semana",
+    "quantity": 2,
+    "unitPriceInCents": 8500,
+    "lineTotalInCents": 19550,
+    "taxRateId": "tax_iva15",
+    "taxRateName": "IVA",
+    "taxRatePercentage": 15,
+    "lineTaxInCents": 2550,
+    "createdAt": "2026-06-17T11:52:00-05:00",
+    "updatedAt": "2026-06-17T11:52:00-05:00"
+  },
+  "_afterCreate": "Re-fetch GET .../invoices/{invoiceId} to get authoritative totals; do not keep the client preview as the source of truth.",
+  "error_422_example": "El precio unitario debe ser mayor a cero.",
+  "error_409_example": "La factura ya no está en estado borrador; no se pueden agregar líneas."
+}

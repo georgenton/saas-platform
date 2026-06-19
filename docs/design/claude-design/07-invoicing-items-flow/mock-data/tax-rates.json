@@ -1,0 +1,11 @@
+[
+  {
+    "_endpoint": "GET /api/invoicing/tenants/{slug}/taxes",
+    "_type": "TaxRateResponse[]",
+    "_note": "The add-item tax selector lists only isActive rates (plus a 'Sin impuesto' / null option). percentage is a whole number (15 = 15%). When every rate isActive:false, design the 'no active tax rates' state.",
+    "_isExampleArrayBelow": true
+  },
+  { "id": "tax_iva15", "tenantId": "ten_acme", "name": "IVA", "percentage": 15, "isActive": true, "createdAt": "2024-04-01T00:00:00-05:00", "updatedAt": "2024-04-01T00:00:00-05:00" },
+  { "id": "tax_iva5", "tenantId": "ten_acme", "name": "IVA reducido", "percentage": 5, "isActive": true, "createdAt": "2024-04-01T00:00:00-05:00", "updatedAt": "2024-04-01T00:00:00-05:00" },
+  { "id": "tax_iva0", "tenantId": "ten_acme", "name": "Exento", "percentage": 0, "isActive": true, "createdAt": "2024-04-01T00:00:00-05:00", "updatedAt": "2024-04-01T00:00:00-05:00" }
+]

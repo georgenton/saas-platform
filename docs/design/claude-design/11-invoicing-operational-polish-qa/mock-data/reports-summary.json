@@ -1,0 +1,10 @@
+{
+  "_endpoint": "GET /api/invoicing/tenants/{slug}/reports/summary",
+  "_type": "InvoicingReportsSummaryResponse",
+  "_note": "Drives the portfolio metrics shown in the context strip for the summary subview. Operational signals only — no vanity metrics.",
+  "periodLabel": "Junio 2026",
+  "porAutorizar": 2,
+  "autorizadasMes": 38,
+  "carteraMesInCents": 4218000,
+  "porCobrarInCents": 1130400
+}

@@ -1,0 +1,10 @@
+{
+  "_endpoint": "GET /api/invoicing/tenants/{slug}/electronic-profile",
+  "complete": true,
+  "legalName": "Acme Logística S.A.",
+  "tradeName": "Acme Logística",
+  "ruc": "1790012345001",
+  "environment": "production",
+  "address": "Av. Amazonas N34-451, Quito",
+  "obligadoContabilidad": true
+}

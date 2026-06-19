@@ -1,0 +1,15 @@
+{
+  "_endpoint": "GET /api/auth/me",
+  "_note": "Session inspection. The gateway routes on this: currentTenancy → ready handoff; else pendingInvitations → invitation; else tenancies → workspace-select; else no-tenant. Field names illustrative — confirm against openapi.json AuthMeResponse.",
+  "user": { "name": "José Quizá Manchuro", "email": "jose@acme-logistica.ec" },
+  "currentTenancy": {
+    "slug": "acme-logistica", "name": "Acme Logística S.A.", "ruc": "1790012345001",
+    "role": "Owner", "environment": "production", "members": 6
+  },
+  "tenancies": [
+    { "slug": "acme-logistica", "name": "Acme Logística S.A.", "ruc": "1790012345001", "role": "Owner", "environment": "production", "members": 6, "products": 7 },
+    { "slug": "andes-salud", "name": "Andes Salud", "ruc": "1791112223001", "role": "Operator", "environment": "production", "members": 12, "products": 4 },
+    { "slug": "costa-verde", "name": "Importadora Costa Verde", "ruc": "0990012345001", "role": "Contador", "environment": "staging", "members": 3, "products": 2 }
+  ],
+  "pendingInvitations": []
+}

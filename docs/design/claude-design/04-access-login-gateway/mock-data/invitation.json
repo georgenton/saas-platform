@@ -1,0 +1,12 @@
+{
+  "_endpoint": "GET /api/auth/invitations/{invitationId}",
+  "_note": "Pending invitation review. POST /api/auth/invitations/{invitationId}/accept joins the tenant and returns an updated session.",
+  "id": "inv_2f9c41",
+  "tenantName": "Andes Salud",
+  "tenantRuc": "1791112223001",
+  "role": "Operator",
+  "email": "jose@acme-logistica.ec",
+  "invitedBy": { "name": "María Fernanda Cobos", "email": "mf.cobos@andes-salud.ec" },
+  "status": "pending",
+  "expiresAt": "2026-06-20T23:59:59-05:00"
+}

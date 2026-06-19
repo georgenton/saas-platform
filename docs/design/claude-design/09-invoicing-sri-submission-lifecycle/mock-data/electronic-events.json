@@ -1,0 +1,25 @@
+{
+  "_note": "Two reference event shapes for InvoiceDetailResponse.electronicEvents[] — drives the quiet technical trace. authorization event carries sriDiagnostics with structured messages; the rejection example shows how a returned comprobante surfaces in the trace + the rejected-state SRI message.",
+  "authorizationEvent": {
+    "id": "evt_auth_1", "tenantId": "ten_acme", "invoiceId": "inv_5a1c",
+    "eventType": "authorization", "provider": "sri_offline_ws", "providerStatus": "AUTORIZADO",
+    "endpoint": "https://cel.sri.gob.ec/.../AutorizacionComprobantesOffline?wsdl",
+    "soapAction": "autorizacionComprobante", "message": "Comprobante autorizado por el SRI.",
+    "requestPayload": "<soap:Envelope>…</soap:Envelope>", "responsePayload": "<autorizacion><estado>AUTORIZADO</estado></autorizacion>",
+    "submissionReference": "SRI-REF-77120", "authorizationNumber": "1706202601179001234500110010010001480123456789",
+    "occurredAt": "2026-06-17T12:05:00-05:00",
+    "sriDiagnostics": { "state": "AUTORIZADO", "authorizationNumber": "1706202601179001234500110010010001480123456789", "authorizationDate": "2026-06-17T12:05:00-05:00", "accessKey": "1706202601179001234500110010010001480123456789", "summary": "Autorizado sin observaciones.", "messages": [] }
+  },
+  "rejectionEvent": {
+    "id": "evt_rej_1", "tenantId": "ten_acme", "invoiceId": "inv_5a1c",
+    "eventType": "authorization", "provider": "sri_offline_ws", "providerStatus": "DEVUELTA",
+    "endpoint": "https://cel.sri.gob.ec/.../AutorizacionComprobantesOffline?wsdl",
+    "soapAction": "autorizacionComprobante", "message": "El SRI devolvió el comprobante con observaciones.",
+    "requestPayload": "<soap:Envelope>…</soap:Envelope>", "responsePayload": "<autorizacion><estado>NO AUTORIZADO</estado></autorizacion>",
+    "submissionReference": "SRI-REF-77118", "authorizationNumber": null,
+    "occurredAt": "2026-06-17T12:03:00-05:00",
+    "sriDiagnostics": { "state": "DEVUELTA", "authorizationNumber": null, "authorizationDate": null, "accessKey": "1706202601179001234500110010010001480123456789", "summary": "Identificación del comprador no válida para el tipo de documento.",
+      "messages": [ { "identifier": "45", "message": "IDENTIFICACIÓN DEL COMPRADOR NO CUMPLE CON EL TIPO DE COMPROBANTE", "additionalInfo": ["Verifica que el RUC/cédula del comprador sea válido para factura."] } ] }
+  },
+  "rejectedInvoiceElectronicStatusMessage": "IDENTIFICACIÓN DEL COMPRADOR NO CUMPLE CON EL TIPO DE COMPROBANTE (cód. 45). Verifica que el RUC/cédula del comprador sea válido para factura."
+}

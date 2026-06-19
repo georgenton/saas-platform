@@ -1,0 +1,18 @@
+{
+  "_endpoint": "GET /api/invoicing/tenants/{slug}/electronic-document/readiness",
+  "_note": "Drives the readiness pillars consumed by the SRI panel. `ready` is composed client-side from the electronic-* surfaces; never assume it.",
+  "ready": true,
+  "blockers": [],
+  "pillars": [
+    { "key": "issuer", "label": "Emisor", "tone": "success", "value": "Acme Logística S.A.", "sub": "Producción · RUC 1790012345001" },
+    { "key": "signature", "label": "Firma electrónica", "tone": "success", "value": "Vigente", "sub": "Hasta 2026-11-08 · Security Data C.A." },
+    { "key": "gateway", "label": "Gateway SRI", "tone": "success", "value": "Conectado", "sub": "production · verificado hace 8 min" },
+    { "key": "numbering", "label": "Numeración", "tone": "success", "value": "001-001-000148", "sub": "estab. 001 · pto. 001" }
+  ],
+  "blockedExample": {
+    "ready": false,
+    "blockers": [
+      { "pillar": "signature", "code": "signature_expired", "title": "Tu firma electrónica caducó", "detail": "El certificado venció el 2026-05-30. No es posible firmar ni enviar al SRI hasta renovarlo." }
+    ]
+  }
+}

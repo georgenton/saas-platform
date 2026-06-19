@@ -1,0 +1,19 @@
+{
+  "_endpoint": "GET /api/invoicing/tenants/{slug}/electronic-submission",
+  "_update": "PUT /api/invoicing/tenants/{slug}/electronic-submission",
+  "_type": "ElectronicSubmissionSettingsResponse",
+  "_note": "The SRI gateway settings. provider 'stub_sri' keeps everything local; 'sri_offline_ws' models recepción/autorización URLs and an optional credentials secret ref. The readiness ladder + document support live in the sandbox-readiness endpoint below.",
+  "id": "sub_01HZX3",
+  "tenantId": "ten_acme",
+  "provider": "sri_offline_ws",
+  "environment": "production",
+  "transmissionMode": "offline",
+  "receptionUrl": "https://cel.sri.gob.ec/comprobantes-electronicos-ws/RecepcionComprobantesOffline?wsdl",
+  "authorizationUrl": "https://cel.sri.gob.ec/comprobantes-electronicos-ws/AutorizacionComprobantesOffline?wsdl",
+  "credentialsSecretRef": "vault://ec/sri/acme-logistica",
+  "timeoutMs": 30000,
+  "gatewayConfigured": true,
+  "isActive": true,
+  "createdAt": "2024-11-08T10:00:00-05:00",
+  "updatedAt": "2026-06-12T11:30:00-05:00"
+}

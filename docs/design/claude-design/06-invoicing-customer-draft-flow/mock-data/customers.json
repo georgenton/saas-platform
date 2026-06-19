@@ -1,0 +1,44 @@
+[
+  {
+    "_endpoint": "GET /api/invoicing/tenants/{slug}/customers",
+    "_type": "CustomerResponse[]",
+    "_note": "Buyer directory. identificationType ∈ 04 RUC | 05 Cédula | 06 Pasaporte | 07 Consumidor final | 08 Exterior. taxId mirrors identification for RUC buyers; both may be null.",
+    "_isExampleArrayBelow": true
+  },
+  {
+    "id": "cus_01",
+    "tenantId": "ten_acme",
+    "name": "Comercial Andina S.A.",
+    "email": "pagos@andina.ec",
+    "taxId": "1791234567001",
+    "identificationType": "04",
+    "identification": "1791234567001",
+    "billingAddress": "Av. República del Salvador N35-04, Quito",
+    "createdAt": "2026-02-11T10:02:00-05:00",
+    "updatedAt": "2026-02-11T10:02:00-05:00"
+  },
+  {
+    "id": "cus_02",
+    "tenantId": "ten_acme",
+    "name": "María Fernanda Salazar",
+    "email": "mf.salazar@gmail.com",
+    "taxId": null,
+    "identificationType": "05",
+    "identification": "1709988776",
+    "billingAddress": "Cdla. Las Garzas, Mz 4 Villa 12, Guayaquil",
+    "createdAt": "2026-03-04T14:20:00-05:00",
+    "updatedAt": "2026-03-04T14:20:00-05:00"
+  },
+  {
+    "id": "cus_03",
+    "tenantId": "ten_acme",
+    "name": "Northwind Trading LLC",
+    "email": "ap@northwind.com",
+    "taxId": null,
+    "identificationType": "08",
+    "identification": "EXT-558120",
+    "billingAddress": "1209 Brickell Ave, Miami, FL",
+    "createdAt": "2026-04-22T09:45:00-05:00",
+    "updatedAt": "2026-04-22T09:45:00-05:00"
+  }
+]

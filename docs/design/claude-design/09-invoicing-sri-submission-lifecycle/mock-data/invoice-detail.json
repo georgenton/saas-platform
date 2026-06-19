@@ -1,0 +1,49 @@
+{
+  "_endpoint": "GET /api/invoicing/tenants/{slug}/invoices/{invoiceId}",
+  "_type": "InvoiceDetailResponse (electronic lifecycle subset)",
+  "_note": "The selected invoice the lifecycle panel reads. electronicStatus ∈ pending_submission | submitted | authorized | rejected. CRITICAL: 'submitted' means the SRI received/ is processing — NOT authorized. The verdict/stepper/evidence only show authorized when electronicStatus === 'authorized'. electronicEvents[] feeds the technical trace; sriDiagnostics carries the structured SRI messages. This example is the SUBMITTED (pending authorization) case.",
+  "id": "inv_5a1c",
+  "tenantId": "ten_acme",
+  "customerId": "cus_01",
+  "number": "001-001-000000148",
+  "documentCode": "01",
+  "establishmentCode": "001",
+  "emissionPointCode": "001",
+  "sequenceNumber": 148,
+  "buyerIdentificationType": "04",
+  "buyerIdentification": "1791234567001",
+  "buyerName": "Comercial Andina S.A.",
+  "buyerAddress": "Av. República del Salvador N35-04, Quito",
+  "electronicStatus": "submitted",
+  "accessKey": "1706202601179001234500110010010001480123456789",
+  "authorizationNumber": null,
+  "authorizedAt": null,
+  "electronicStatusMessage": null,
+  "signedAt": "2026-06-17T11:59:00-05:00",
+  "submittedAt": "2026-06-17T12:00:00-05:00",
+  "submissionReference": "SRI-REF-77120",
+  "status": "issued",
+  "currency": "USD",
+  "issuedAt": "2026-06-17T11:20:00-05:00",
+  "dueAt": "2026-07-15",
+  "notes": "Servicios de logística junio 2026.",
+  "createdAt": "2026-06-17T11:20:00-05:00",
+  "updatedAt": "2026-06-17T12:00:00-05:00",
+  "items": [
+    { "id": "it_01", "position": 1, "description": "Servicio de logística — ruta Quito/Guayaquil", "quantity": 1, "unitPriceInCents": 120000, "lineTotalInCents": 138000, "taxRateName": "IVA", "taxRatePercentage": 15, "lineTaxInCents": 18000 }
+  ],
+  "payments": [],
+  "electronicEvents": [
+    {
+      "id": "evt_sub_1", "tenantId": "ten_acme", "invoiceId": "inv_5a1c",
+      "eventType": "submission", "provider": "sri_offline_ws", "providerStatus": "RECEIVED",
+      "endpoint": "https://cel.sri.gob.ec/.../RecepcionComprobantesOffline?wsdl",
+      "soapAction": "validarComprobante", "message": "El SRI recibió el comprobante para procesamiento.",
+      "requestPayload": "<soap:Envelope>…</soap:Envelope>", "responsePayload": "<respuestaRecepcion><estado>RECIBIDA</estado></respuestaRecepcion>",
+      "submissionReference": "SRI-REF-77120", "authorizationNumber": null,
+      "occurredAt": "2026-06-17T12:00:00-05:00", "sriDiagnostics": null
+    }
+  ],
+  "totals": { "subtotalInCents": 204000, "taxInCents": 26100, "totalInCents": 230100 },
+  "settlement": { "paidInCents": 0, "balanceDueInCents": 230100, "isFullyPaid": false }
+}

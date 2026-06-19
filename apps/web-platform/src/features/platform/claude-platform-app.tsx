@@ -722,28 +722,30 @@ function ClaudeInvoicingWorkspace({
         ))}
       </nav>
 
-      <Card className={styles.invoicingDomainHero}>
-        <div className={styles.invoicingDomainHeroMain}>
-          <span
-            className={`${styles.invoicingDomainHeroIcon} ${
-              model.readiness.ready
-                ? styles.invoicingDomainHeroIconSuccess
-                : styles.invoicingDomainHeroIconWarning
-            }`}
-            aria-hidden="true"
-          >
-            {model.readiness.ready ? '✓' : '!'}
-          </span>
-          <div>
-            <span className={styles.label}>Operaciones · Ecuador</span>
-            <h2>{model.hero.title}</h2>
-            <p>{model.hero.description}</p>
+      {activeSubview === 'overview' ? (
+        <Card className={styles.invoicingDomainHero}>
+          <div className={styles.invoicingDomainHeroMain}>
+            <span
+              className={`${styles.invoicingDomainHeroIcon} ${
+                model.readiness.ready
+                  ? styles.invoicingDomainHeroIconSuccess
+                  : styles.invoicingDomainHeroIconWarning
+              }`}
+              aria-hidden="true"
+            >
+              {model.readiness.ready ? '✓' : '!'}
+            </span>
+            <div>
+              <span className={styles.label}>Operaciones · Ecuador</span>
+              <h2>{model.hero.title}</h2>
+              <p>{model.hero.description}</p>
+            </div>
+            <a className={styles.primaryButton} href="#invoicing-settings-sri">
+              Revisar SRI
+            </a>
           </div>
-          <a className={styles.primaryButton} href="#invoicing-settings-sri">
-            Revisar SRI
-          </a>
-        </div>
-      </Card>
+        </Card>
+      ) : null}
 
       <ClaudeInvoicingContextStrip
         data={data}

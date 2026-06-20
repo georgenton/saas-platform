@@ -11,6 +11,30 @@ type MoodSelectorProps = {
   variant?: 'full' | 'compact';
 };
 
+function SlidersIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <path d="M4 21v-7" />
+      <path d="M4 10V3" />
+      <path d="M12 21v-9" />
+      <path d="M12 8V3" />
+      <path d="M20 21v-5" />
+      <path d="M20 12V3" />
+      <path d="M2 14h4" />
+      <path d="M10 8h4" />
+      <path d="M18 16h4" />
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <path d="m20 6-11 11-5-5" />
+    </svg>
+  );
+}
+
 export function MoodSelector({
   mood,
   onMoodChange,
@@ -27,20 +51,16 @@ export function MoodSelector({
         <button
           aria-expanded={isOpen}
           aria-haspopup="menu"
-          aria-label={`Mood: ${activeMood?.label ?? mood}`}
+          aria-label="Design mood"
           className={styles.moodCompactButton}
           onClick={() => setIsOpen((current) => !current)}
           type="button"
         >
-          <span
-            aria-hidden="true"
-            className={styles.moodSwatch}
-            data-preview-mood={activeMood?.key ?? mood}
-          />
-          <span>{activeMood?.label ?? mood}</span>
+          <SlidersIcon />
         </button>
         {isOpen ? (
           <div className={styles.moodCompactMenu} role="menu">
+            <div className={styles.moodCompactEyebrow}>Design mood</div>
             {PLATFORM_MOODS.map((platformMood) => (
               <button
                 aria-checked={mood === platformMood.key}
@@ -58,9 +78,16 @@ export function MoodSelector({
                   className={styles.moodSwatch}
                   data-preview-mood={platformMood.key}
                 />
-                <span>{platformMood.label}</span>
+                <span className={styles.moodCompactOptionText}>
+                  <span>{platformMood.label}</span>
+                  <small>{platformMood.summary}</small>
+                </span>
+                {mood === platformMood.key ? <CheckIcon /> : null}
               </button>
             ))}
+            <p className={styles.moodCompactNote}>
+              Frontend-only preference. Backend persistence is future backlog.
+            </p>
           </div>
         ) : null}
       </div>

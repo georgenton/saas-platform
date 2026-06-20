@@ -1,6 +1,7 @@
 # Claude Design vs production audit
 
 Date: 2026-06-19
+Last updated: 2026-06-19, Command Center shell/mood parity pass.
 
 Scope: compare Claude Design deliveries `00` through `11` with the production
 frontend deployed at `https://saas-platform-api-platform.vercel.app/`.
@@ -25,6 +26,31 @@ The current implementation is best described as a semantic integration:
 
 Do not add more frontend surfaces until these mismatches are either accepted as
 intentional or converted into explicit remediation slices.
+
+## Latest parity pass: Platform Shell and Command Center
+
+Reference checked:
+
+- Claude Design slice: `docs/design/claude-design/01-product-command-center`
+- Production/local route: `#platform-home`
+
+Result after the latest pass:
+
+- The shell now uses the Claude-style fixed sidebar plus independently
+  scrollable main area.
+- The topbar now exposes the assistant as an in-place panel trigger instead of
+  a navigation shortcut.
+- The mood control now matches the Claude Design contract: a 36px square
+  sliders/equalizer button, `Design mood` popover, five mood options with
+  swatch + description, active checkmark, and the frontend-only persistence
+  note.
+- The Command Center typography, cards and status pills were tightened toward
+  the Claude Design scale: smaller headings/body type, gray eyebrows, white
+  card surfaces, compact green pills with dots.
+
+Important environment note: Vercel production only reflects these fixes after
+the corresponding frontend PRs are merged and deployed. Local verification was
+performed against the current branch preview.
 
 ## Production routes verified
 
@@ -69,8 +95,8 @@ Detailed workflow: `docs/frontend/claude-design-validation.md`.
 
 | Slice | Production status | Notes |
 | --- | --- | --- |
-| `00-platform-shell` | Partial | Production has shell/sidebar/topbar/mood selector and product nav. It is not an exact match to the design shell: icons, spacing, topbar density, assistant affordance and mood personality are simplified. |
-| `01-product-command-center` | Partial to good | Production has the Command Center, domain sections, product access states and cards. It does not fully match the design layout/mobile system. It currently composes existing endpoints client-side. |
+| `00-platform-shell` | Good, still not pixel-perfect | Production has shell/sidebar/topbar/product nav. Latest fixes align the fixed scrolling model, assistant panel trigger and mood equalizer popover. Remaining differences are mostly icon exactness, mobile shell completeness and the fact that production uses React/CSS modules rather than the raw Claude viewer implementation. |
+| `01-product-command-center` | Good, still not pixel-perfect | Production has the Command Center, domain sections, product access states and cards. Latest fixes align typography scale, gray labels, white card surfaces, compact status pills and topbar mood behavior. Remaining differences: exact card content values differ because production reads real/local backend data; some Claude demo details like Acme/José/Plan Growth are intentionally not hard-coded. |
 | `02-invoicing-workspace` | Partial | Production has Invoicing overview, metrics, context strip, active invoice and nav. It is not identical to the Claude Design screenshot: the design queue/detail workspace is richer and more spatially refined. |
 | `03-invoicing-sri-progressive-disclosure` | Partial | Guardrails are present in `#invoicing-sri-lifecycle` and `#invoicing-settings-sri`, but the strict progressive disclosure panel hierarchy from the slice is not fully reproduced. |
 | `04-access-login-gateway` | Partial to good | Production has a guided access gateway and advanced token path. It still exposes a desktop brand/action layout that is simpler than the design, and future access methods remain non-functional as intended. |
@@ -107,8 +133,9 @@ Important loose contract:
 
 ## Technical debt to resolve before more product screens
 
-1. Decide whether production must become pixel/component faithful to Claude
-   Design or only semantically aligned. Current state is semantic alignment.
+1. Treat Claude Design as the visual source of truth, but keep backend/OpenAPI
+   as the behavioral source of truth. Do not hard-code Claude demo data when
+   production already has real tenant/product data.
 2. Keep Claude Design viewer validation reproducible through the static-server
    workflow in `docs/frontend/claude-design-validation.md`.
 3. Extract the large Invoicing implementation out of
@@ -120,6 +147,26 @@ Important loose contract:
    `#platform-home`, all Invoicing subviews, desktop and mobile.
 6. Keep the generic Command Center BFF as backlog unless/when backend work is
    unfrozen.
+
+## Detailed Command Center parity checklist
+
+The following items were compared against Claude Design slice `01`.
+
+| Area | Status | Notes |
+| --- | --- | --- |
+| Fixed shell scrolling | Matched | Sidebar stays fixed; the main content scrolls independently. |
+| Sidebar groups | Good | Grouping and active state match the design structure. Icons are equivalent but not always identical to the Claude SVG set. |
+| Topbar tenant chip | Good | Tenant selector position, compact card shape and breadcrumb are aligned. Text values come from backend/local tenant, not the Claude Acme fixture. |
+| Assistant button | Matched for UI shell | Opens an in-place assistant panel. No conversational backend is invented. |
+| Search box | Good | Shape, icon and shortcut are aligned. Search remains non-functional shell UI for now. |
+| Mood button | Matched | Uses sliders/equalizer icon, 36px square button and popover menu with five moods. |
+| Notification button | Good | Bell + red dot present. Exact notification behavior remains future scope. |
+| User avatar | Good | Uses tenant/user initials from runtime instead of the Claude fixture. |
+| Page headline | Good | Size and copy are close; production greets the authenticated user/role from available data. |
+| Summary cards | Matched structurally | Three cards: company/tenant, subscription, products. Values differ because production uses current tenant/subscription state. |
+| Product cards | Good | White surfaces, icon tile, state pills and evidence rows are aligned. Remaining differences are content density and some copy/details from real backend contracts. |
+| Mood reskinning | Partial to good | Mood tokens affect shell, cards and controls. A full cross-route/mood screenshot matrix is still needed before calling all slices visually complete. |
+| Mobile launcher | Partial | Production has responsive behavior, but the Claude mobile bottom-tab and sheet patterns are not fully audited in this pass. |
 
 ## Recommended remediation order
 

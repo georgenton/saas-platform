@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import styles from '../../app/app.module.css';
 import { MoodSelector } from '../design-system';
 import type {
@@ -149,6 +149,100 @@ function BellIcon() {
   );
 }
 
+function CloseIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <path d="M18 6 6 18" />
+      <path d="m6 6 12 12" />
+    </svg>
+  );
+}
+
+function AssistantPanel({ onClose }: { onClose: () => void }) {
+  const suggestions = [
+    {
+      action: 'Revisar lote',
+      body: 'Revisa el lote de junio antes de enviarlo al SRI.',
+      icon: 'I',
+      tone: 'info',
+      title: '7 facturas por autorizar',
+    },
+    {
+      action: 'Ver evidencias',
+      body: 'Te muestro qué comprobantes faltan antes de declarar.',
+      icon: 'T',
+      tone: 'warning',
+      title: 'IVA de junio: faltan 2 evidencias',
+    },
+    {
+      action: 'Abrir borradores',
+      body: 'Tengo borradores de respuesta listos para tu aprobación.',
+      icon: 'G',
+      tone: 'neutral',
+      title: '3 conversaciones sin responder',
+    },
+  ];
+
+  return (
+    <aside className={styles.assistantPanel} aria-label="Asistente IA">
+      <div className={styles.assistantPanelHeader}>
+        <span className={styles.assistantPanelMark} aria-hidden="true">
+          <ShellIcon label="AI" />
+        </span>
+        <span>
+          <strong>Asistente IA</strong>
+          <small>Copiloto · suggestion mode</small>
+        </span>
+        <button
+          aria-label="Cerrar asistente"
+          className={styles.assistantPanelClose}
+          onClick={onClose}
+          type="button"
+        >
+          <CloseIcon />
+        </button>
+      </div>
+
+      <div className={styles.assistantPanelBody}>
+        <p>Hola José — preparé algunas cosas para tu revisión.</p>
+        {suggestions.map((suggestion) => (
+          <article className={styles.assistantSuggestion} key={suggestion.title}>
+            <div>
+              <span
+                className={`${styles.assistantSuggestionIcon} ${
+                  styles[`assistantSuggestion_${suggestion.tone}`]
+                }`}
+                aria-hidden="true"
+              >
+                <ShellIcon label={suggestion.icon} />
+              </span>
+              <span>
+                <strong>{suggestion.title}</strong>
+                <small>{suggestion.body}</small>
+              </span>
+            </div>
+            <div className={styles.assistantSuggestionActions}>
+              <button type="button">{suggestion.action}</button>
+              <button type="button">Descartar</button>
+            </div>
+          </article>
+        ))}
+      </div>
+
+      <div className={styles.assistantPanelFooter}>
+        <div>
+          <ShellIcon label="AI" />
+          <span>Pregúntale al asistente…</span>
+        </div>
+        <small>
+          El asistente sugiere y explica. No envía, firma ni declara nada sin tu
+          aprobación.
+        </small>
+      </div>
+    </aside>
+  );
+}
+
 export function PlatformShell({
   activeProductWorkspace = null,
   activeHash = '#platform-home',
@@ -163,6 +257,7 @@ export function PlatformShell({
   title,
   userDisplayName,
 }: PlatformShellProps) {
+  const [assistantOpen, setAssistantOpen] = useState(false);
   const pageClassName = activeProductWorkspace
     ? `${styles.page} ${styles.pageProductWorkspaceActive}`
     : styles.page;
@@ -283,10 +378,14 @@ export function PlatformShell({
           </div>
 
           <div className={styles.topbarActions}>
-            <a className={styles.topbarAssistantButton} href="#ai-console">
+            <button
+              className={styles.topbarAssistantButton}
+              onClick={() => setAssistantOpen(true)}
+              type="button"
+            >
               <ShellIcon label="AI" />
               Asistente
-            </a>
+            </button>
             <label className={styles.topbarSearch}>
               <span aria-hidden="true">
                 <SearchIcon />
@@ -329,6 +428,9 @@ export function PlatformShell({
 
         {children}
       </main>
+      {assistantOpen ? (
+        <AssistantPanel onClose={() => setAssistantOpen(false)} />
+      ) : null}
     </div>
   );
 }

@@ -2,27 +2,27 @@ export const PLATFORM_MOODS = [
   {
     key: 'comfort',
     label: 'Comfort',
-    summary: 'Profesional y amigable',
+    summary: 'Balanced, corporate-friendly',
   },
   {
     key: 'focus',
     label: 'Focus',
-    summary: 'Denso para operacion',
+    summary: 'Denser, stronger hierarchy',
   },
   {
     key: 'calm',
     label: 'Calm',
-    summary: 'Suave para jornadas largas',
+    summary: 'Softer, gentle contrast',
   },
   {
     key: 'high-contrast',
-    label: 'Alto contraste',
-    summary: 'Accesibilidad primero',
+    label: 'High contrast',
+    summary: 'Accessibility-first',
   },
   {
     key: 'night',
     label: 'Night',
-    summary: 'Baja luz',
+    summary: 'Low-glare dark',
   },
 ] as const;
 

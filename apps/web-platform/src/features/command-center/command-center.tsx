@@ -402,7 +402,14 @@ export function CommandCenter({
             <SummaryRow label="Rol" value={tenantRoleLabel} />
             <SummaryRow
               label="Ambiente"
-              value={<StatusPill>{hasCurrentTenancy ? 'Producción' : 'Sin tenant'}</StatusPill>}
+              value={
+                <StatusPill
+                  className={styles.commandSuccessPill}
+                  tone={hasCurrentTenancy ? 'success' : 'default'}
+                >
+                  {hasCurrentTenancy ? 'Producción' : 'Sin tenant'}
+                </StatusPill>
+              }
             />
             <SummaryRow label="Miembros" value={tenantMemberCount} />
           </div>

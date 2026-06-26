@@ -1,7 +1,7 @@
 # Claude Design vs production audit
 
 Date: 2026-06-19
-Last updated: 2026-06-19, Command Center shell/mood parity pass.
+Last updated: 2026-06-26, Invoicing workspace overview parity pass.
 
 Scope: compare Claude Design deliveries `00` through `11` with the production
 frontend deployed at `https://saas-platform-api-platform.vercel.app/`.
@@ -52,6 +52,42 @@ Important environment note: Vercel production only reflects these fixes after
 the corresponding frontend PRs are merged and deployed. Local verification was
 performed against the current branch preview.
 
+## Latest parity pass: Invoicing workspace overview
+
+Reference checked:
+
+- Claude Design slice: `docs/design/claude-design/02-invoicing-workspace`
+- Claude Design polish: `docs/design/claude-design/11-invoicing-operational-polish-qa`
+- Production/local route: `#invoicing-domain`
+
+Result after this pass:
+
+- The Invoicing overview now follows the Claude workspace structure more
+  closely: status hero, persistent SRI/delivery/payment context, metric cards,
+  invoice queue and focused invoice detail.
+- The queue uses the Claude filter vocabulary (`Todas`, `Borradores`,
+  `Por autorizar`, `Autorizadas`, `Rechazadas`) while remaining backed by the
+  existing `InvoiceSummaryResponse` contract.
+- The detail panel shows the selected invoice, lifecycle steps
+  (`Borrador`, `Generado`, `Enviado`, `Autorizado`) and the independent
+  document/SRI/payment truths. It still avoids implying SRI authorization until
+  the backend reports it.
+- No new backend endpoints or invented write actions were added.
+
+Verification performed:
+
+```bash
+corepack pnpm nx build web-platform
+corepack pnpm design:validate:claude
+corepack pnpm exec vite --host 127.0.0.1 --port 4195 dist/apps/web-platform
+curl -sS http://127.0.0.1:4195/#invoicing-domain
+```
+
+The in-app browser connection timed out during this pass, so the compiled
+bundle and local preview response were verified automatically. Final visual QA
+still requires opening the local preview or Vercel deployment and comparing it
+against the Claude Design viewer.
+
 ## Production routes verified
 
 Authenticated production was verified through the browser against:
@@ -93,20 +129,20 @@ Detailed workflow: `docs/frontend/claude-design-validation.md`.
 
 ## Slice-by-slice status
 
-| Slice | Production status | Notes |
-| --- | --- | --- |
-| `00-platform-shell` | Good, still not pixel-perfect | Production has shell/sidebar/topbar/product nav. Latest fixes align the fixed scrolling model, assistant panel trigger and mood equalizer popover. Remaining differences are mostly icon exactness, mobile shell completeness and the fact that production uses React/CSS modules rather than the raw Claude viewer implementation. |
-| `01-product-command-center` | Good, still not pixel-perfect | Production has the Command Center, domain sections, product access states and cards. Latest fixes align typography scale, gray labels, white card surfaces, compact status pills and topbar mood behavior. Remaining differences: exact card content values differ because production reads real/local backend data; some Claude demo details like Acme/José/Plan Growth are intentionally not hard-coded. |
-| `02-invoicing-workspace` | Partial | Production has Invoicing overview, metrics, context strip, active invoice and nav. It is not identical to the Claude Design screenshot: the design queue/detail workspace is richer and more spatially refined. |
-| `03-invoicing-sri-progressive-disclosure` | Partial | Guardrails are present in `#invoicing-sri-lifecycle` and `#invoicing-settings-sri`, but the strict progressive disclosure panel hierarchy from the slice is not fully reproduced. |
-| `04-access-login-gateway` | Partial to good | Production has a guided access gateway and advanced token path. It still exposes a desktop brand/action layout that is simpler than the design, and future access methods remain non-functional as intended. |
-| `05-invoicing-settings-sri` | Partial | Production has SRI readiness, issuer/signature/gateway/numbering cards and blockers. It is not visually equal to the Claude Design readiness-spined surface with the full four-pillar detail hierarchy. |
-| `06-invoicing-customer-draft-flow` | Partial | Production has buyer, fiscal identity and draft guardrails. The design's guided lane and mobile bottom-sheet behavior are only approximated. |
-| `07-invoicing-items-flow` | Partial | Production has items/totals/guardrail content. The design's item composition lane, sticky/mobile totals and state set are not fully implemented. |
-| `08-invoicing-document-review` | Partial | Production has document queue/detail, readiness facts and review guardrails. The artifact/RIDE/XML design hierarchy is only partially represented. |
-| `09-invoicing-sri-submission-lifecycle` | Partial | Production separates prepared/submitted/authorized and does not imply authorization too early. The complete 17-state design surface, manual/fallback/trace panels and copy interactions are incomplete. |
-| `10-invoicing-payment-email-delivery-closeout` | Partial | Production shows independent SRI/delivery/payment truths and closeout actions. The 20-state closeout lane, payment history depth and mobile sheets are not fully equal. |
-| `11-invoicing-operational-polish-qa` | Partial | Some polish from this slice was integrated: product header, subview nav, context strip, active focus. The design's full Shell/Map/Audit viewer and exact final workspace composition are not in production. |
+| Slice                                          | Production status             | Notes                                                                                                                                                                                                                                                                                                                                                                                                      |
+| ---------------------------------------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `00-platform-shell`                            | Good, still not pixel-perfect | Production has shell/sidebar/topbar/product nav. Latest fixes align the fixed scrolling model, assistant panel trigger and mood equalizer popover. Remaining differences are mostly icon exactness, mobile shell completeness and the fact that production uses React/CSS modules rather than the raw Claude viewer implementation.                                                                        |
+| `01-product-command-center`                    | Good, still not pixel-perfect | Production has the Command Center, domain sections, product access states and cards. Latest fixes align typography scale, gray labels, white card surfaces, compact status pills and topbar mood behavior. Remaining differences: exact card content values differ because production reads real/local backend data; some Claude demo details like Acme/José/Plan Growth are intentionally not hard-coded. |
+| `02-invoicing-workspace`                       | Good, still not pixel-perfect | Production now has the core Claude workspace composition: status hero, context strip, metrics, invoice queue, filters and focused invoice detail. Remaining differences are exact spacing, icon geometry, demo copy/data values, and mobile bottom-sheet behavior.                                                                                                                                         |
+| `03-invoicing-sri-progressive-disclosure`      | Partial                       | Guardrails are present in `#invoicing-sri-lifecycle` and `#invoicing-settings-sri`, but the strict progressive disclosure panel hierarchy from the slice is not fully reproduced.                                                                                                                                                                                                                          |
+| `04-access-login-gateway`                      | Partial to good               | Production has a guided access gateway and advanced token path. It still exposes a desktop brand/action layout that is simpler than the design, and future access methods remain non-functional as intended.                                                                                                                                                                                               |
+| `05-invoicing-settings-sri`                    | Partial                       | Production has SRI readiness, issuer/signature/gateway/numbering cards and blockers. It is not visually equal to the Claude Design readiness-spined surface with the full four-pillar detail hierarchy.                                                                                                                                                                                                    |
+| `06-invoicing-customer-draft-flow`             | Partial                       | Production has buyer, fiscal identity and draft guardrails. The design's guided lane and mobile bottom-sheet behavior are only approximated.                                                                                                                                                                                                                                                               |
+| `07-invoicing-items-flow`                      | Partial                       | Production has items/totals/guardrail content. The design's item composition lane, sticky/mobile totals and state set are not fully implemented.                                                                                                                                                                                                                                                           |
+| `08-invoicing-document-review`                 | Partial                       | Production has document queue/detail, readiness facts and review guardrails. The artifact/RIDE/XML design hierarchy is only partially represented.                                                                                                                                                                                                                                                         |
+| `09-invoicing-sri-submission-lifecycle`        | Partial                       | Production separates prepared/submitted/authorized and does not imply authorization too early. The complete 17-state design surface, manual/fallback/trace panels and copy interactions are incomplete.                                                                                                                                                                                                    |
+| `10-invoicing-payment-email-delivery-closeout` | Partial                       | Production shows independent SRI/delivery/payment truths and closeout actions. The 20-state closeout lane, payment history depth and mobile sheets are not fully equal.                                                                                                                                                                                                                                    |
+| `11-invoicing-operational-polish-qa`           | Partial                       | Some polish from this slice was integrated: product header, subview nav, context strip, active focus. The design's full Shell/Map/Audit viewer and exact final workspace composition are not in production.                                                                                                                                                                                                |
 
 ## Contract and endpoint audit
 
@@ -152,21 +188,21 @@ Important loose contract:
 
 The following items were compared against Claude Design slice `01`.
 
-| Area | Status | Notes |
-| --- | --- | --- |
-| Fixed shell scrolling | Matched | Sidebar stays fixed; the main content scrolls independently. |
-| Sidebar groups | Good | Grouping and active state match the design structure. Icons are equivalent but not always identical to the Claude SVG set. |
-| Topbar tenant chip | Good | Tenant selector position, compact card shape and breadcrumb are aligned. Text values come from backend/local tenant, not the Claude Acme fixture. |
-| Assistant button | Matched for UI shell | Opens an in-place assistant panel. No conversational backend is invented. |
-| Search box | Good | Shape, icon and shortcut are aligned. Search remains non-functional shell UI for now. |
-| Mood button | Matched | Uses sliders/equalizer icon, 36px square button and popover menu with five moods. |
-| Notification button | Good | Bell + red dot present. Exact notification behavior remains future scope. |
-| User avatar | Good | Uses tenant/user initials from runtime instead of the Claude fixture. |
-| Page headline | Good | Size and copy are close; production greets the authenticated user/role from available data. |
-| Summary cards | Matched structurally | Three cards: company/tenant, subscription, products. Values differ because production uses current tenant/subscription state. |
-| Product cards | Good | White surfaces, icon tile, state pills and evidence rows are aligned. Remaining differences are content density and some copy/details from real backend contracts. |
-| Mood reskinning | Partial to good | Mood tokens affect shell, cards and controls. A full cross-route/mood screenshot matrix is still needed before calling all slices visually complete. |
-| Mobile launcher | Partial | Production has responsive behavior, but the Claude mobile bottom-tab and sheet patterns are not fully audited in this pass. |
+| Area                  | Status               | Notes                                                                                                                                                              |
+| --------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Fixed shell scrolling | Matched              | Sidebar stays fixed; the main content scrolls independently.                                                                                                       |
+| Sidebar groups        | Good                 | Grouping and active state match the design structure. Icons are equivalent but not always identical to the Claude SVG set.                                         |
+| Topbar tenant chip    | Good                 | Tenant selector position, compact card shape and breadcrumb are aligned. Text values come from backend/local tenant, not the Claude Acme fixture.                  |
+| Assistant button      | Matched for UI shell | Opens an in-place assistant panel. No conversational backend is invented.                                                                                          |
+| Search box            | Good                 | Shape, icon and shortcut are aligned. Search remains non-functional shell UI for now.                                                                              |
+| Mood button           | Matched              | Uses sliders/equalizer icon, 36px square button and popover menu with five moods.                                                                                  |
+| Notification button   | Good                 | Bell + red dot present. Exact notification behavior remains future scope.                                                                                          |
+| User avatar           | Good                 | Uses tenant/user initials from runtime instead of the Claude fixture.                                                                                              |
+| Page headline         | Good                 | Size and copy are close; production greets the authenticated user/role from available data.                                                                        |
+| Summary cards         | Matched structurally | Three cards: company/tenant, subscription, products. Values differ because production uses current tenant/subscription state.                                      |
+| Product cards         | Good                 | White surfaces, icon tile, state pills and evidence rows are aligned. Remaining differences are content density and some copy/details from real backend contracts. |
+| Mood reskinning       | Partial to good      | Mood tokens affect shell, cards and controls. A full cross-route/mood screenshot matrix is still needed before calling all slices visually complete.               |
+| Mobile launcher       | Partial              | Production has responsive behavior, but the Claude mobile bottom-tab and sheet patterns are not fully audited in this pass.                                        |
 
 ## Recommended remediation order
 
@@ -177,8 +213,8 @@ The following items were compared against Claude Design slice `01`.
    align sidebar, topbar, mood behavior, iconography, typography and assistant
    affordance with slice `00`.
 3. Invoicing workspace parity:
-   rebuild `#invoicing-domain` against slice `02` and `11` as the final
-   workspace composition.
+   visually verify `#invoicing-domain` against slice `02` and `11` on desktop
+   and mobile, then close remaining pixel-level differences if needed.
 4. Invoicing subview parity:
    align `settings`, `customer-draft`, `items`, `documents`, `sri-lifecycle`
    and `closeout` one by one against slices `05` through `10`.

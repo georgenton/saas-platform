@@ -1985,6 +1985,14 @@
   margin: 4px 0 0;
 }
 
+.invoicingDomainQueueActions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
 .invoicingDomainQueueFilters {
   border-bottom: 1px solid var(--divider);
   display: flex;
@@ -2085,6 +2093,11 @@
   text-align: right;
 }
 
+.invoicingDomainEmptyState {
+  color: var(--text-muted);
+  padding: 24px 20px;
+}
+
 .invoicingDomainDetailContent {
   display: grid;
   gap: 20px;
@@ -2111,11 +2124,104 @@
   margin: 6px 0 0;
 }
 
+.invoicingDomainDetailTitle small {
+  color: var(--text-muted);
+  display: block;
+  margin-top: 4px;
+}
+
 .invoicingDomainDetailTotal {
   color: var(--text-strong);
   font-size: 2rem;
   letter-spacing: 0;
   line-height: 1;
+}
+
+.invoicingDomainLifecycle {
+  background: var(--surface-muted);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  padding: 14px 16px;
+}
+
+.invoicingDomainLifecycleItem {
+  align-items: center;
+  color: var(--text-muted);
+  display: grid;
+  gap: 8px;
+  grid-template-columns: auto minmax(0, 1fr);
+  position: relative;
+}
+
+.invoicingDomainLifecycleItem strong {
+  color: inherit;
+  font-size: 0.78rem;
+  font-weight: 760;
+  grid-column: 1 / -1;
+  text-align: center;
+}
+
+.invoicingDomainLifecycleDot {
+  align-items: center;
+  border-radius: 999px;
+  display: inline-flex;
+  height: 24px;
+  justify-content: center;
+  justify-self: center;
+  position: relative;
+  width: 24px;
+  z-index: 1;
+}
+
+.invoicingDomainLifecycleDot::after {
+  border-radius: 999px;
+  content: '';
+  height: 8px;
+  width: 8px;
+}
+
+.invoicingDomainLifecycleDotComplete {
+  background: var(--success);
+}
+
+.invoicingDomainLifecycleDotComplete::after {
+  background: var(--surface);
+}
+
+.invoicingDomainLifecycleDotCurrent {
+  background: var(--primary);
+}
+
+.invoicingDomainLifecycleDotCurrent::after {
+  background: var(--surface);
+}
+
+.invoicingDomainLifecycleDotDanger {
+  background: var(--danger);
+}
+
+.invoicingDomainLifecycleDotDanger::after {
+  background: var(--surface);
+}
+
+.invoicingDomainLifecycleDotPending {
+  background: var(--surface);
+  box-shadow: inset 0 0 0 2px var(--border-strong);
+}
+
+.invoicingDomainLifecycleDotPending::after {
+  background: var(--border-strong);
+}
+
+.invoicingDomainLifecycleLine {
+  background: var(--border);
+  display: block;
+  height: 2px;
+  margin-left: -4px;
+  width: calc(100% + 8px);
 }
 
 .invoicingDomainDetailFacts {
@@ -2138,6 +2244,13 @@
 .invoicingDomainDetailFacts strong {
   color: var(--text-strong);
   text-align: right;
+}
+
+.invoicingDomainDetailActions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .invoicingWorkspaceLayout {

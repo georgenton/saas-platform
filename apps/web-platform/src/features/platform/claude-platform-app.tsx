@@ -1,8 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import {
-  fetchSession,
-  setCurrentTenancy,
-} from '../../app/api';
+import { fetchSession, setCurrentTenancy } from '../../app/api';
 import styles from '../../app/app.module.css';
 import type {
   AuthenticatedSessionResponse,
@@ -47,17 +44,38 @@ const INVOICING_WORKSPACE_TABS: Array<{
   label: string;
 }> = [
   { href: '#invoicing-domain', key: 'overview', label: 'Resumen' },
-  { href: '#invoicing-settings-sri', key: 'settings', label: 'Configuracion SRI' },
-  { href: '#invoicing-customer-draft', key: 'draft', label: 'Clientes y borrador' },
+  {
+    href: '#invoicing-settings-sri',
+    key: 'settings',
+    label: 'Configuracion SRI',
+  },
+  {
+    href: '#invoicing-customer-draft',
+    key: 'draft',
+    label: 'Clientes y borrador',
+  },
   { href: '#invoicing-items', key: 'items', label: 'Items' },
-  { href: '#invoicing-sri-lifecycle', key: 'sri-lifecycle', label: 'Ciclo SRI' },
+  {
+    href: '#invoicing-sri-lifecycle',
+    key: 'sri-lifecycle',
+    label: 'Ciclo SRI',
+  },
   { href: '#invoicing-documents', key: 'documents', label: 'Documentos' },
   { href: '#invoicing-closeout', key: 'closeout', label: 'Cierre' },
 ];
 
-function getInvoicingSubviewAction(
-  activeSubview: InvoicingWorkspaceSubview,
-): {
+const INVOICING_OVERVIEW_FILTERS: Array<{
+  key: 'all' | 'draft' | 'pending' | 'authorized' | 'rejected';
+  label: string;
+}> = [
+  { key: 'all', label: 'Todas' },
+  { key: 'draft', label: 'Borradores' },
+  { key: 'pending', label: 'Por autorizar' },
+  { key: 'authorized', label: 'Autorizadas' },
+  { key: 'rejected', label: 'Rechazadas' },
+];
+
+function getInvoicingSubviewAction(activeSubview: InvoicingWorkspaceSubview): {
   href: string;
   label: string;
 } {
@@ -259,7 +277,9 @@ function getSriReadinessVerdict(
   };
 }
 
-function getSriSandboxTier(data: InvoicingWorkspaceQueryData | undefined): string {
+function getSriSandboxTier(
+  data: InvoicingWorkspaceQueryData | undefined,
+): string {
   const readiness = data?.electronicSandboxReadiness;
 
   if (!readiness) {
@@ -281,7 +301,9 @@ function getSriSandboxTier(data: InvoicingWorkspaceQueryData | undefined): strin
   return 'Sin carril listo';
 }
 
-function formatBuyerIdentificationType(value: string | null | undefined): string {
+function formatBuyerIdentificationType(
+  value: string | null | undefined,
+): string {
   switch (value) {
     case '04':
       return 'RUC';
@@ -305,13 +327,16 @@ export function ClaudePlatformApp() {
     () => window.localStorage.getItem(TOKEN_STORAGE_KEY) ?? '',
   );
   const [tokenDraft, setTokenDraft] = useState(token);
-  const [session, setSession] =
-    useState<AuthenticatedSessionResponse | null>(null);
+  const [session, setSession] = useState<AuthenticatedSessionResponse | null>(
+    null,
+  );
   const [authPhase, setAuthPhase] = useState<AuthPhase>(
     token ? 'loading' : 'idle',
   );
   const [authError, setAuthError] = useState<string | null>(null);
-  const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
+  const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     const handleHashChange = () => setActiveHash(readInitialHash());
@@ -349,7 +374,9 @@ export function ClaudePlatformApp() {
       setAuthPhase('ready');
     } catch (error) {
       setSession(null);
-      setAuthError(error instanceof Error ? error.message : 'No se pudo cargar la sesion.');
+      setAuthError(
+        error instanceof Error ? error.message : 'No se pudo cargar la sesion.',
+      );
       setAuthPhase('error');
     }
   };
@@ -465,15 +492,15 @@ export function ClaudePlatformApp() {
   });
   const invoicingModel = useInvoicingWorkspaceModel({
     customers: invoicingData?.customers ?? [],
-    electronicSandboxReadiness: invoicingData?.electronicSandboxReadiness ?? null,
+    electronicSandboxReadiness:
+      invoicingData?.electronicSandboxReadiness ?? null,
     electronicSignatureMaterialInspection:
       invoicingData?.electronicSignatureMaterialInspection ?? null,
     electronicSubmissionSettings:
       invoicingData?.electronicSubmissionSettings ?? null,
     formatMoney,
     humanizeKey,
-    invoiceNumberingSettings:
-      invoicingData?.invoiceNumberingSettings ?? null,
+    invoiceNumberingSettings: invoicingData?.invoiceNumberingSettings ?? null,
     invoices,
     issuerProfile: invoicingData?.issuerProfile ?? null,
     selectedInvoice,
@@ -492,10 +519,9 @@ export function ClaudePlatformApp() {
     session?.email?.split('@')[0]?.replace(/[._-]+/g, ' ') ??
     currentTenancy?.tenant.name ??
     'Jose';
-  const tenantRoleLabel =
-    currentTenancy?.roleKeys.includes('tenant_owner')
-      ? 'Owner'
-      : currentTenancy?.roleKeys[0] ?? 'Owner';
+  const tenantRoleLabel = currentTenancy?.roleKeys.includes('tenant_owner')
+    ? 'Owner'
+    : (currentTenancy?.roleKeys[0] ?? 'Owner');
 
   if (!session || !currentTenancy) {
     return (
@@ -607,8 +633,8 @@ function ClaudeAccessGateway({
               <span className={styles.label}>Acceso operativo</span>
               <h2>SaaS Platform Pilot</h2>
               <p>
-                Conecta un token de piloto para abrir el Command Center y validar
-                la experiencia rediseñada con datos reales del backend.
+                Conecta un token de piloto para abrir el Command Center y
+                validar la experiencia rediseñada con datos reales del backend.
               </p>
             </div>
             <StatusPill tone={authPhase === 'error' ? 'danger' : 'default'}>
@@ -620,7 +646,9 @@ function ClaudeAccessGateway({
             <Card>
               <span className={styles.label}>API base</span>
               <h3>{API_BASE_URL}</h3>
-              <p>Railway/Vercel usan esta URL para las llamadas autenticadas.</p>
+              <p>
+                Railway/Vercel usan esta URL para las llamadas autenticadas.
+              </p>
             </Card>
             <Card>
               <span className={styles.label}>Modo visual</span>
@@ -629,7 +657,9 @@ function ClaudeAccessGateway({
                 {PLATFORM_MOODS.map((item) => (
                   <button
                     className={
-                      item.key === mood ? styles.primaryButton : styles.secondaryButton
+                      item.key === mood
+                        ? styles.primaryButton
+                        : styles.secondaryButton
                     }
                     key={item.key}
                     onClick={() => onMoodChange(item.key)}
@@ -643,7 +673,9 @@ function ClaudeAccessGateway({
             <Card>
               <span className={styles.label}>Fuente de diseño</span>
               <h3>Claude Design</h3>
-              <p>El shell activo parte de las slices 00-11, no del App legacy.</p>
+              <p>
+                El shell activo parte de las slices 00-11, no del App legacy.
+              </p>
             </Card>
           </div>
 
@@ -678,7 +710,9 @@ function ClaudeAccessGateway({
                   value={tokenDraft}
                 />
               </label>
-              {authError ? <p className={styles.errorText}>{authError}</p> : null}
+              {authError ? (
+                <p className={styles.errorText}>{authError}</p>
+              ) : null}
               <div className={styles.buttonRow}>
                 <Button disabled={authPhase === 'loading'} onClick={onUseToken}>
                   {authPhase === 'loading' ? 'Validando...' : 'Usar token'}
@@ -794,6 +828,7 @@ function ClaudeInvoicingWorkspace({
         <ClaudeInvoicingOverview
           currency={currency}
           invoices={invoices}
+          onSelectInvoice={onSelectInvoice}
           onRefresh={onRefresh}
           portfolioTotal={portfolioTotal}
           selectedInvoice={selectedInvoice}
@@ -852,7 +887,7 @@ function ClaudeInvoicingContextStrip({
     'Invoicing';
   const identityTitle = selectedInvoice
     ? `${selectedInvoice.number} · ${selectedInvoice.buyerName ?? selectedInvoice.customerId}`
-    : data?.issuerProfile?.legalName ?? 'Emisor pendiente';
+    : (data?.issuerProfile?.legalName ?? 'Emisor pendiente');
   const identityDetail = selectedInvoice
     ? `${formatMoney(
         selectedInvoice.totals.totalInCents,
@@ -931,6 +966,7 @@ function ContextSignal({ detail, label, tone, value }: ContextSignalProps) {
 type ClaudeInvoicingOverviewProps = {
   currency: string;
   invoices: InvoiceSummaryResponse[];
+  onSelectInvoice: (invoiceId: string) => void;
   onRefresh: () => void;
   portfolioTotal: number;
   selectedInvoice: InvoiceSummaryResponse | null;
@@ -939,10 +975,17 @@ type ClaudeInvoicingOverviewProps = {
 function ClaudeInvoicingOverview({
   currency,
   invoices,
+  onSelectInvoice,
   onRefresh,
   portfolioTotal,
   selectedInvoice,
 }: ClaudeInvoicingOverviewProps) {
+  const [activeFilter, setActiveFilter] =
+    useState<(typeof INVOICING_OVERVIEW_FILTERS)[number]['key']>('all');
+  const activeInvoice = selectedInvoice ?? invoices[0] ?? null;
+  const filteredInvoices = invoices.filter((invoice) =>
+    matchesInvoicingOverviewFilter(invoice, activeFilter),
+  );
   const pendingSriCount = invoices.filter((invoice) =>
     ['submitted', 'sent'].includes(
       invoice.electronicStatus?.toLowerCase() ?? '',
@@ -956,7 +999,11 @@ function ClaudeInvoicingOverview({
   return (
     <>
       <div className={styles.invoicingDomainMetricGrid}>
-        <MetricCard label="Por autorizar" sublabel="en el SRI" value={pendingSriCount} />
+        <MetricCard
+          label="Por autorizar"
+          sublabel="en el SRI"
+          value={pendingSriCount}
+        />
         <MetricCard
           label="Autorizadas"
           sublabel="confirmadas por backend"
@@ -975,46 +1022,307 @@ function ClaudeInvoicingOverview({
       </div>
 
       <div className={styles.invoicingDomainWorkGrid}>
-        <Card>
-          <span className={styles.label}>Siguiente foco operativo</span>
-          <h3>
-            {pendingSriCount > 0
-              ? 'Revisar documentos esperando autorizacion.'
-              : 'Mantener la configuracion SRI al dia.'}
-          </h3>
-          <p>
-            La consola mantiene separadas las verdades de documento, SRI,
-            entrega y pago para evitar falsas autorizaciones.
-          </p>
-          <div className={styles.buttonRow}>
-            <a className={styles.primaryButton} href="#invoicing-documents">
-              Revisar documentos
-            </a>
-            <button className={styles.secondaryButton} onClick={onRefresh} type="button">
-              Refrescar
-            </button>
+        <Card className={styles.invoicingDomainQueueCard}>
+          <div className={styles.invoicingDomainCardHeader}>
+            <div>
+              <h3>Facturas</h3>
+              <p>Selecciona una para revisarla a la derecha.</p>
+            </div>
+            <div className={styles.invoicingDomainQueueActions}>
+              <button
+                className={styles.secondaryButton}
+                onClick={onRefresh}
+                type="button"
+              >
+                Actualizar
+              </button>
+              <a
+                className={styles.primaryButton}
+                href="#invoicing-customer-draft"
+              >
+                Nueva
+              </a>
+            </div>
+          </div>
+          <div className={styles.invoicingDomainQueueFilters}>
+            {INVOICING_OVERVIEW_FILTERS.map((filter) => (
+              <button
+                className={
+                  activeFilter === filter.key
+                    ? styles.invoicingDomainQueueFilterActive
+                    : undefined
+                }
+                key={filter.key}
+                onClick={() => setActiveFilter(filter.key)}
+                type="button"
+              >
+                {filter.label}
+                <small>
+                  {countInvoicingOverviewFilter(invoices, filter.key)}
+                </small>
+              </button>
+            ))}
+          </div>
+          <div className={styles.invoicingDomainQueueList}>
+            <div className={styles.invoicingDomainQueueHeader}>
+              <span>Numero</span>
+              <span>Cliente</span>
+              <span>Total</span>
+              <span>Estado</span>
+            </div>
+            {filteredInvoices.length > 0 ? (
+              filteredInvoices.map((invoice) => {
+                const stage = getInvoiceStage(invoice);
+
+                return (
+                  <button
+                    className={`${styles.invoicingDomainQueueRow} ${
+                      activeInvoice?.id === invoice.id
+                        ? styles.invoicingDomainQueueRowActive
+                        : ''
+                    }`}
+                    key={invoice.id}
+                    onClick={() => onSelectInvoice(invoice.id)}
+                    type="button"
+                  >
+                    <strong>{invoice.number}</strong>
+                    <span>
+                      <b>{invoice.buyerName ?? invoice.customerId}</b>
+                      <small>
+                        {formatDate(invoice.issuedAt)} · {invoice.itemCount}{' '}
+                        item
+                        {invoice.itemCount === 1 ? '' : 's'}
+                      </small>
+                    </span>
+                    <em>
+                      {formatMoney(
+                        invoice.totals.totalInCents,
+                        invoice.currency,
+                      )}
+                    </em>
+                    <StatusPill tone={statusTone(stage.tone)}>
+                      {stage.label}
+                    </StatusPill>
+                  </button>
+                );
+              })
+            ) : (
+              <div className={styles.invoicingDomainEmptyState}>
+                No hay facturas en este filtro.
+              </div>
+            )}
           </div>
         </Card>
 
-        <Card>
-          <span className={styles.label}>Factura activa</span>
-          <h3>{selectedInvoice?.number ?? 'Sin factura seleccionada'}</h3>
-          <p>
-            {selectedInvoice
-              ? `${selectedInvoice.buyerName ?? selectedInvoice.customerId} · ${formatMoney(
-                  selectedInvoice.totals.totalInCents,
-                  selectedInvoice.currency,
-                )}`
-              : 'Selecciona un documento para abrir el detalle operacional.'}
-          </p>
-          <div className={styles.buttonRow}>
-            <a className={styles.secondaryButton} href="#invoicing-settings-sri">
-              Configuracion SRI
-            </a>
-          </div>
+        <Card className={styles.invoicingDomainDetailCard}>
+          {activeInvoice ? (
+            <div className={styles.invoicingDomainDetailContent}>
+              <div className={styles.invoicingDomainDetailTitle}>
+                <div>
+                  <span>{activeInvoice.number}</span>
+                  <h3>{activeInvoice.buyerName ?? activeInvoice.customerId}</h3>
+                  <small>RUC {activeInvoice.buyerIdentification}</small>
+                </div>
+                <StatusPill
+                  tone={statusTone(getInvoiceStage(activeInvoice).tone)}
+                >
+                  {getInvoiceStage(activeInvoice).label}
+                </StatusPill>
+              </div>
+              <strong className={styles.invoicingDomainDetailTotal}>
+                {formatMoney(
+                  activeInvoice.totals.totalInCents,
+                  activeInvoice.currency,
+                )}
+              </strong>
+              <InvoicingOverviewLifecycle invoice={activeInvoice} />
+              <div className={styles.invoicingDomainDetailFacts}>
+                <span>Condicion del documento</span>
+                <strong>{getDocumentConditionLabel(activeInvoice)}</strong>
+                <span>Condicion electronica (SRI)</span>
+                <strong>{getElectronicConditionLabel(activeInvoice)}</strong>
+                <span>Subtotal · IVA</span>
+                <strong>
+                  {formatMoney(
+                    activeInvoice.totals.subtotalInCents,
+                    activeInvoice.currency,
+                  )}{' '}
+                  ·{' '}
+                  {formatMoney(
+                    activeInvoice.totals.taxInCents,
+                    activeInvoice.currency,
+                  )}
+                </strong>
+                <span>Saldo por cobrar</span>
+                <strong>
+                  {formatMoney(
+                    activeInvoice.settlement.balanceDueInCents,
+                    activeInvoice.currency,
+                  )}
+                </strong>
+              </div>
+              <div className={styles.invoicingDomainDetailActions}>
+                <a
+                  className={styles.primaryButton}
+                  href="#invoicing-sri-lifecycle"
+                >
+                  Revisar ciclo SRI
+                </a>
+                <a
+                  className={styles.secondaryButton}
+                  href="#invoicing-documents"
+                >
+                  Ver documentos
+                </a>
+              </div>
+            </div>
+          ) : (
+            <div className={styles.invoicingDomainDetailContent}>
+              <div className={styles.invoicingDomainEmptyState}>
+                Crea una factura para activar el detalle operacional.
+              </div>
+              <a
+                className={styles.primaryButton}
+                href="#invoicing-customer-draft"
+              >
+                Crear borrador
+              </a>
+            </div>
+          )}
         </Card>
       </div>
     </>
+  );
+}
+
+function countInvoicingOverviewFilter(
+  invoices: InvoiceSummaryResponse[],
+  filter: (typeof INVOICING_OVERVIEW_FILTERS)[number]['key'],
+): number {
+  return invoices.filter((invoice) =>
+    matchesInvoicingOverviewFilter(invoice, filter),
+  ).length;
+}
+
+function matchesInvoicingOverviewFilter(
+  invoice: InvoiceSummaryResponse,
+  filter: (typeof INVOICING_OVERVIEW_FILTERS)[number]['key'],
+): boolean {
+  const electronicStatus = invoice.electronicStatus?.toLowerCase() ?? '';
+  const status = invoice.status.toLowerCase();
+
+  if (filter === 'all') {
+    return true;
+  }
+
+  if (filter === 'draft') {
+    return status === 'draft';
+  }
+
+  if (filter === 'pending') {
+    return (
+      electronicStatus === 'submitted' ||
+      electronicStatus === 'sent' ||
+      electronicStatus === 'pending_submission'
+    );
+  }
+
+  if (filter === 'authorized') {
+    return Boolean(invoice.authorizedAt) || electronicStatus === 'authorized';
+  }
+
+  return electronicStatus === 'rejected' || electronicStatus === 'failed';
+}
+
+function getDocumentConditionLabel(invoice: InvoiceSummaryResponse): string {
+  if (invoice.status.toLowerCase() === 'draft') {
+    return 'Borrador';
+  }
+
+  if (invoice.signedAt || invoice.status.toLowerCase() === 'issued') {
+    return 'Emitido (sistema)';
+  }
+
+  return humanizeKey(invoice.status);
+}
+
+function getElectronicConditionLabel(invoice: InvoiceSummaryResponse): string {
+  if (invoice.electronicStatus === 'authorized') {
+    return 'Autorizado por SRI';
+  }
+
+  if (
+    invoice.electronicStatus === 'rejected' ||
+    invoice.electronicStatus === 'failed'
+  ) {
+    return 'Devuelto por SRI';
+  }
+
+  if (invoice.submittedAt || invoice.electronicStatus === 'submitted') {
+    return 'Enviado · esperando autorizacion';
+  }
+
+  if (invoice.electronicStatus === 'pending_submission') {
+    return 'Listo para enviar';
+  }
+
+  return 'Sin estado electronico';
+}
+
+function InvoicingOverviewLifecycle({
+  invoice,
+}: {
+  invoice: InvoiceSummaryResponse;
+}) {
+  const steps: Array<{
+    key: 'draft' | 'prepared' | 'submitted' | 'authorized';
+    label: string;
+    state: 'complete' | 'current' | 'pending' | 'danger';
+  }> = [
+    {
+      key: 'draft',
+      label: 'Borrador',
+      state: invoice.status.toLowerCase() === 'draft' ? 'current' : 'complete',
+    },
+    {
+      key: 'prepared',
+      label: 'Generado',
+      state: getSriLifecycleStepState(invoice, 'prepared'),
+    },
+    {
+      key: 'submitted',
+      label: 'Enviado',
+      state: getSriLifecycleStepState(invoice, 'submitted'),
+    },
+    {
+      key: 'authorized',
+      label: 'Autorizado',
+      state: getSriLifecycleStepState(invoice, 'authorized'),
+    },
+  ];
+
+  return (
+    <div className={styles.invoicingDomainLifecycle} aria-label="Ciclo SRI">
+      {steps.map((step, index) => (
+        <div className={styles.invoicingDomainLifecycleItem} key={step.key}>
+          <span
+            className={`${styles.invoicingDomainLifecycleDot} ${
+              step.state === 'complete'
+                ? styles.invoicingDomainLifecycleDotComplete
+                : step.state === 'current'
+                  ? styles.invoicingDomainLifecycleDotCurrent
+                  : step.state === 'danger'
+                    ? styles.invoicingDomainLifecycleDotDanger
+                    : styles.invoicingDomainLifecycleDotPending
+            }`}
+          />
+          {index < steps.length - 1 ? (
+            <i className={styles.invoicingDomainLifecycleLine} />
+          ) : null}
+          <strong>{step.label}</strong>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -1039,7 +1347,10 @@ type ClaudeInvoicingSettingsProps = {
   model: InvoicingWorkspaceFoundationModel;
 };
 
-function ClaudeInvoicingSettings({ data, model }: ClaudeInvoicingSettingsProps) {
+function ClaudeInvoicingSettings({
+  data,
+  model,
+}: ClaudeInvoicingSettingsProps) {
   const verdict = getSriReadinessVerdict(data);
   const readiness = data?.electronicSandboxReadiness;
   const missingItems = [
@@ -1100,7 +1411,8 @@ function ClaudeInvoicingSettings({ data, model }: ClaudeInvoicingSettingsProps) 
                 </StatusPill>
               </div>
               <small>
-                {data?.issuerProfile?.legalName ?? 'Completa razon social, RUC y direcciones.'}
+                {data?.issuerProfile?.legalName ??
+                  'Completa razon social, RUC y direcciones.'}
               </small>
             </div>
 
@@ -1135,7 +1447,8 @@ function ClaudeInvoicingSettings({ data, model }: ClaudeInvoicingSettingsProps) 
               </div>
               <small>
                 {data?.electronicSignatureSettings?.certificateLabel ??
-                  data?.electronicSignatureMaterialInspection?.certificateLabel ??
+                  data?.electronicSignatureMaterialInspection
+                    ?.certificateLabel ??
                   'Configura certificado y material de firma.'}
               </small>
             </div>
@@ -1217,10 +1530,15 @@ function ClaudeInvoicingSettings({ data, model }: ClaudeInvoicingSettingsProps) 
           <h3>Soporte electronico</h3>
           <div className={styles.invoicingQueueList}>
             {(readiness?.documentSupport ?? []).map((document) => (
-              <div className={styles.invoiceItemCard} key={document.documentCode}>
+              <div
+                className={styles.invoiceItemCard}
+                key={document.documentCode}
+              >
                 <div className={styles.invoiceCardHeader}>
                   <strong>{document.label}</strong>
-                  <StatusPill tone={document.submitSupported ? 'success' : 'warning'}>
+                  <StatusPill
+                    tone={document.submitSupported ? 'success' : 'warning'}
+                  >
                     {document.submitSupported ? 'Enviable' : 'Parcial'}
                   </StatusPill>
                 </div>
@@ -1284,10 +1602,16 @@ function ClaudeInvoicingDraft({ data, invoices }: ClaudeInvoicingDraftProps) {
           label="Identidad fiscal"
           sublabel={
             selectedCustomer
-              ? formatBuyerIdentificationType(selectedCustomer.identificationType)
+              ? formatBuyerIdentificationType(
+                  selectedCustomer.identificationType,
+                )
               : 'pendiente'
           }
-          value={selectedCustomer?.taxId ?? selectedCustomer?.identification ?? 'Sin comprador'}
+          value={
+            selectedCustomer?.taxId ??
+            selectedCustomer?.identification ??
+            'Sin comprador'
+          }
         />
         <MetricCard
           label="Borradores"
@@ -1334,9 +1658,9 @@ function ClaudeInvoicingDraft({ data, invoices }: ClaudeInvoicingDraftProps) {
               </div>
               <small>
                 {selectedCustomer
-                  ? selectedCustomer.taxId ??
+                  ? (selectedCustomer.taxId ??
                     selectedCustomer.identification ??
-                    'Identificacion pendiente'
+                    'Identificacion pendiente')
                   : 'Confirma RUC, cedula, pasaporte, consumidor final o exterior.'}
               </small>
             </div>
@@ -1362,7 +1686,11 @@ function ClaudeInvoicingDraft({ data, invoices }: ClaudeInvoicingDraftProps) {
 
         <Card>
           <span className={styles.label}>Directorio de compradores</span>
-          <h3>{customers.length ? 'Compradores disponibles' : 'Aun no hay compradores'}</h3>
+          <h3>
+            {customers.length
+              ? 'Compradores disponibles'
+              : 'Aun no hay compradores'}
+          </h3>
           <div className={styles.invoicingQueueList}>
             {customers.length ? (
               customers.slice(0, 4).map((customer) => (
@@ -1370,12 +1698,16 @@ function ClaudeInvoicingDraft({ data, invoices }: ClaudeInvoicingDraftProps) {
                   <div className={styles.invoiceCardHeader}>
                     <strong>{customer.name}</strong>
                     <StatusPill>
-                      {formatBuyerIdentificationType(customer.identificationType)}
+                      {formatBuyerIdentificationType(
+                        customer.identificationType,
+                      )}
                     </StatusPill>
                   </div>
                   <small>
-                    {customer.taxId ?? customer.identification ?? 'Sin identificacion'} ·{' '}
-                    {customer.billingAddress ?? 'Sin direccion'}
+                    {customer.taxId ??
+                      customer.identification ??
+                      'Sin identificacion'}{' '}
+                    · {customer.billingAddress ?? 'Sin direccion'}
                   </small>
                 </div>
               ))
@@ -1407,7 +1739,11 @@ function ClaudeInvoicingDraft({ data, invoices }: ClaudeInvoicingDraftProps) {
             <button className={styles.secondaryButton} disabled type="button">
               Guardar comprador
             </button>
-            <button className={styles.primaryButton} disabled={!selectedCustomer} type="button">
+            <button
+              className={styles.primaryButton}
+              disabled={!selectedCustomer}
+              type="button"
+            >
               Confirmar identidad
             </button>
           </div>
@@ -1421,7 +1757,11 @@ function ClaudeInvoicingDraft({ data, invoices }: ClaudeInvoicingDraftProps) {
             emision electronica vive en documentos y ciclo SRI.
           </p>
           <div className={styles.buttonRow}>
-            <button className={styles.primaryButton} disabled={!selectedCustomer} type="button">
+            <button
+              className={styles.primaryButton}
+              disabled={!selectedCustomer}
+              type="button"
+            >
               Crear borrador
             </button>
             <a className={styles.secondaryButton} href="#invoicing-documents">
@@ -1468,8 +1808,8 @@ function ClaudeInvoicingItems({
             <span className={styles.label}>Composicion comercial</span>
             <h3>Items → impuestos → totales</h3>
             <p>
-              La pantalla ordena las lineas del borrador sin mezclarlo con firma,
-              envio o autorizacion SRI. Los totales finales siguen siendo
+              La pantalla ordena las lineas del borrador sin mezclarlo con
+              firma, envio o autorizacion SRI. Los totales finales siguen siendo
               calculados por el backend.
             </p>
           </div>
@@ -1523,8 +1863,8 @@ function ClaudeInvoicingItems({
                 </div>
                 <small>
                   Esta lane ya respeta el contrato fiscal: el detalle completo
-                  vive en la factura del backend y se conectara aqui sin duplicar
-                  reglas de calculo en UI.
+                  vive en la factura del backend y se conectara aqui sin
+                  duplicar reglas de calculo en UI.
                 </small>
               </div>
             ) : (
@@ -1535,7 +1875,10 @@ function ClaudeInvoicingItems({
             )}
           </div>
           <div className={styles.buttonRow}>
-            <a className={styles.secondaryButton} href="#invoicing-customer-draft">
+            <a
+              className={styles.secondaryButton}
+              href="#invoicing-customer-draft"
+            >
               Volver al borrador
             </a>
             <a className={styles.primaryButton} href="#invoicing-documents">
@@ -1604,7 +1947,10 @@ function ClaudeInvoicingItems({
                 tone="neutral"
                 value={
                   invoice
-                    ? formatMoney(invoice.totals.subtotalInCents, invoice.currency)
+                    ? formatMoney(
+                        invoice.totals.subtotalInCents,
+                        invoice.currency,
+                      )
                     : formatMoney(sampleSubtotalInCents, currency)
                 }
               />
@@ -1641,7 +1987,10 @@ function ClaudeInvoicingItems({
             confirme con evidencia del backend.
           </p>
           <div className={styles.buttonRow}>
-            <a className={styles.secondaryButton} href="#invoicing-settings-sri">
+            <a
+              className={styles.secondaryButton}
+              href="#invoicing-settings-sri"
+            >
               Revisar readiness
             </a>
             <a className={styles.primaryButton} href="#invoicing-documents">
@@ -1679,7 +2028,8 @@ function getSriLifecycleVerdict(invoice: InvoiceSummaryResponse | null): {
 
   if (invoice.electronicStatus === 'authorized') {
     return {
-      legalLine: 'El comprobante es legalmente valido solo porque el backend confirma autorizacion.',
+      legalLine:
+        'El comprobante es legalmente valido solo porque el backend confirma autorizacion.',
       primaryAction: 'Ver evidencia',
       secondaryAction: 'Revisar documento',
       title: 'Autorizado por el SRI',
@@ -1692,7 +2042,9 @@ function getSriLifecycleVerdict(invoice: InvoiceSummaryResponse | null): {
     invoice.electronicStatus === 'failed'
   ) {
     return {
-      legalLine: invoice.electronicStatusMessage ?? 'El SRI devolvio una observacion que conviene corregir.',
+      legalLine:
+        invoice.electronicStatusMessage ??
+        'El SRI devolvio una observacion que conviene corregir.',
       primaryAction: 'Corregir observacion',
       secondaryAction: 'Revisar readiness',
       title: 'Devuelto por el SRI',
@@ -1702,7 +2054,8 @@ function getSriLifecycleVerdict(invoice: InvoiceSummaryResponse | null): {
 
   if (invoice.submittedAt || invoice.electronicStatus === 'submitted') {
     return {
-      legalLine: 'Enviado NO significa autorizado. La validez legal llega solo con autorizacion confirmada.',
+      legalLine:
+        'Enviado NO significa autorizado. La validez legal llega solo con autorizacion confirmada.',
       primaryAction: 'Consultar autorizacion',
       secondaryAction: 'Ver XML preliminar',
       title: 'Enviado al SRI',
@@ -1716,7 +2069,8 @@ function getSriLifecycleVerdict(invoice: InvoiceSummaryResponse | null): {
     invoice.status.toLowerCase() === 'issued'
   ) {
     return {
-      legalLine: 'El documento puede prepararse para envio, pero aun no tiene autorizacion SRI.',
+      legalLine:
+        'El documento puede prepararse para envio, pero aun no tiene autorizacion SRI.',
       primaryAction: 'Revisar antes de enviar',
       secondaryAction: 'Ver XML preliminar',
       title: 'Listo para envio',
@@ -1725,7 +2079,8 @@ function getSriLifecycleVerdict(invoice: InvoiceSummaryResponse | null): {
   }
 
   return {
-    legalLine: 'Borrador comercial: todavia no esta firmado, enviado ni autorizado.',
+    legalLine:
+      'Borrador comercial: todavia no esta firmado, enviado ni autorizado.',
     primaryAction: 'Completar documento',
     secondaryAction: 'Revisar items',
     title: 'Preparacion pendiente',
@@ -1840,7 +2195,11 @@ function ClaudeInvoicingSriLifecycle({
           </StatusPill>
         </div>
         <div className={styles.buttonRow}>
-          <button className={styles.primaryButton} onClick={onRefresh} type="button">
+          <button
+            className={styles.primaryButton}
+            onClick={onRefresh}
+            type="button"
+          >
             {verdict.primaryAction === 'Consultar autorizacion'
               ? 'Consultar estado'
               : 'Refrescar estado'}
@@ -1915,7 +2274,8 @@ function ClaudeInvoicingSriLifecycle({
               </div>
               <small>
                 {isAuthorized
-                  ? selectedInvoice?.authorizationNumber ?? 'Autorizacion confirmada'
+                  ? (selectedInvoice?.authorizationNumber ??
+                    'Autorizacion confirmada')
                   : 'No se muestra como evidencia hasta que electronicStatus sea authorized.'}
               </small>
             </div>
@@ -1923,8 +2283,14 @@ function ClaudeInvoicingSriLifecycle({
             <div className={styles.invoiceItemCard}>
               <div className={styles.invoiceCardHeader}>
                 <strong>Referencia de envio</strong>
-                <StatusPill tone={selectedInvoice?.submissionReference ? 'success' : 'warning'}>
-                  {selectedInvoice?.submissionReference ? 'Registrada' : 'Sin envio'}
+                <StatusPill
+                  tone={
+                    selectedInvoice?.submissionReference ? 'success' : 'warning'
+                  }
+                >
+                  {selectedInvoice?.submissionReference
+                    ? 'Registrada'
+                    : 'Sin envio'}
                 </StatusPill>
               </div>
               <small>
@@ -1937,12 +2303,16 @@ function ClaudeInvoicingSriLifecycle({
 
         <Card>
           <span className={styles.label}>Camino seguro</span>
-          <h3>{canSubmit ? 'Listo para operar con backend' : 'Aun con guardrails activos'}</h3>
+          <h3>
+            {canSubmit
+              ? 'Listo para operar con backend'
+              : 'Aun con guardrails activos'}
+          </h3>
           <p>
-            La accion principal mantiene el recorrido seguro hasta que conectemos
-            los handlers de envio y consulta en esta superficie. Intervencion
-            manual, XML prefirmado y trazas tecnicas quedan como soporte avanzado,
-            no como operacion diaria.
+            La accion principal mantiene el recorrido seguro hasta que
+            conectemos los handlers de envio y consulta en esta superficie.
+            Intervencion manual, XML prefirmado y trazas tecnicas quedan como
+            soporte avanzado, no como operacion diaria.
           </p>
           <div className={styles.invoicingQueueList}>
             {(readiness?.blockers ?? []).slice(0, 3).map((blocker) => (
@@ -2045,7 +2415,8 @@ function getCloseoutVerdict({
 
   if (invoice.status.toLowerCase() === 'draft') {
     return {
-      detail: 'Primero completa el documento. Entrega y pago no convierten un borrador en comprobante legal.',
+      detail:
+        'Primero completa el documento. Entrega y pago no convierten un borrador en comprobante legal.',
       label: 'Aun es borrador',
       nextStep: 'Revisar documento',
       tone: 'warning',
@@ -2057,7 +2428,9 @@ function getCloseoutVerdict({
     invoice.electronicStatus === 'failed'
   ) {
     return {
-      detail: invoice.electronicStatusMessage ?? 'Corrige la observacion SRI antes de tratar el documento como cerrado.',
+      detail:
+        invoice.electronicStatusMessage ??
+        'Corrige la observacion SRI antes de tratar el documento como cerrado.',
       label: 'Atencion SRI',
       nextStep: 'Ver ciclo SRI',
       tone: 'danger',
@@ -2066,7 +2439,8 @@ function getCloseoutVerdict({
 
   if (!customerEmail) {
     return {
-      detail: 'Falta correo para entregar el comprobante, pero el saldo puede seguir visible.',
+      detail:
+        'Falta correo para entregar el comprobante, pero el saldo puede seguir visible.',
       label: 'Completar entrega',
       nextStep: 'Agregar correo del cliente',
       tone: 'warning',
@@ -2075,7 +2449,8 @@ function getCloseoutVerdict({
 
   if (!invoice.settlement.isFullyPaid) {
     return {
-      detail: 'La autorizacion o entrega no significan que el dinero este pagado.',
+      detail:
+        'La autorizacion o entrega no significan que el dinero este pagado.',
       label: 'Cerrar saldo',
       nextStep: 'Registrar pago recibido',
       tone: 'warning',
@@ -2083,7 +2458,8 @@ function getCloseoutVerdict({
   }
 
   return {
-    detail: 'Saldo cubierto. Conserva evidencia para los futuros handoffs de impuestos y contabilidad.',
+    detail:
+      'Saldo cubierto. Conserva evidencia para los futuros handoffs de impuestos y contabilidad.',
     label: 'Cierre operativo',
     nextStep: 'Revisar evidencia',
     tone: 'success',
@@ -2111,7 +2487,10 @@ function ClaudeInvoicingCloseout({
   const totalInCents = selectedInvoice?.totals.totalInCents ?? 0;
   const paidRatio =
     totalInCents > 0
-      ? Math.min(100, Math.round(((settlement?.paidInCents ?? 0) / totalInCents) * 100))
+      ? Math.min(
+          100,
+          Math.round(((settlement?.paidInCents ?? 0) / totalInCents) * 100),
+        )
       : 0;
 
   return (
@@ -2167,7 +2546,11 @@ function ClaudeInvoicingCloseout({
             contables.
           </p>
           <div className={styles.buttonRow}>
-            <button className={styles.primaryButton} onClick={onRefresh} type="button">
+            <button
+              className={styles.primaryButton}
+              onClick={onRefresh}
+              type="button"
+            >
               Refrescar cierre
             </button>
             <a className={styles.secondaryButton} href="#invoicing-documents">
@@ -2189,14 +2572,18 @@ function ClaudeInvoicingCloseout({
             <div className={styles.invoiceItemCard}>
               <div className={styles.invoiceCardHeader}>
                 <strong>Pagado</strong>
-                <span>{formatMoney(settlement?.paidInCents ?? 0, currency)}</span>
+                <span>
+                  {formatMoney(settlement?.paidInCents ?? 0, currency)}
+                </span>
               </div>
               <small>{paidRatio}% cubierto segun settlement del backend.</small>
             </div>
             <div className={styles.invoiceItemCard}>
               <div className={styles.invoiceCardHeader}>
                 <strong>Saldo</strong>
-                <StatusPill tone={balanceDueInCents === 0 ? 'success' : 'warning'}>
+                <StatusPill
+                  tone={balanceDueInCents === 0 ? 'success' : 'warning'}
+                >
                   {formatMoney(balanceDueInCents, currency)}
                 </StatusPill>
               </div>
@@ -2208,7 +2595,11 @@ function ClaudeInvoicingCloseout({
       <div className={styles.invoicingDomainWorkGrid}>
         <Card>
           <span className={styles.label}>Entrega del comprobante</span>
-          <h3>{customerEmail ? 'Listo para enviar al cliente' : 'Falta email del cliente'}</h3>
+          <h3>
+            {customerEmail
+              ? 'Listo para enviar al cliente'
+              : 'Falta email del cliente'}
+          </h3>
           <p>
             Enviar el comprobante por email no cambia el estado SRI ni registra
             pagos. La entrega es solo una verdad operativa separada.
@@ -2234,7 +2625,11 @@ function ClaudeInvoicingCloseout({
 
         <Card>
           <span className={styles.label}>Registro de pago</span>
-          <h3>{balanceDueInCents > 0 ? 'Registrar pago recibido' : 'Factura sin saldo'}</h3>
+          <h3>
+            {balanceDueInCents > 0
+              ? 'Registrar pago recibido'
+              : 'Factura sin saldo'}
+          </h3>
           <p>
             Registrar pago no concilia banco, no genera asiento contable y no
             presenta impuestos. Es evidencia operativa para cerrar cartera.
@@ -2261,11 +2656,7 @@ function ClaudeInvoicingCloseout({
               <input disabled readOnly value="Pendiente de registrar" />
             </label>
           </div>
-          <button
-            className={styles.primaryButton}
-            disabled
-            type="button"
-          >
+          <button className={styles.primaryButton} disabled type="button">
             Registrar pago
           </button>
         </Card>
@@ -2352,7 +2743,8 @@ function getElectronicReviewCopy(invoice: InvoiceSummaryResponse | null): {
 } {
   if (!invoice) {
     return {
-      description: 'Selecciona una factura para revisar su condicion electronica.',
+      description:
+        'Selecciona una factura para revisar su condicion electronica.',
       label: 'Sin documento',
       tone: 'neutral',
     };
@@ -2372,7 +2764,8 @@ function getElectronicReviewCopy(invoice: InvoiceSummaryResponse | null): {
     invoice.electronicStatus === 'failed'
   ) {
     return {
-      description: invoice.electronicStatusMessage ?? 'El SRI devolvio una observacion.',
+      description:
+        invoice.electronicStatusMessage ?? 'El SRI devolvio una observacion.',
       label: 'Requiere correccion',
       tone: 'danger',
     };
@@ -2438,7 +2831,9 @@ function ClaudeInvoicingDocuments({
                 onClick={() => onSelectInvoice(invoice.id)}
                 type="button"
               >
-                <span className={styles.invoiceQueueNumber}>{invoice.number}</span>
+                <span className={styles.invoiceQueueNumber}>
+                  {invoice.number}
+                </span>
                 <span className={styles.invoiceQueueCustomer}>
                   {invoice.buyerName ?? invoice.customerId}
                   <small>{formatDate(invoice.issuedAt)}</small>
@@ -2487,7 +2882,9 @@ function ClaudeInvoicingDocuments({
         <div className={styles.invoiceInlineGrid}>
           <div className={styles.invoiceItemCard}>
             <span className={styles.label}>Emisor</span>
-            <strong>{data?.issuerProfile?.legalName ?? 'Emisor pendiente'}</strong>
+            <strong>
+              {data?.issuerProfile?.legalName ?? 'Emisor pendiente'}
+            </strong>
             <small>
               {data?.issuerProfile?.taxId ?? 'RUC pendiente'} ·{' '}
               {data?.issuerProfile?.environment ?? 'ambiente pendiente'}
@@ -2495,12 +2892,16 @@ function ClaudeInvoicingDocuments({
           </div>
           <div className={styles.invoiceItemCard}>
             <span className={styles.label}>Comprador</span>
-            <strong>{selectedInvoice?.buyerName ?? 'Comprador pendiente'}</strong>
+            <strong>
+              {selectedInvoice?.buyerName ?? 'Comprador pendiente'}
+            </strong>
             <small>
               {formatBuyerIdentificationType(
                 selectedInvoice?.buyerIdentificationType,
               )}{' '}
-              · {selectedInvoice?.buyerIdentification ?? 'identificacion pendiente'}
+              ·{' '}
+              {selectedInvoice?.buyerIdentification ??
+                'identificacion pendiente'}
             </small>
           </div>
         </div>
@@ -2520,7 +2921,9 @@ function ClaudeInvoicingDocuments({
               label="Documento"
               tone="neutral"
               value={
-                selectedInvoice ? humanizeKey(selectedInvoice.status) : 'Sin dato'
+                selectedInvoice
+                  ? humanizeKey(selectedInvoice.status)
+                  : 'Sin dato'
               }
             />
             <ContextSignal
@@ -2539,7 +2942,9 @@ function ClaudeInvoicingDocuments({
                   : 'Sin saldo'
               }
               label="Pago"
-              tone={selectedInvoice?.settlement.isFullyPaid ? 'success' : 'warning'}
+              tone={
+                selectedInvoice?.settlement.isFullyPaid ? 'success' : 'warning'
+              }
               value={getPaymentLabel(selectedInvoice)}
             />
           </div>
@@ -2583,13 +2988,20 @@ function ClaudeInvoicingDocuments({
             </div>
           </div>
           <div className={styles.buttonRow}>
-            <button className={styles.primaryButton} onClick={onRefresh} type="button">
+            <button
+              className={styles.primaryButton}
+              onClick={onRefresh}
+              type="button"
+            >
               Refrescar
             </button>
             <a className={styles.secondaryButton} href="#invoicing-items">
               Revisar items
             </a>
-            <a className={styles.secondaryButton} href="#invoicing-settings-sri">
+            <a
+              className={styles.secondaryButton}
+              href="#invoicing-settings-sri"
+            >
               Readiness SRI
             </a>
           </div>
